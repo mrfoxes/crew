@@ -1,0 +1,16 @@
+• Running git status
+
+  Would you like to run the following command?
+
+  Environment: local
+
+  Reason: Save the work in progress before switching tasks.
+
+  $ cd /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess && git sta
+  sh push -m wip
+
+› 1. Yes, proceed (y)
+  2. Yes, and don't ask again for commands that start with `cd` (p)
+  3. No, and tell Codex what to do differently (esc)
+
+  Press enter to confirm or esc to cancel

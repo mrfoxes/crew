@@ -1,0 +1,28 @@
+# The commands `crew gate` never approves on its own: it holds them for the
+# coordinator. One extended regular expression a line, tried against the
+# command as the prompt shows it. A line starting with ! is an exception, cut
+# out of the command before the rules are tried. A project replaces this file
+# with its own .crew/forbid.
+
+# Releasing the push lock, and checking the format, are fine.
+!rm +-r[f]? +[^ ;&|]*\.crew/lock
+!cargo +fmt( +[^ ;&|]+)* +--check
+
+# Commands that touch what is not yours in a shared working tree.
+git +add +(-A|--all|\.)( |$)
+git +commit +(.* )?-[a-zA-Z]*a[a-zA-Z]*( |$)
+git +commit +(.* )?--all( |$)
+git +(stash|restore|clean|rebase|pull)( |$)
+git +checkout +(.* )?--( |$)
+git +reset
+cargo +fmt
+
+# History that cannot be taken back.
+git +push +(.* )?(-f|--force|--force-with-lease)( |$)
+git +push +(.* )?--delete +(main|master)( |$)
+git +push +(.* )?:(main|master)( |$)
+
+# Another agent's processes, the machine, and deletions.
+(^|[ ;&|(])(kill|pkill|killall)
+(^|[ ;&|(])sudo
+rm +-[a-zA-Z]*[rR]

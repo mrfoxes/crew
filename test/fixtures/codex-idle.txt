@@ -1,0 +1,12 @@
+• Ran kill -TERM -- -42985
+  └ (no output)
+
+✔ You approved codex to run ps -axo pid,ppid,etime,command this time
+
+• Working (17m 59s • esc to interrupt) · 2 background terminals running · /ps to view · /stop t…
+  └ Tip: Paste an image with Ctrl+V to attach it to your next message.
+
+› Ask Codex to do anything
+
+  GPT-6-Astra high · ~/Documents/repos/github.com/mrfoxes/tess · Pursuing goal (22m)
+  ← for agents · ? for shortcuts

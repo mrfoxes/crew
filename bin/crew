@@ -1,0 +1,71 @@
+#!/bin/sh
+# crew: coding agents working side by side in panes the owner can see, iTerm2
+# or tmux, talking through one numbered stream of messages in .crew/.
+set -eu
+
+# Follow the symlink from ~/.local/bin back to the checkout.
+self=$0
+while [ -L "$self" ]; do
+    link=$(readlink "$self")
+    case "$link" in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+    esac
+done
+CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
+
+. "$CREW_HOME/lib/store.sh"
+. "$CREW_HOME/lib/term.sh"
+. "$CREW_HOME/lib/panes.sh"
+. "$CREW_HOME/lib/gate.sh"
+
+usage() {
+    cat <<'EOF'
+usage: crew <command> [arguments]
+
+For everyone
+  help                          the protocol agents follow
+  join <name>                   join the crew as <name> from this pane
+  send <from> <to> <subject>    post a message, body on stdin; wakes <to>
+  unread <name>                 the messages to <name> or all not read yet
+  board [count]                 statuses, lock, latest messages, git, CI
+  lock <name>                   take the push lock
+  unlock <name> | --force       release it
+
+For the coordinator
+  init                          make .crew/ at the project's root
+  panes                         every pane, and who joined it
+  spawn <name> [--tab] <cmd>... open a pane running <cmd> for <name>
+  peek <name> [lines]           what <name>'s pane shows
+  poke <name> <line>            type a line into it and press Return
+  key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, ...
+  gate <name> [--dry]           answer <name>'s approval prompts, hold the forbidden
+
+<name> is lower-case letters, digits, and dashes; peek, poke, and key also
+take a pane (iterm:<id>, tmux:<id>) from 'crew panes'.
+EOF
+}
+
+cmd=${1:-help}
+[ $# -eq 0 ] || shift
+case "$cmd" in
+help) cat "$CREW_HOME/share/protocol.md" ;;
+init) crew_init "$@" ;;
+join) crew_join "$@" ;;
+send) crew_send "$@" ;;
+unread) crew_unread "$@" ;;
+board) crew_board "$@" ;;
+lock) crew_lock "$@" ;;
+unlock) crew_unlock "$@" ;;
+panes) crew_panes "$@" ;;
+spawn) crew_spawn "$@" ;;
+peek) crew_peek "$@" ;;
+poke) crew_poke "$@" ;;
+key) crew_key "$@" ;;
+gate) crew_gate "$@" ;;
+-h | --help | usage) usage ;;
+*)
+    usage >&2
+    exit 2
+    ;;
+esac

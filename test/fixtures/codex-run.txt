@@ -1,0 +1,20 @@
+• Ran .inbox/bin/send codex claude 'Answer: #161 should release those files within ten minutes'…
+  └ /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess/.inbox/messages/0017-codex-to-claude…
+    + 1 line (⌃t to expand)
+
+• Running cargo test --test editors
+
+  Would you like to run the following command?
+
+  Environment: local
+
+  Reason: Verifico il nuovo test Neovim con accesso ai socket locali: il sandbox impedisce al
+  client LSP di inizializzarsi.
+
+  $ cargo test --test editors
+
+› 1. Yes, proceed (y)
+  2. Yes, and don't ask again for commands that start with `cargo test` (p)
+  3. No, and tell Codex what to do differently (esc)
+
+  Press enter to confirm or esc to cancel

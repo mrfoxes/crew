@@ -1,0 +1,194 @@
+# The .crew directory: where a project keeps it, and the numbered stream of
+# messages inside it. Sourced by bin/crew.
+
+# The root of the main checkout inside git, so that every linked worktree of a
+# project shares one crew; the working directory outside git.
+crew_root() {
+    common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || {
+        pwd
+        return
+    }
+    case "$common" in
+    */.git) dirname "$common" ;;
+    *) git rev-parse --show-toplevel ;;
+    esac
+}
+
+# The project's .crew: $CREW_DIR, else the nearest .crew at or above the
+# working directory, else the one at the main checkout's root.
+crew_dir() {
+    if [ -n "${CREW_DIR:-}" ]; then
+        echo "$CREW_DIR"
+        return
+    fi
+    d=$(pwd -P)
+    while :; do
+        if [ -d "$d/.crew" ]; then
+            echo "$d/.crew"
+            return
+        fi
+        [ "$d" = / ] && break
+        d=$(dirname "$d")
+    done
+    d=$(crew_root)/.crew
+    if [ -d "$d" ]; then
+        echo "$d"
+        return
+    fi
+    echo "crew: no .crew here or above; run 'crew init' in the project first" >&2
+    return 1
+}
+
+# A name is lower-case letters, digits, and dashes: it goes into file names.
+crew_name() {
+    case "$1" in
+    "" | *[!abcdefghijklmnopqrstuvwxyz0123456789-]*)
+        echo "crew: '$1' is not a name: use lower-case letters, digits, and dashes" >&2
+        return 1
+        ;;
+    esac
+}
+
+crew_init() {
+    root=$(crew_root)
+    dir=$root/.crew
+    for d in messages seq cursors panes status reports tmp; do
+        mkdir -p "$dir/$d"
+    done
+    # Keep the crew out of commits without touching a tracked .gitignore.
+    if common=$(git -C "$root" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); then
+        mkdir -p "$common/info"
+        grep -qx '/.crew/' "$common/info/exclude" 2>/dev/null ||
+            echo '/.crew/' >>"$common/info/exclude"
+    fi
+    echo "$dir"
+}
+
+# Posts a message: <from> <to> <subject>, the body on stdin. Prints the path.
+crew_send() {
+    if [ $# -lt 3 ]; then
+        echo "usage: crew send <from> <to> <subject>, the body on stdin" >&2
+        return 2
+    fi
+    from=$1
+    to=$2
+    shift 2
+    subject=$*
+    crew_name "$from" && crew_name "$to" || return 2
+    dir=$(crew_dir) || return 1
+    body=$(cat)
+    slug=$(printf '%s' "$subject" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//' | cut -c1-48)
+    tmp=$(mktemp "$dir/tmp/message.XXXXXX")
+
+    # A number is taken by hard-linking the finished message to seq/<n>, which
+    # fails when another sender took it first: no number is seen half-written.
+    n=$(ls "$dir/seq" | sort -n | tail -n 1)
+    n=${n:-0}
+    while :; do
+        n=$((n + 1))
+        {
+            printf '# %04d. %s to %s: %s\n\n' "$n" "$from" "$to" "$subject"
+            printf 'From: %s\nTo: %s\nTime: %s\n\n' "$from" "$to" "$(date '+%H:%M:%S')"
+            printf '%s\n' "$body"
+        } >"$tmp"
+        ln "$tmp" "$dir/seq/$n" 2>/dev/null && break
+    done
+    file=$(printf '%s/messages/%04d-%s-to-%s-%s.md' "$dir" "$n" "$from" "$to" "$slug")
+    ln "$tmp" "$file"
+    rm "$tmp"
+    echo "$file"
+    [ "${CREW_WAKE:-1}" = 0 ] || crew_wake "$dir" "$n" "$from" "$to" "$subject"
+}
+
+# Prints the messages to <name> or to all, from someone else, that <name> has
+# not read yet, in order, and marks them read.
+crew_unread() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew unread <name>" >&2
+        return 2
+    fi
+    me=$1
+    crew_name "$me" || return 2
+    dir=$(crew_dir) || return 1
+    cursor=$dir/cursors/$me
+    last=$(cat "$cursor" 2>/dev/null || echo 0)
+    count=0
+    for n in $(ls "$dir/seq" | sort -n); do
+        [ "$n" -gt "$last" ] || continue
+        if grep -q -x -e "To: $me" -e "To: all" "$dir/seq/$n" &&
+            ! grep -q -x "From: $me" "$dir/seq/$n"; then
+            printf '\n'
+            cat "$dir/seq/$n"
+            count=$((count + 1))
+        fi
+        last=$n
+    done
+    echo "$last" >"$cursor"
+    [ "$count" -gt 0 ] || echo "No new messages for $me."
+}
+
+# The push lock: one of the crew lands at a time.
+crew_lock() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew lock <name>" >&2
+        return 2
+    fi
+    crew_name "$1" || return 2
+    dir=$(crew_dir) || return 1
+    if mkdir "$dir/lock" 2>/dev/null; then
+        printf '%s %s\n' "$1" "$(date '+%H:%M')" >"$dir/lock/owner"
+        echo "lock taken by $1"
+        return
+    fi
+    held=$(cat "$dir/lock/owner" 2>/dev/null || echo "someone")
+    age=$((($(date +%s) - $(stat -f %m "$dir/lock" 2>/dev/null || stat -c %Y "$dir/lock")) / 60))
+    echo "crew: the lock is held by $held, for $age minutes; keep working and retry" >&2
+    [ "$age" -lt 10 ] || echo "crew: past 10 minutes it is stale: ask its owner, then 'crew unlock --force'" >&2
+    return 1
+}
+
+crew_unlock() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew unlock <name> | --force" >&2
+        return 2
+    fi
+    dir=$(crew_dir) || return 1
+    [ -d "$dir/lock" ] || {
+        echo "crew: the lock is free"
+        return
+    }
+    held=$(cut -d' ' -f1 "$dir/lock/owner" 2>/dev/null || true)
+    if [ "$1" != --force ] && [ "$1" != "$held" ]; then
+        echo "crew: the lock is $held's, not $1's" >&2
+        return 1
+    fi
+    rm -r "$dir/lock"
+    echo "lock released"
+}
+
+# The crew at a glance: statuses, the lock, the latest messages, and the
+# latest commits with their CI.
+crew_board() {
+    dir=$(crew_dir) || return 1
+    for f in "$dir"/status/*.md; do
+        [ -e "$f" ] || continue
+        echo "== $(basename "$f" .md) ($(cat "$dir/panes/$(basename "$f" .md)" 2>/dev/null || echo "no pane"))"
+        cat "$f"
+        echo
+    done
+    if [ -d "$dir/lock" ]; then
+        echo "== lock: $(cat "$dir/lock/owner" 2>/dev/null || echo held)"
+    else
+        echo "== lock: free"
+    fi
+    echo
+    echo "== messages"
+    ls "$dir/messages" | tail -n "${1:-10}"
+    root=$(dirname "$dir")
+    if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
+        echo
+        echo "== git"
+        git -C "$root" log --oneline -5 2>/dev/null
+        (cd "$root" && gh run list --limit 5 2>/dev/null) || true
+    fi
+}

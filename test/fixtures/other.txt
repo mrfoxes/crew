@@ -1,0 +1,8 @@
+● Fetching the release notes.
+
+  Allow access to this URL?
+
+  https://example.com/notes
+
+  > Yes, allow access
+    No, deny access
