@@ -53,13 +53,17 @@ EOF
 # when an agent's sandbox dropped them, the tty of the nearest ancestor that
 # belongs to a pane.
 term_self() {
-    if [ -n "${TMUX:-}" ] && [ -n "${TMUX_PANE:-}" ]; then
-        echo "tmux:$TMUX_PANE"
-        return
-    fi
-    if [ -n "${ITERM_SESSION_ID:-}" ]; then
-        echo "iterm:${ITERM_SESSION_ID#*:}"
-        return
+    # Codex runs commands through its app-server daemon: the variables name
+    # the pane the daemon was started from, not this one.
+    if [ -z "${CODEX_THREAD_ID:-}" ]; then
+        if [ -n "${TMUX:-}" ] && [ -n "${TMUX_PANE:-}" ]; then
+            echo "tmux:$TMUX_PANE"
+            return
+        fi
+        if [ -n "${ITERM_SESSION_ID:-}" ]; then
+            echo "iterm:${ITERM_SESSION_ID#*:}"
+            return
+        fi
     fi
     panes=$(term_list)
     pid=$$
@@ -78,6 +82,37 @@ term_self() {
         pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
     done
     return 1
+}
+
+# Whether <pane> is gone: its terminal lists its panes and it is not among
+# them. A terminal that cannot be asked, from a sandbox, says nothing.
+term_gone() {
+    panes=$(term_list 2>/dev/null) || panes=""
+    printf '%s\n' "$panes" | grep -q "^${1%%:*}:" &&
+        ! printf '%s\n' "$panes" | grep -q "^$1	"
+}
+
+# The tty of a pane, from the list.
+term_tty() {
+    tty=$(term_list | awk -F '\t' -v p="$1" '$1 == p { print $2; exit }')
+    [ -n "$tty" ] || {
+        echo "crew: no pane $1" >&2
+        return 1
+    }
+    echo "$tty"
+}
+
+# Whether something other than a shell runs in the foreground on <tty>: the
+# agent started there is up, so a line typed there reaches it, not the
+# shell.
+term_running() {
+    ps -t "${1#/dev/}" -o stat=,comm= 2>/dev/null | awk '
+        $1 ~ /\+/ {
+            sub(/.*\//, "", $2)
+            sub(/^-/, "", $2)
+            if ($2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) up = 1
+        }
+        END { exit !up }'
 }
 
 # What the pane shows now.

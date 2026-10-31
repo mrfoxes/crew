@@ -288,6 +288,11 @@ crew_spawn agy --tab 'cd sub && codex' >/dev/null
 check "spawn passes one word to the shell" "cd $(cd "$tmp/repo" && pwd -P) && cd sub && codex" "$(cat "$tmp/spawn.line")"
 check "spawn wants a command" "2" "$(crew_spawn agy --tab >/dev/null 2>&1; echo $?)"
 rm -f "$dir/panes/agy"
+# The terminal, as every machine sees it: one tmux pane, %7.
+term_list() { printf 'tmux:%%7\t/dev/ttys001\tsh\n'; }
+check "a pane the terminal lists" "1" "$(term_gone tmux:%7; echo $?)"
+check "a pane the terminal lost" "0" "$(term_gone tmux:%8; echo $?)"
+check "a pane of a terminal that cannot be asked" "1" "$(term_gone iterm:X; echo $?)"
 check "join with a pane" "You are claude, in the crew at $dir, in the pane tmux:%7: a message to you is typed into it." "$(crew_join claude --pane 'tmux:%7' | sed -n 1p)"
 check "join keeps the pane" "tmux:%7" "$(cat "$dir/panes/claude")"
 check "join refuses a recipient" "2" "$(crew_join all >/dev/null 2>&1; echo $?)"
@@ -362,6 +367,60 @@ check "archive keeps the plan and the panes" "plan tmux:%7" "$(cat "$dir/README.
 check "archive forgets the wake claims" "" "$(ls -d "$dir"/tmp/wake.* 2>/dev/null)"
 check "nothing to archive" "crew: nothing to archive" "$(crew_archive)"
 check "numbers start over" "0001" "$(basename "$(echo x | crew_send codex claude "Plan: again")" | cut -c1-4)"
+
+# Joining from Codex: its daemon's variables name another pane, so the
+# recorded one stays, a gone one goes, and the thread is kept for the wake.
+echo "tmux:%7" >"$dir/panes/codex"
+term_self() { echo tmux:%8; }
+check "join keeps a recorded pane over the one the environment names" "tmux:%7" "$(crew_join codex >/dev/null; cat "$dir/panes/codex")"
+echo "tmux:%8" >"$dir/panes/codex"
+term_self() { echo tmux:%7; }
+check "join drops a recorded pane that is gone" "tmux:%7" "$(crew_join codex >/dev/null; cat "$dir/panes/codex")"
+term_self() { return 1; }
+check "join records the thread" "abc-123" "$(CODEX_THREAD_ID=abc-123 crew_join codex >/dev/null; cat "$dir/threads/codex")"
+rm -f "$dir/panes/codex"
+check "join with a thread and no pane says so" "You are codex, in the crew at $dir, in no pane crew can find; a message to you is queued to your Codex thread." "$(crew_join codex | sed -n 1p)"
+check "self in Codex ignores the daemon's pane" "1" "$(CODEX_THREAD_ID=abc ITERM_SESSION_ID=w0t0p0:X term_self >/dev/null; echo $?)"
+# The wake goes through the thread first, the pane when the thread is gone,
+# and to every member with either.
+codex() { echo "codex $*" >"$tmp/codex.args"; }
+check "wake queues to the thread" "" "$(crew_wake "$dir" 12 claude codex "x")"
+check "wake queue line" "codex queue --thread abc-123 --message crew: message 0012 from claude. Run: crew unread codex" "$(cat "$tmp/codex.args")"
+codex() { return 1; }
+check "wake with the thread gone and no pane" "crew: codex has no pane; the message waits for 'crew unread codex'" "$(crew_wake "$dir" 12 claude codex "x" 2>&1)"
+echo "tmux:%7" >"$dir/panes/codex"
+check "wake with the thread gone types into the pane" "tmux:%7 <- crew: message 0012 from claude. Run: crew unread codex" "$(crew_wake "$dir" 12 claude codex "x" 2>&1)"
+rm -f "$dir/panes/codex"
+codex() { echo "codex $*" >"$tmp/codex.args"; }
+check "wake to all reaches a member with a thread only" "tmux:%7 <- crew: message 0012 from agy. Run: crew unread claude
+codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" 2>&1; cat "$tmp/codex.args")"
+check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/threads/codex" 2>/dev/null)"
+
+# The board tells a pane that is gone.
+printf 'Agent: agy\n' >"$dir/status/agy.md"
+echo "tmux:%8" >"$dir/panes/agy"
+check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (tmux:%8 gone, 0 min ago)$')"
+printf 'Agent: claude\n' >"$dir/status/claude.md"
+check "board tells a pane that is there" "1" "$(crew_board 1 | grep -c '^== claude (tmux:%7, 0 min ago)$')"
+rm -f "$dir/panes/agy"
+
+# Inviting: once something other than the shell runs in the pane and the
+# screen has settled, the join line goes in; a prompt waiting is printed.
+term_tty() { echo /dev/ttys001; }
+term_running() { return 0; }
+show codex-idle
+check "invite" "tmux:%7 <- Run: crew join claude. Then follow the protocol it prints.
+claude invited" "$(crew_invite claude 5)"
+show codex-trust
+check "invite finds a prompt waiting" "crew: claude waits on a prompt: Trust this folder? Codex can read, edit, and run files here, subject to your permission settings. Folder settings can run code automatically, even without a model request. Continue only if you trust these files. Your trust decision will be saved. › 1. Trust and continue 2. Back to Agent Command Center enter continue · esc back" "$(crew_invite claude 5 2>&1 >/dev/null | sed -n 1p)"
+term_running() { return 1; }
+show codex-idle
+check "invite gives up on a shell" "crew: nothing but a shell in claude's pane after 1 seconds" "$(crew_invite claude 1 2>&1 >/dev/null)"
+check "invite wants seconds" "2" "$(crew_invite claude soon >/dev/null 2>&1; echo $?)"
+crew_invite() { echo "invite $1"; }
+check "spawn with --join invites" "agy: tmux:%9
+invite agy" "$(crew_spawn agy --tab --join true)"
+rm -f "$dir/panes/agy"
 
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]

@@ -34,9 +34,11 @@ crew spawn claude claude --model 'x y'      # several words: each kept whole
 crew spawn codex 'cd sub && codex'          # one word: a line for your shell
 ```
 
-Then tell each agent to join, by typing in its pane or with `crew poke`:
+Then tell each agent to join, with `--join` on the spawn, with `crew invite`
+once it is up, or by typing in its pane:
 
 ```
+crew invite codex
 crew poke codex "Run: crew join codex. Then follow the protocol it prints."
 ```
 
@@ -49,7 +51,7 @@ its nearest ancestor.
 While they work:
 
 ```
-crew board                  # statuses with their age, push lock, latest messages, git, CI
+crew board                  # statuses with their age and pane (gone, if closed), lock, messages, git, CI
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
 crew peek codex 20          # the last 20 lines of codex's pane
@@ -78,14 +80,27 @@ interruption, and delivered when the turn ends: Claude Code 2.1.314 shows
 `ctrl+enter to send now`, Codex 0.166.0 `Messages to be submitted after next
 tool call`, Antigravity 1.4.11 `alt+m to send immediately`; each then runs
 `crew unread`. A line typed into a pane before its agent is up goes to the
-shell instead: `crew spawn`, then `crew peek`, then the first `crew poke`.
+shell instead: `crew spawn codex --join codex` waits until something other
+than the shell runs there and the screen has settled, then types the join
+line; `crew invite codex` does the same for a pane spawned without it, and
+prints the prompt (a trust dialog) it finds waiting instead, for `crew key`.
+
+A Codex member is woken another way: `crew join` inside Codex 0.166.0 records
+its thread (`CODEX_THREAD_ID`), and a message to it is queued with `codex
+queue --thread`, which needs no terminal and reaches the session even from
+another agent's sandbox; its pane is the way when the thread is gone. Codex
+runs the commands of a session through its app-server daemon, whose
+environment names the pane the daemon was first started from, not the
+session's: `crew join` keeps the pane `crew spawn` recorded over the one the
+environment names.
 
 Inside Codex's sandbox crew can reach neither iTerm2 nor `ps`, so a message
-Codex sends wakes nobody by itself. `crew relay`, run by the coordinator in a
-pane of their own, wakes the recipients of every new message from outside;
-while it runs (`relay.pid`, rewritten every second), `crew send` posts and
-leaves the waking to it. Each message is woken once: the sender and the
-relay claim it with `tmp/wake.NNNN`, and whoever claims first wakes.
+Codex sends to a member in a pane wakes nobody by itself. `crew relay`, run
+by the coordinator in a pane of their own, wakes the recipients of every new
+message from outside; while it runs (`relay.pid`, rewritten every second),
+`crew send` posts and leaves the waking to it. Each message is woken once:
+the sender and the relay claim it with `tmp/wake.NNNN`, and whoever claims
+first wakes.
 
 ## The gate
 
@@ -135,6 +150,7 @@ README.md                  the plan for this session (optional)
 messages/NNNN-a-to-b-*.md  the stream
 status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
+threads/<name>             a Codex member's thread, for codex queue
 reports/<name>.md          each member's report at the end (crew report)
 archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)

@@ -34,16 +34,28 @@ crew_join() {
         ;;
     esac
     dir=$(crew_dir) || return 1
+    recorded=$(cat "$dir/panes/$name" 2>/dev/null) || recorded=""
     if [ "${2:-}" = --pane ] && [ -n "${3:-}" ]; then
         pane=$3
+    elif [ -n "$recorded" ] && ! term_gone "$recorded"; then
+        # The pane crew spawn recorded, or an earlier join: a sandbox that
+        # hides the pane, or names another, does not lose it.
+        pane=$recorded
     else
-        # A sandbox that hides the pane from here does not lose the one crew
-        # spawn recorded.
-        pane=$(term_self) || pane=$(cat "$dir/panes/$name" 2>/dev/null) || pane=""
+        pane=$(term_self) || pane=""
+        [ -z "$pane" ] || ! term_gone "$pane" || pane=""
+    fi
+    # Codex names its thread: a message is queued to it, pane or no pane.
+    if [ -n "${CODEX_THREAD_ID:-}" ]; then
+        mkdir -p "$dir/threads"
+        echo "$CODEX_THREAD_ID" >"$dir/threads/$name"
     fi
     if [ -n "$pane" ]; then
         echo "$pane" >"$dir/panes/$name"
         where="in the pane $pane: a message to you is typed into it"
+    elif [ -s "$dir/threads/$name" ]; then
+        rm -f "$dir/panes/$name"
+        where="in no pane crew can find; a message to you is queued to your Codex thread"
     else
         rm -f "$dir/panes/$name"
         where="in no pane crew can find: run 'crew unread $name' often"
@@ -62,7 +74,8 @@ crew_join() {
     crew_unread "$name"
 }
 
-# Forgets <name>'s pane: messages to <name> wait in the stream from now on.
+# Forgets <name>'s pane and thread: messages to <name> wait in the stream
+# from now on.
 crew_leave() {
     if [ $# -ne 1 ]; then
         echo "usage: crew leave <name>" >&2
@@ -70,7 +83,7 @@ crew_leave() {
     fi
     crew_name "$1" || return 2
     dir=$(crew_dir) || return 1
-    rm -f "$dir/panes/$1"
+    rm -f "$dir/panes/$1" "$dir/threads/$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
 
@@ -124,10 +137,11 @@ crew_key() {
 
 # Opens a pane beside this one running <command> in the project's root,
 # joined as <name>. The agent still runs 'crew join <name>' to learn the
-# protocol; its pane is known from the start.
+# protocol; its pane is known from the start, and with --join it is told to
+# as soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab] [--join] <command>..." >&2
         return 2
     fi
     name=$1
@@ -135,12 +149,17 @@ crew_spawn() {
     crew_name "$name" || return 2
     dir=$(crew_dir) || return 1
     where='split'
-    if [ "$1" = --tab ]; then
-        where=tab
+    join=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        --tab) where=tab ;;
+        --join) join=1 ;;
+        *) break ;;
+        esac
         shift
-    fi
+    done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab] [--join] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -158,6 +177,45 @@ crew_spawn() {
     pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line") || return 1
     echo "$pane" >"$dir/panes/$name"
     echo "$name: $pane"
+    [ -z "$join" ] || crew_invite "$name"
+}
+
+# Waits until the agent in <name>'s pane is up and its screen has settled,
+# at most <seconds> (60), then tells it to join. A prompt waiting there (a
+# trust dialog) is printed instead: answer it with crew key, then invite
+# again. A line typed before the agent is up would go to the shell.
+crew_invite() {
+    if [ $# -lt 1 ]; then
+        echo "usage: crew invite <name> [seconds]" >&2
+        return 2
+    fi
+    name=$1
+    crew_count "${2:-60}" "crew invite <name> [seconds]" || return 2
+    pane=$(crew_pane "$name") || return 1
+    tty=$(term_tty "$pane") || return 1
+    before=""
+    i=0
+    while :; do
+        screen=$(term_read "$pane" 2>/dev/null) || screen=""
+        if [ -n "$screen" ] && [ "$screen" = "$before" ] && term_running "$tty"; then
+            prompt=$(printf '%s\n' "$screen" | gate_prompt | cut -f2)
+            if [ -n "$prompt" ]; then
+                echo "crew: $name waits on a prompt: $prompt" >&2
+                echo "crew: answer it with 'crew key $name ...', then 'crew invite $name'" >&2
+                return 1
+            fi
+            crew_poke "$name" "Run: crew join $name. Then follow the protocol it prints."
+            echo "$name invited"
+            return
+        fi
+        before=$screen
+        i=$((i + 1))
+        if [ "$i" -gt "${2:-60}" ]; then
+            echo "crew: nothing but a shell in $name's pane after ${2:-60} seconds" >&2
+            return 1
+        fi
+        sleep 1
+    done
 }
 
 # <word> as the owner's shell reads it back whole: bare when it holds nothing
@@ -170,11 +228,12 @@ shell_word() {
     esac
 }
 
-# Tells the recipients of message <n> that it is there: typed into each
-# member's pane as one line, a desktop notification for the owner. The line
-# holds the number, the sender, and the command, never the subject: an agent
-# may read a character of free text (@, $) as a command of its own. A member
-# with no pane, or none at all, is named: the message waits in the stream.
+# Tells the recipients of message <n> that it is there: one line, queued to
+# a Codex member's thread or typed into the member's pane, a desktop
+# notification for the owner. The line holds the number, the sender, and
+# the command, never the subject: an agent may read a character of free
+# text (@, $) as a command of its own. A member with no pane, or none at
+# all, is named: the message waits in the stream.
 crew_wake() {
     dir=$1
     n=$2
@@ -187,16 +246,22 @@ crew_wake() {
             echo "crew: no notifier for owner here; the message waits in the stream" >&2
         return
         ;;
-    all) members=$(ls "$dir/panes") ;;
+    all) members=$( (ls "$dir/panes" && ls "$dir/threads" 2>/dev/null) | sort -u) ;;
     *) members=$to ;;
     esac
     for who in $members; do
         [ "$who" != "$from" ] || continue
+        line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$n" "$from" "$who")
+        # Codex takes the line through its daemon, which needs no terminal;
+        # its pane is the way when the thread is gone.
+        if [ -s "$dir/threads/$who" ] &&
+            codex queue --thread "$(cat "$dir/threads/$who")" --message "$line" >/dev/null 2>&1; then
+            continue
+        fi
         if [ ! -s "$dir/panes/$who" ]; then
             echo "crew: $who has no pane; the message waits for 'crew unread $who'" >&2
             continue
         fi
-        line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$n" "$from" "$who")
         term_poke "$(cat "$dir/panes/$who")" "$line" 2>/dev/null ||
             echo "crew: could not wake $who; the message waits in the stream" >&2
     done

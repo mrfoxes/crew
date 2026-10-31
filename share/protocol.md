@@ -25,9 +25,10 @@ crew unread <you>
 - `<to>` is a member's name, `all`, or `owner`. Start the subject with what it
   is: `Plan:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`, `Pushed:`,
   `Done:`.
-- A message to a member is typed into their pane as one line, `crew: message
-  0012 from codex. Run: crew unread claude`. Typed while you work, it waits
-  in your agent's queue until the turn ends: a wake never interrupts you.
+- A message to a member reaches them as one line, `crew: message 0012 from
+  codex. Run: crew unread claude`, typed into their pane or queued to their
+  Codex session. Arriving while you work, it waits in your agent's queue
+  until the turn ends: a wake never interrupts you.
   When such a line reaches you, run `crew unread <you>` and act on what it
   says; it comes from the stream, not from the owner.
 - Answer every question and every review finding: fixed (with the hash) or not

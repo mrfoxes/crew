@@ -40,7 +40,9 @@ For everyone
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   panes                         every pane, and who joined it
-  spawn <name> [--tab] <cmd>... open a pane running <cmd> for <name>
+  spawn <name> [--tab] [--join] <cmd>...
+                                open a pane running <cmd> for <name>
+  invite <name> [seconds]       once its agent is up, tell it to join
   leave <name>                  forget <name>'s pane
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
@@ -78,6 +80,7 @@ lock) crew_lock "$@" ;;
 unlock) crew_unlock "$@" ;;
 panes) crew_panes "$@" ;;
 spawn) crew_spawn "$@" ;;
+invite) crew_invite "$@" ;;
 leave) crew_leave "$@" ;;
 peek) crew_peek "$@" ;;
 poke) crew_poke "$@" ;;

@@ -73,7 +73,7 @@ crew_init() {
                 echo '/.crew/' >>"$common/info/exclude"
         fi
     fi
-    for d in messages seq cursors panes status reports tmp; do
+    for d in messages seq cursors panes threads status reports tmp; do
         mkdir -p "$dir/$d"
     done
     echo "$root" >"$dir/project"
@@ -231,8 +231,8 @@ crew_write() {
 
 # Puts the session's stream, cursors, statuses, reports, and wake claims
 # under archive/<date and time>/ and starts the stream over, keeping the
-# plan, the rules, the project, the lock, and the panes. Not under a relay,
-# whose count would go on from the old stream.
+# plan, the rules, the project, the lock, the panes, and the threads. Not
+# under a relay, whose count would go on from the old stream.
 crew_archive() {
     dir=$(crew_dir) || return 1
     if crew_relay_alive "$dir"; then
@@ -316,7 +316,12 @@ crew_board() {
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue
         who=$(basename "$f" .md)
-        echo "== $who ($(cat "$dir/panes/$who" 2>/dev/null || echo "no pane"), $(crew_age "$f") min ago)"
+        if pane=$(cat "$dir/panes/$who" 2>/dev/null); then
+            ! term_gone "$pane" || pane="$pane gone"
+        else
+            pane="no pane"
+        fi
+        echo "== $who ($pane, $(crew_age "$f") min ago)"
         cat "$f"
         echo
     done
