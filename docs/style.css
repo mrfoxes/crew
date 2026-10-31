@@ -717,3 +717,14 @@ footer.site-footer {
     display: none;
   }
 }
+
+/* The heading breaks after its comma on a narrow window. */
+br.narrow {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  br.narrow {
+    display: inline;
+  }
+}

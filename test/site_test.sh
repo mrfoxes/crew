@@ -17,7 +17,7 @@ check "docs/index.html exists" "1" "$([ -f "$html" ] && echo 1)"
 check "docs/style.css exists" "1" "$([ -f "$css" ] && echo 1)"
 
 check "tagline on the site" "1" \
-    "$(grep -c '<h1>Coding agents side by side, in panes you can see\.</h1>' "$html")"
+    "$(grep -c '<h1>Coding agents side by side, \(<br class="narrow">\)\{0,1\}in panes you can see\.</h1>' "$html")"
 check "portable install one-liner on the site" "2" \
     "$(grep -c 'curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh' "$html")"
 
