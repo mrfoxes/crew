@@ -257,7 +257,8 @@ gate_members() {
 # and seen/ (the screen of each member and since when it is unchanged).
 gate_dirs() {
     mkdir -p "$1/held" "$1/answered" "$1/pane" "$1/up" "$1/seen" \
-        "$1/told/held" "$1/told/exited" "$1/told/gone" "$1/told/idle"
+        "$1/told/held" "$1/told/exited" "$1/told/gone" "$1/told/idle" \
+        "$1/told/budget"
 }
 
 # One look at every pane the gate watches, and a check that its member is
@@ -272,6 +273,34 @@ gate_round() {
         pane=$(cat "$gate_state/pane/$name")
         gate_look "$name" "$pane"
         gate_tend "$name" "$pane"
+    done
+    gate_budgets
+}
+
+# Once a minute, the members whose Crewfile line gives a budget= against
+# what they spent (crew cost): at 80% and at 100% the owner is told, once
+# each, with the command that keeps the member from being woken by all;
+# crew never mutes or stops an agent by itself. A member crew cannot price
+# is said once. told/budget/<name> keeps the last threshold told.
+gate_budgets() {
+    b_now=$(gate_now)
+    [ $((b_now - ${gate_budget_at:-0})) -ge 60 ] || return 0
+    gate_budget_at=$b_now
+    for b_name in $names; do
+        b_budget=$(crewfile_get "$dir" "$b_name" budget)
+        [ -n "$b_budget" ] || continue
+        b_spent=$(cost_spent "$dir" "$b_name")
+        if [ -z "$b_spent" ]; then
+            if gate_new budget "$b_name" unpriced; then
+                echo "$(crew_stamp) budget $b_name: \$$b_budget, but no rate prices its model: crew cost $b_name"
+            fi
+            continue
+        fi
+        b_level=$(awk -v s="$b_spent" -v b="$b_budget" 'BEGIN { p = (b > 0 ? s * 100 / b : 100); print (p >= 100 ? 100 : (p >= 80 ? 80 : 0)) }')
+        [ "$b_level" != 0 ] || continue
+        gate_new budget "$b_name" "$b_level" || continue
+        echo "$(crew_stamp) budget $b_name: \$$b_spent of \$$b_budget ($b_level%)"
+        gate_notify "$b_name" "Spent \$$b_spent of its \$$b_budget budget ($b_level%). Keep it from messages to all: crew mute $b_name"
     done
 }
 

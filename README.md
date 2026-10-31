@@ -211,7 +211,7 @@ list the models, a line each, in dollars per million tokens; a line in the
 crew's replaces the owner's for that model, and `-` is no price:
 
 ```
-# model            input  cached  write  output  reasoning
+# model            input  cached  write  output  reasoning   (an example: write your own prices)
 gpt-6-astra          5.00    0.50      -   30.00      30.00
 claude-opus-5-5     15.00    1.50  18.75   75.00      75.00
 ```
@@ -219,6 +219,14 @@ claude-opus-5-5     15.00    1.50  18.75   75.00      75.00
 A model with no line shows its tokens and `no rate for <model>`. The last
 section of `crew board`, `== cost`, shows each member's total and, where the
 log has times (Codex and Claude Code), the last hour's.
+
+A member's `budget=<dollars>` on its Crewfile line is set against what it
+spent: `crew board` adds `of a $60 budget, 21%` to its cost line, and the
+live board's column reads `12.60/60`. `crew watch` checks once a minute: at
+80% and at 100% of a budget it prints a line and notifies the owner, once
+each, naming `crew mute <name>`; crew never mutes or stops an agent by
+itself. A member whose models no rate prices has its budget said once, as
+one crew cannot check.
 
 ## One command, the whole crew
 

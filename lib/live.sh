@@ -108,6 +108,8 @@ live_frame() {
         fi
         [ -e "$v_dir/muted/$v_name" ] && v_state="$v_state*"
         v_spent=$(printf '%s\n' "$v_costs" | awk -v n="$v_name" '$1 == n { print $2; exit }')
+        v_budget=$(crewfile_get "$v_dir" "$v_name" budget)
+        [ -z "$v_budget" ] || v_spent="${v_spent:--}/$v_budget"
         printf '%-9s %-7s %-8s %-8s %-28.28s %4s %s\n' "$v_name" "${v_kind:--}" "${v_tab:--}" "$v_state" "${v_issue:--}" "$v_age" "${v_spent:--}"
     done
     echo

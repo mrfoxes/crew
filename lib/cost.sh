@@ -403,5 +403,29 @@ cost_board() {
     [ $# -gt 0 ] || return 0
     echo
     echo "== cost"
-    cost_sum board "$c_dir" "$@"
+    cost_sum board "$c_dir" "$@" | while IFS= read -r c_line; do
+        c_who=$(printf '%s\n' "$c_line" | awk '{ print $1 }')
+        c_budget=$(crewfile_get "$c_dir" "$c_who" budget)
+        if [ -n "$c_budget" ]; then
+            c_spent=$(printf '%s\n' "$c_line" | awk '$3 == "tokens" && $4 ~ /^\$/ { print substr($4, 2) }')
+            c_line="$c_line  $(cost_against "${c_spent:-}" "$c_budget")"
+        fi
+        printf '%s\n' "$c_line"
+    done
+}
+
+# The dollars <name> of the crew <dir> has spent, as 12.40, or nothing
+# when the rates price none of its models.
+cost_spent() {
+    cost_sum board "$1" "$2" | awk '$3 == "tokens" && $4 ~ /^\$/ { print substr($4, 2); exit }' || :
+}
+
+# <spent> against <budget>, both in dollars: "of a $60 budget, 21%", or
+# what stands in for a member crew cannot price.
+cost_against() {
+    if [ -z "$1" ]; then
+        echo "a \$$2 budget, but no rate to price it"
+        return
+    fi
+    awk -v s="$1" -v b="$2" 'BEGIN { printf "of a $%s budget, %d%%\n", b, (b > 0 ? s * 100 / b : 100) }'
 }
