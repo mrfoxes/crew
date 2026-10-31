@@ -26,6 +26,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/cost.sh"
 . "$CREW_HOME/lib/crewfile.sh"
 . "$CREW_HOME/lib/up.sh"
+. "$CREW_HOME/lib/live.sh"
 
 usage() {
     cat <<'EOF'
@@ -40,7 +41,9 @@ For everyone
   show <number>...              those messages, whole
   status <name>                 write <name>'s status, text on stdin
   report <name>                 write <name>'s report, text on stdin
-  board [count]                 statuses, lock, latest messages, git, CI
+  board [count] | --live [seconds]
+                                statuses, claims, lock, latest messages, git,
+                                CI, cost; --live: a line a member, redrawn
   dir                           the crew's directory
   lock <name>                   take the push lock
   unlock <name> | --force       release it

@@ -315,7 +315,12 @@ crew_unlock() {
 # lock, the latest messages, the latest commits with their CI, and what the
 # members spent.
 crew_board() {
-    crew_count "${1:-10}" "crew board [count]" || return 2
+    if [ "${1:-}" = --live ]; then
+        shift
+        crew_board_live "$@"
+        return
+    fi
+    crew_count "${1:-10}" "crew board [count] | --live [seconds]" || return 2
     dir=$(crew_dir) || return 1
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue

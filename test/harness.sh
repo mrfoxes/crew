@@ -19,6 +19,7 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/cost.sh"
 . "$CREW_HOME/lib/crewfile.sh"
 . "$CREW_HOME/lib/up.sh"
+. "$CREW_HOME/lib/live.sh"
 export CREW_WAKE=0
 # No test notifies the owner; the ones that test notifying fake crew_notify.
 export CREW_NOTIFY=0

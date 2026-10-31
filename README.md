@@ -103,6 +103,7 @@ While they work:
 
 ```
 crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
+crew board --live           # a line a member, redrawn every 5 seconds, in a pane of its own
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
 crew focus codex            # codex's pane to the front, its tab and its window
@@ -446,6 +447,29 @@ counts once the tab has changed and the pane comes right after the other
 there stays where iTerm2 left it, never closed, and the move fails saying
 so; the focus stays where it was.
 
+## The live board
+
+`crew board --live [seconds]` keeps the crew in a pane, redrawn every
+`<seconds>` (5), a frame worked out before the pane is cleared:
+
+```
+member    kind    tab      state    issue                         age spent
+claude2   claude  proof    working  #187 step 3                    4m 1.20
+codex     codex   runtime  prompt   #190 review                    1m 38.10
+agy       agy     runtime  exited*  -                             22m 9.40
+```
+
+The state is what the member's pane shows now: `prompt` (a prompt waits
+for an answer), `working` (the agent says esc interrupts it, or its screen
+changed since the last frame), `idle`, `exited` (back to a shell), `gone`,
+or `none`; `*` marks a muted member. Then the `Issue:` line of its status,
+the status's age, and what it spent, dollars where the rates price its
+model, else tokens. Under the members: the lock, the relay, the last three
+messages, and the last commit with its CI. What it spent and the CI are
+worked out once a minute at most: they read every agent's logs and ask the
+network. A narrow pane cuts each line at its right. `crew up` opens it
+beside the coordinator for a tab with `board`.
+
 ## The gate
 
 `crew gate <name>...` reads their panes every two seconds and answers the
@@ -503,6 +527,7 @@ lib/term-tmux.sh    tmux's half of it
 lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layouts
 lib/crewfile.sh     the Crewfile read, checked, and asked
 lib/up.sh           crew up: the crew of the Crewfile brought up, or back
+lib/live.sh         crew board --live: a line a member, redrawn
 lib/clones.sh       a member's clone: made, reused, shown on the board, removed
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
