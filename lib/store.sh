@@ -176,7 +176,8 @@ crew_unread() {
         fi
         last=$n
     done
-    echo "$last" >"$cursor"
+    cu_tmp=$(mktemp "$dir/tmp/cursor.XXXXXX")
+    echo "$last" >"$cu_tmp" && mv "$cu_tmp" "$cursor"
     [ "$count" -gt 0 ] || echo "No new messages for $me."
 }
 
@@ -254,7 +255,11 @@ crew_status() {
             [ ! -f "$file" ] || cat "$file"
             return 0
         fi
-        cat >"$file"
+        st_tmp=$(mktemp "$dir/tmp/status.XXXXXX")
+        cat >"$st_tmp" && mv "$st_tmp" "$file" || {
+            rm -f "$st_tmp"
+            return 1
+        }
     else
         st_in=/dev/null
         [ ! -f "$file" ] || st_in=$file
@@ -313,7 +318,11 @@ crew_write() {
     dir=$(crew_dir) || return 1
     file=$dir/reports/$1.md
     ! crew_tty || echo "crew: type the $kind, then press ctrl-d" >&2
-    cat >"$file"
+    wr_tmp=$(mktemp "$dir/tmp/report.XXXXXX")
+    cat >"$wr_tmp" && mv "$wr_tmp" "$file" || {
+        rm -f "$wr_tmp"
+        return 1
+    }
     echo "$file"
 }
 
