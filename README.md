@@ -226,8 +226,9 @@ conversation that began with `crew join <name>` (it needs `sqlite3`; without
 it the line says so, and the others go on); Claude Code in
 `~/.claude/projects/*/<session>.jsonl`, the session `crew join` recorded in
 `sessions/<name>` (`CLAUDE_CODE_SESSION_ID`), each message once, its
-thinking counted as reasoning. A Claude Code member has tokens only: it runs
-on a subscription. A member who joined before crew recorded a session shows
+thinking counted as reasoning. On a subscription, a Claude Code member's
+dollars are what its tokens would cost through the API, not what the
+subscription bills. A member who joined before crew recorded a session shows
 that, not a number. `CREW_CODEX_HOME`, `CREW_AGY_HOME`, and
 `CREW_CLAUDE_HOME` move the three roots.
 
