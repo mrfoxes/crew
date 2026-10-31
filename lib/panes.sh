@@ -12,6 +12,10 @@ crew_pane() {
     esac
     crew_name "$1" || return 2
     dir=$(crew_dir) || return 1
+    if [ -e "$dir/nopane/$1" ]; then
+        echo "crew: $1 joined with --no-pane: there is no pane to read or type into" >&2
+        return 1
+    fi
     if [ ! -s "$dir/panes/$1" ]; then
         echo "crew: $1 has no pane: '$1' runs 'crew join $1' in it, or see 'crew panes'" >&2
         return 1
@@ -20,17 +24,24 @@ crew_pane() {
 }
 
 # Registers the pane this runs in as <name>'s, or the one given with --pane,
-# then prints the protocol, the crew's plan, and <name>'s unread messages.
+# or none at all with --no-pane (a coordinator in a pane the owner types in,
+# an agent whose sandbox hides its pane, a script: it reads the stream on
+# its own, with crew unread --wait), then prints the protocol, the crew's
+# plan, and <name>'s unread messages.
 crew_join() {
     if [ $# -lt 1 ]; then
-        echo "usage: crew join <name> [--pane <pane>]" >&2
+        echo "usage: crew join <name> [--pane <pane> | --no-pane]" >&2
         return 2
     fi
     name=$1
     crew_member "$name" || return 2
     dir=$(crew_dir) || return 1
     recorded=$(cat "$dir/panes/$name" 2>/dev/null) || recorded=""
-    if [ "${2:-}" = --pane ] && [ -n "${3:-}" ]; then
+    nopane=0
+    if [ "${2:-}" = --no-pane ]; then
+        nopane=1
+        pane=""
+    elif [ "${2:-}" = --pane ] && [ -n "${3:-}" ]; then
         pane=$3
     elif [ -n "$recorded" ] && ! term_gone "$recorded"; then
         # The pane crew spawn recorded, or an earlier join: a sandbox that
@@ -55,7 +66,13 @@ crew_join() {
         mkdir -p "$dir/sessions"
         echo "$CLAUDE_CODE_SESSION_ID" >"$dir/sessions/$name"
     fi
-    if [ -n "$pane" ]; then
+    if [ "$nopane" = 1 ]; then
+        mkdir -p "$dir/nopane"
+        : >"$dir/nopane/$name"
+        rm -f "$dir/panes/$name"
+        where="in no pane, as you asked: a message to you waits for your next 'crew unread $name', which 'crew unread $name --wait' blocks for"
+    elif [ -n "$pane" ]; then
+        rm -f "$dir/nopane/$name"
         echo "$pane" >"$dir/panes/$name"
         crew_label "$pane" "$name" "${kind:-other}" 2>/dev/null || :
         where="in the pane $pane: a message to you is typed into it"
@@ -94,7 +111,7 @@ crew_leave() {
     dir=$(crew_dir) || return 1
     pane=$(cat "$dir/panes/$1" 2>/dev/null) || pane=""
     [ -z "$pane" ] || term_gone "$pane" || crew_unlabel "$pane"
-    rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1"
+    rm -f "$dir/panes/$1" "$dir/nopane/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1"
     tab_drop "$dir" "$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
     if [ "${2:-}" = --clone ]; then
@@ -181,6 +198,13 @@ crew_panes() {
         [ "$tab" = - ] || order=$(grep -nx -- "$who" "$dir/tabs/$tab" | cut -d: -f1) || order=0
         printf '%s\t%s\t%-8s %-7s %-8s %-48s %-14s %s\n' "${tab:--}" "$order" "$who" "${kind:--}" "${tab:--}" "$pane" "$tty" "$title"
     done | sort -s -t '	' -k1,1 -k2,2n | cut -f3-
+    [ -n "$dir" ] || return 0
+    for f in "$dir"/nopane/*; do
+        [ -e "$f" ] || continue
+        who=$(basename "$f")
+        kind=$(kind_member "$dir" "$who")
+        printf '%-8s %-7s %-8s %-48s %-14s %s\n' "$who" "${kind:--}" - "no pane" - -
+    done
 }
 
 crew_peek() {
@@ -460,9 +484,9 @@ shell_word() {
 # a Codex member's thread or typed into the member's pane, a desktop
 # notification for the owner. The line holds the number, the sender, and
 # the command, never the subject: an agent may read a character of free
-# text (@, $) as a command of its own. A member with no pane, or none at
-# all, is named: the message waits in the stream. So is a muted member, for
-# a message to all.
+# text (@, $) as a command of its own. A member that reads on its own
+# (--no-pane), one with no pane, or none at all, is named: the message
+# waits in the stream. So is a muted member, for a message to all.
 crew_wake() {
     dir=$1
     n=$2
@@ -489,6 +513,10 @@ crew_wake() {
         # its pane is the way when the thread is gone.
         if [ -s "$dir/threads/$who" ] &&
             codex queue --thread "$(cat "$dir/threads/$who")" --message "$line" >/dev/null 2>&1; then
+            continue
+        fi
+        if [ -e "$dir/nopane/$who" ]; then
+            echo "crew: $who reads the stream on its own; the message waits for its next 'crew unread $who'" >&2
             continue
         fi
         if [ ! -s "$dir/panes/$who" ]; then

@@ -34,6 +34,11 @@ crew unread <you>
 - A member `crew board` shows `muted` is woken only by a message to its name:
   one to `all` waits for its next `crew unread`. Write to it by name when it
   must act now.
+- A member that joined with `--no-pane` (a coordinator in the pane the
+  owner types in, an agent whose sandbox hides its pane) is woken by
+  nobody: it reads with `crew unread <you> --wait [seconds]`, which blocks
+  until a message to it or to `all` arrives (600 seconds by default) and
+  costs no turn while it waits; on a timeout it prints nothing and exits 1.
 - Answer every question and every review finding: fixed (with the hash) or not
   (with the reason). Do not send messages that only acknowledge: every message
   wakes someone.

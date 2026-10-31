@@ -36,9 +36,15 @@ usage: crew <command> [arguments]
 
 For everyone
   help                          the protocol agents follow
-  join <name> [--pane <pane>]   join the crew as <name> from this pane
+  join <name> [--pane <pane> | --no-pane]
+                                join the crew as <name> from this pane, or
+                                with no pane: messages to you wait in the
+                                stream for your next crew unread
   send <from> <to> <subject>    post a message, body on stdin; wakes <to>
-  unread <name> [--peek]        the messages to <name> or all not read yet (--peek: keep them unread)
+  unread <name> [--peek] [--wait [seconds]]
+                                the messages to <name> or all not read yet;
+                                --peek keeps them unread, --wait blocks until
+                                one comes (600 seconds)
   log [count] [--from <name>] [--to <name>] [--grep <text>] [--oneline]
                                 the last messages, whole (5), filtered
   show <number>...              those messages, whole

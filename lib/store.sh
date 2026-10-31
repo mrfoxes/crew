@@ -172,18 +172,46 @@ crew_field() {
 # not read yet, in order, and marks them read; with --peek, marks nothing.
 crew_unread() {
     peek=0
-    if [ $# -eq 2 ] && [ "$2" = --peek ]; then
-        peek=1
-        set -- "$1"
-    fi
-    if [ $# -ne 1 ]; then
-        echo "usage: crew unread <name> [--peek]" >&2
+    wait=""
+    if [ $# -lt 1 ]; then
+        echo "usage: crew unread <name> [--peek] [--wait [seconds]]" >&2
         return 2
     fi
     me=$1
+    shift
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        --peek) peek=1 ;;
+        --wait)
+            wait=600
+            if [ $# -ge 2 ] && [ "${2#-}" = "$2" ]; then
+                wait=$2
+                shift
+            fi
+            crew_count "$wait" "crew unread <name> [--peek] [--wait [seconds]]" || return 2
+            ;;
+        *)
+            echo "usage: crew unread <name> [--peek] [--wait [seconds]]" >&2
+            return 2
+            ;;
+        esac
+        shift
+    done
     crew_name "$me" || return 2
     dir=$(crew_dir) || return 1
     cursor=$dir/cursors/$me
+    # --wait: the stream read every two seconds until something is there for
+    # <name>, 600 seconds at most; a wait inside one command costs an agent no
+    # turn. On a timeout, nothing is printed, the cursor stays, and the
+    # status is 1.
+    if [ -n "$wait" ]; then
+        waited=0
+        until crew_waiting "$dir" "$me"; do
+            [ "$waited" -lt "$wait" ] || return 1
+            sleep 2
+            waited=$((waited + 2))
+        done
+    fi
     last=$(cat "$cursor" 2>/dev/null || echo 0)
     count=0
     for n in $(ls "$dir/seq" | sort -n); do
@@ -202,6 +230,19 @@ crew_unread() {
         echo "$last" >"$cu_tmp" && mv "$cu_tmp" "$cursor"
     fi
     [ "$count" -gt 0 ] || echo "No new messages for $me."
+}
+
+# Whether a message to <name> or to all, from someone else, waits past
+# <name>'s cursor in the crew <dir>.
+crew_waiting() {
+    last=$(cat "$1/cursors/$2" 2>/dev/null || echo 0)
+    for n in $(ls "$1/seq" | sort -n); do
+        [ "$n" -gt "$last" ] || continue
+        to=$(crew_field "$1/seq/$n" To)
+        { [ "$to" = "$2" ] || [ "$to" = all ]; } &&
+            [ "$(crew_field "$1/seq/$n" From)" != "$2" ] && return 0
+    done
+    return 1
 }
 
 # Prints the last <count> messages (5 when not given), whole, in order. The

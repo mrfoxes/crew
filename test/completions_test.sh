@@ -44,7 +44,8 @@ check "spawn's positionals" "<name> <cmd>..." "$(words spawn | tr ' ' '\n' | gre
 check "move flags" "--above --below --beside" "$(flags move)"
 check "gate flags" "--all --dry" "$(flags gate)"
 check "watch flags" "--all --dry" "$(flags watch)"
-check "join flags" "--pane" "$(flags join)"
+check "join flags" "--no-pane --pane" "$(flags join)"
+check "unread flags" "--peek --wait" "$(flags unread)"
 check "unlock flags" "--force" "$(flags unlock)"
 check "peek has no flag" "" "$(flags peek)"
 check "send's positionals" "<from> <to> <subject>" "$(words send | sed "s/^ //")"
@@ -113,7 +114,7 @@ crew key claude sh|shift-tab
 crew key claude al|alt-
 crew key claude alt-m|alt-m
 crew key claude ctrl-c|ctrl-c
-crew join --|--pane
+crew join --|--no-pane --pane
 crew nosuch |
 EOF2
 }

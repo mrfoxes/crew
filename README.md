@@ -185,6 +185,16 @@ keeps an agent you would rather not wake often in the crew: a message to
 reads both with `crew unread`, and `crew board` shows it muted until `crew
 unmute codex`.
 
+A member that joined with `crew join <name> --no-pane` (a coordinator in
+the pane the owner types in, an agent whose sandbox hides its pane, a
+script) is typed into by nobody: `crew send` says the message waits for
+its next `crew unread`, `crew panes` lists it after the panes with `no
+pane`, and `crew unread <name> --wait [seconds]` blocks, reading the
+stream every two seconds, until a message to it or to `all` arrives (600
+seconds by default), then prints them as `crew unread` does; on a timeout
+it prints nothing, leaves the cursor, and exits 1. A wait inside one
+command costs the agent no turn.
+
 A line typed while the agent is in a turn is queued, not read as an
 interruption, and delivered when the turn ends: Claude Code 2.1.314 shows
 `ctrl+enter to send now`, Codex 0.166.0 `Messages to be submitted after next
@@ -667,6 +677,7 @@ threads/<name>             a Codex member's thread, for codex queue
 sessions/<name>            a Claude Code member's session, for crew cost
 rates                      the project's prices per model, over the owner's (optional)
 muted/<name>               a member woken only by messages to its name (crew mute)
+nopane/<name>              a member that reads the stream on its own (crew join --no-pane)
 kind/<name>                each member's kind (claude, codex, agy, other)
 clones/<name>              the path of a member's clone (crew spawn --clone)
 tabs/<tab>                 a tab's members, in the order they were placed
