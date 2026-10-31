@@ -152,4 +152,17 @@ check "rows of names go to the tab of the first" "lane: l1,l3 / l4" "$(crew_layo
 check "and are moved so" "move $l4 below $l1
 move $l3 beside $l1" "$(calls | grep '^move ')"
 
+# A move keeps to variables of its own: crew spawn lays its tab out after
+# the spawn, then labels its pane, and a move that set pane= labelled the
+# last pane moved instead (sonnet1's name on agy3's pane).
+# shellcheck source=/dev/null
+. "$CREW_HOME/lib/layout.sh"
+tmux() { :; }
+iterm_move_session() { echo placed; }
+pane=mine where=below anchor=theirs verdict=kept
+term_move tmux:%7 beside tmux:%8
+check "a tmux move leaves its caller's variables" "mine below theirs" "$pane $where $anchor"
+term_move iterm:A beside iterm:B
+check "an iTerm2 move leaves its caller's variables" "mine below theirs kept" "$pane $where $anchor $verdict"
+
 finish

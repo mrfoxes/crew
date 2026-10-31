@@ -259,26 +259,26 @@ iterm_spawn() {
 # on in the order a tab lists its panes (from the top left, as iTerm2
 # walks its splits), the two values of before:.
 iterm_move() {
-    pane=iterm:$1
-    where=$2
-    anchor=iterm:$3
-    case "$where" in
+    im_pane=iterm:$1
+    im_where=$2
+    im_anchor=iterm:$3
+    case "$im_where" in
     beside) set -- "$1" "$3" true after false true ;;
     above) set -- "$1" "$3" false before false true ;;
     below) set -- "$1" "$3" false after true false ;;
     esac
-    verdict=$(iterm_move_session "$@") || {
-        echo "crew: iTerm2 could not move $pane $where $anchor; it stays where iTerm2 left it (iTerm2 3.5 or later moves panes)" >&2
+    im_verdict=$(iterm_move_session "$@") || {
+        echo "crew: iTerm2 could not move $im_pane $im_where $im_anchor; it stays where iTerm2 left it (iTerm2 3.5 or later moves panes)" >&2
         return 1
     }
-    case "$verdict" in
+    case "$im_verdict" in
     placed) ;;
     unchanged)
-        echo "crew: iTerm2 left $pane where it was: a locked layout, no room to split, or $where $anchor already" >&2
+        echo "crew: iTerm2 left $im_pane where it was: a locked layout, no room to split, or $im_where $im_anchor already" >&2
         return 3
         ;;
     *)
-        echo "crew: iTerm2 moved $pane, but not $where $anchor; it stays where iTerm2 put it" >&2
+        echo "crew: iTerm2 moved $im_pane, but not $im_where $im_anchor; it stays where iTerm2 put it" >&2
         return 1
         ;;
     esac

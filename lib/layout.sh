@@ -21,26 +21,26 @@ term_spawn() {
 # terminal will not place, or places elsewhere, stays where it is, and the
 # move fails saying so. The focus stays where it was.
 term_move() {
-    pane=$1
-    where=$2
-    anchor=$3
-    case "$where" in
+    tm_pane=$1
+    tm_where=$2
+    tm_anchor=$3
+    case "$tm_where" in
     beside | below | above) ;;
     *)
-        echo "crew: a pane moves beside, below, or above another, not '$where'" >&2
+        echo "crew: a pane moves beside, below, or above another, not '$tm_where'" >&2
         return 2
         ;;
     esac
-    if [ "$pane" = "$anchor" ]; then
-        echo "crew: $pane cannot move next to itself" >&2
+    if [ "$tm_pane" = "$tm_anchor" ]; then
+        echo "crew: $tm_pane cannot move next to itself" >&2
         return 1
     fi
-    backend=$(term_of "$pane") || return
-    if [ "$(term_of "$anchor" 2>/dev/null)" != "$backend" ]; then
-        echo "crew: $pane and $anchor are not panes of one terminal" >&2
+    tm_backend=$(term_of "$tm_pane") || return
+    if [ "$(term_of "$tm_anchor" 2>/dev/null)" != "$tm_backend" ]; then
+        echo "crew: $tm_pane and $tm_anchor are not panes of one terminal" >&2
         return 1
     fi
-    "${backend}_move" "${pane#*:}" "$where" "${anchor#*:}"
+    "${tm_backend}_move" "${tm_pane#*:}" "$tm_where" "${tm_anchor#*:}"
 }
 
 # The crew's tabs, by name: tabs/<tab> lists its members, one a line, in
