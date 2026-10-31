@@ -126,22 +126,93 @@ crew_name() {
     esac
 }
 
-# Posts a message: <from> <to> <subject>, the body on stdin. Prints the path.
+# The names the crew <dir> knows, one a line: a pane, a thread, a session, a
+# kind, a status, a member with no pane, or a line of the Crewfile.
+crew_roster() {
+    {
+        for ro_f in "$1"/panes/* "$1"/threads/* "$1"/sessions/* "$1"/nopane/* "$1"/kind/*; do
+            if [ -e "$ro_f" ]; then
+                basename "$ro_f"
+            fi
+        done
+        for ro_f in "$1"/status/*.md; do
+            if [ -e "$ro_f" ]; then
+                basename "$ro_f" .md
+            fi
+        done
+        if [ -f "$(crewfile_path "$1")" ]; then
+            crewfile_read "$(crewfile_path "$1")" 2>/dev/null | awk -F '\t' '$1 == "member" { print $3 }'
+        fi
+    } | sort -u
+}
+
+# Posts a message: <from> <to> <subject>, the body on stdin, or --message
+# (-m) <text>, or --file (-F) <file> (- is stdin). Prints the path. A
+# recipient that is no member of the crew is posted to all the same, with a
+# warning that names the members.
 crew_send() {
+    sd_usage="usage: crew send <from> <to> <subject> [--message <text> | --file <file>], the body on stdin otherwise"
     if [ $# -lt 3 ]; then
-        echo "usage: crew send <from> <to> <subject>, the body on stdin" >&2
+        echo "$sd_usage" >&2
         return 2
     fi
     from=$1
     to=$2
     shift 2
+    sd_text=""
+    sd_file=""
+    sd_from_stdin=1
+    subject=""
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        -m | --message | -F | --file)
+            if [ $# -lt 2 ] || [ -z "$sd_from_stdin" ]; then
+                echo "$sd_usage" >&2
+                return 2
+            fi
+            sd_from_stdin=""
+            case "$1" in
+            -m | --message) sd_text=$2 sd_file="" ;;
+            *) sd_file=$2 ;;
+            esac
+            shift 2
+            ;;
+        *)
+            subject="$subject${subject:+ }$1"
+            shift
+            ;;
+        esac
+    done
+    if [ -z "$subject" ]; then
+        echo "$sd_usage" >&2
+        return 2
+    fi
     # The subject is the first line of the message: a newline in it would
     # break the header the stream is read by.
-    subject=$(printf '%s' "$*" | tr '\n' ' ')
+    subject=$(printf '%s' "$subject" | tr '\n' ' ')
     crew_name "$from" && crew_name "$to" || return 2
     dir=$(crew_dir) || return 1
-    [ ! -t 0 ] || echo "crew: type the body, then press ctrl-d" >&2
-    body=$(cat)
+    if [ -n "$sd_from_stdin" ] || [ "$sd_file" = - ]; then
+        [ ! -t 0 ] || echo "crew: type the body, then press ctrl-d" >&2
+        body=$(cat)
+    elif [ -n "$sd_file" ]; then
+        if [ ! -f "$sd_file" ]; then
+            echo "crew: the body file $sd_file does not exist" >&2
+            return 1
+        fi
+        body=$(cat "$sd_file")
+    else
+        body=$sd_text
+    fi
+    case "$to" in
+    all | owner) ;;
+    *)
+        if ! crew_roster "$dir" | grep -qx -- "$to"; then
+            sd_known=$(crew_roster "$dir" | tr '\n' ' ' | sed 's/ $//; s/ /, /g')
+            echo "crew: $to is not a member of this crew${sd_known:+ (members: $sd_known)}: the message is posted, and nobody reads it unless $to joins" >&2
+        fi
+        ;;
+    esac
     slug=$(printf '%s' "$subject" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//' | cut -c1-48)
     tmp=$(mktemp "$dir/tmp/message.XXXXXX")
 

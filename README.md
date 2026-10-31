@@ -73,7 +73,7 @@ lands only its claimed paths and wakes its reviewer:
 
 ```
 crew land claude -m "Fix parser edge case" --check 'sh test/run.sh' -- src/parse.sh
-crew send codex claude "Review: a1b2c3d clean"
+crew send codex claude "Review: a1b2c3d clean" -m "Read it all; no findings."
 ```
 
 When the goal is met:
@@ -227,6 +227,13 @@ keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
 forgets a pane you closed; `crew version` says which crew this is: the tag
 when the checkout has one (`crew v1.0.0 (2026-11-02)`, and
 `crew v1.0.0-3-g17aac8d (2026-11-05)` three commits past it), else the commit.
+
+The body of a message is read from stdin (a heredoc), or given on the line
+with `-m <text>` (`--message`) or `-F <file>` (`--file`, `-` for stdin), one
+of the three. A recipient the crew does not know (no pane, thread, session,
+kind, status, `--no-pane` join, or Crewfile line of that name, and not `all` or
+`owner`) is posted to all the same, with a warning on stderr that names the
+members: a misspelt name is seen at once.
 
 `crew send codex claude "Review: ..."` posts message `0012-codex-to-claude-review.md`
 and types one line into claude's pane: `crew: message 0012 from codex. Run:

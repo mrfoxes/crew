@@ -40,7 +40,10 @@ For everyone
                                 join the crew as <name> from this pane, or
                                 with no pane: messages to you wait in the
                                 stream for your next crew unread
-  send <from> <to> <subject>    post a message, body on stdin; wakes <to>
+  send <from> <to> <subject> [--message <text> | --file <file>]
+                                post a message, body on stdin or given with
+                                -m or -F; wakes <to>, and warns when <to> is
+                                no member
   unread <name> [--peek] [--wait [seconds]]
                                 the messages to <name> or all not read yet;
                                 --peek keeps them unread, --wait blocks until

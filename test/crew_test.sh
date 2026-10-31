@@ -77,7 +77,8 @@ check "bad name" "2" "$(echo x | crew_send Codex all "x" >/dev/null 2>&1; echo $
 echo "To: claude" | crew_send codex agy "Heads-up: a header line in a body" >/dev/null
 echo "From: claude" | crew_send codex claude "Heads-up: another" >/dev/null
 check "unread reads the header, not the body" "0012" "$(crew_unread claude | sed -n 's/^# \([0-9]*\)\..*/\1/p' | tr '\n' ' ' | sed 's/ $//')"
-check "send to one who has not joined says so" "crew: nobody has no pane; the message waits for 'crew unread nobody'" "$(CREW_WAKE=1; echo x | crew_send codex nobody "Question: anyone?" 2>&1 >/dev/null)"
+check "send to one who has not joined says so" "crew: nobody has no pane; the message waits for 'crew unread nobody'" "$(CREW_WAKE=1; echo x | crew_send codex nobody "Question: anyone?" 2>&1 >/dev/null | sed -n 2p)"
+check "and warns that nobody is no member" "crew: nobody is not a member of this crew: the message is posted, and nobody reads it unless nobody joins" "$(CREW_WAKE=1; echo x | crew_send codex nobody "Question: anyone?" 2>&1 >/dev/null | sed -n 1p)"
 
 check "lock taken" "lock taken by codex" "$(crew_lock codex)"
 check "lock busy" "1" "$(crew_lock claude 2>/dev/null; echo $?)"

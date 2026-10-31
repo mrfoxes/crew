@@ -22,6 +22,9 @@ EOF
 crew unread <you>
 ```
 
+- A short body goes on the line, `-m "<text>"`, or from a file, `-F <file>`,
+  instead of the heredoc. A warning on stderr that `<to>` is not a member
+  means a misspelt name: nobody reads that message.
 - `<to>` is a member's name, `all`, or `owner`. Start the subject with what it
   is: `Plan:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`, `Pushed:`,
   `Done:`.
