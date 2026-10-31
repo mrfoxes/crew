@@ -54,6 +54,7 @@ unset -f osascript
 # shows them in its border, which it turns on for the pane's window.
 tmux() { echo "$*" >>"$tmp/tmux.args"; }
 named() { : >"$tmp/tmux.args"; "$@"; cat "$tmp/tmux.args"; }
+# shellcheck disable=SC2154 # set by lib/term-tmux.sh
 check "name in tmux" "set-option -p -t %4 @crew_name claude2
 set-option -w -t %4 pane-border-status top
 set-option -w -t %4 pane-border-format $tmux_border" "$(named term_name tmux:%4 claude2)"

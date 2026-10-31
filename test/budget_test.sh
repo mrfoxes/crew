@@ -33,6 +33,7 @@ check "the board's budgets" "
 # crew cannot price said once; a member with no budget left alone.
 gate_state=$tmp/state
 gate_dirs "$gate_state"
+# shellcheck disable=SC2034 # read by the library under test
 names="codex agy claude"
 now=1000
 gate_now() { echo "$now"; }
@@ -40,6 +41,7 @@ gate_notify() { echo "notify $1: $2"; }
 spent_codex=40
 cost_spent() { [ "$2" != codex ] || echo "$spent_codex"; }
 check "under 80%, nothing" "12:00:00 budget agy: \$20, but no rate prices its model: crew cost agy" "$(gate_budgets)"
+# shellcheck disable=SC2034 # read by the library under test
 gate_budget_at=$now
 spent_codex=48
 now=1030

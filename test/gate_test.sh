@@ -131,9 +131,11 @@ check "rule named" "git +reset" "$(gate_forbidden "$CREW_HOME/share/forbid" "git
 
 # One look of the gate at a pane, with the screen read from a fixture and
 # the keys it would press printed instead.
+# shellcheck disable=SC2034 # read by the library under test
 gate_rules=$CREW_HOME/share/forbid
 gate_state=$tmp/gate
 gate_dirs "$gate_state"
+# shellcheck disable=SC2034 # read by the library under test
 gate_dry=""
 term_read() { fixture_read; }
 term_key() { echo "pressed $2"; }
@@ -156,6 +158,7 @@ show claude-run
 check "gate dry" "12:00:00 would approve claude: touch /private/tmp/crew-fixture-touch" "$(gate_look claude tmux:%2)"
 # The press waits for a second read: the same prompt is answered, one gone
 # in between is not.
+# shellcheck disable=SC2034 # read by the library under test
 gate_dry=""
 rm -f "$gate_state/held/codex" "$gate_state/answered/codex"
 show codex-run codex-idle

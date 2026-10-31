@@ -29,7 +29,9 @@ clock() { echo "$1" >"$tmp/now"; }
 # A gate over codex that has told the owner of nothing, its agent up in a
 # pane that is listed.
 dir=$tmp/crew
+# shellcheck disable=SC2034 # read by the library under test
 gate_rules=$CREW_HOME/share/forbid
+# shellcheck disable=SC2034 # read by the library under test
 gate_dry=""
 names=codex
 fresh() {
@@ -140,6 +142,7 @@ CREW_IDLE_MINUTES=soon
 check "idle is off for a word" "" "$(round)"
 
 fresh
+# shellcheck disable=SC2034 # read by the library under test
 CREW_IDLE_MINUTES=10
 show codex-idle
 clock 1000
@@ -193,6 +196,7 @@ check "all: their panes" "tmux:%31" "$(cat "$gate_state/pane/m1")"
 echo tmux:%32 >"$dir/panes/m2"
 gate_members
 check "all: a member spawned later" " m1 m2" "$names"
+# shellcheck disable=SC2034 # read by the library under test
 gate_all=""
 
 finish
