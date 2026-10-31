@@ -159,6 +159,12 @@ crew_unread() {
     [ "$count" -gt 0 ] || echo "No new messages for $me."
 }
 
+# When <file> was last written, in seconds since the epoch: GNU stat takes
+# -c, BSD stat -f (where -c is an error; on GNU, -f reports the file system).
+crew_mtime() {
+    stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"
+}
+
 # The push lock: one of the crew lands at a time.
 crew_lock() {
     if [ $# -ne 1 ]; then
@@ -173,7 +179,7 @@ crew_lock() {
         return
     fi
     held=$(cat "$dir/lock/owner" 2>/dev/null || echo "someone")
-    age=$((($(date +%s) - $(stat -f %m "$dir/lock" 2>/dev/null || stat -c %Y "$dir/lock")) / 60))
+    age=$((($(date +%s) - $(crew_mtime "$dir/lock")) / 60))
     echo "crew: the lock is held by $held, for $age minutes; keep working and retry" >&2
     [ "$age" -lt 10 ] || echo "crew: past 10 minutes it is stale: ask its owner, then 'crew unlock --force'" >&2
     return 1

@@ -220,6 +220,6 @@ crew_relay_step() {
 crew_relay_alive() {
     f=$1/relay.pid
     [ -f "$f" ] || return 1
-    age=$(($(date +%s) - $(stat -f %m "$f" 2>/dev/null || stat -c %Y "$f")))
+    age=$(($(date +%s) - $(crew_mtime "$f")))
     [ "$age" -le 5 ]
 }
