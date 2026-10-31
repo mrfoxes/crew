@@ -76,6 +76,11 @@ approve|ruff format --check src
 approve|ruff format src/a.py
 approve|rm foo.txt
 approve|find . -name '*.rs' -newer x
+approve|git --no-pager log -3
+approve|git -P diff
+approve|git --git-dir=/p/.git status
+approve|env GIT_PAGER=cat git log
+approve|time git status
 hold|cargo fmt --all
 hold|cargo fmt --all --check && cargo fmt --all
 hold|go fmt ./...
@@ -101,6 +106,20 @@ hold|git commit -s --all
 hold|git commit --amend --no-edit
 hold|git stash push -m wip
 hold|git -C /p reset --hard
+hold|git --no-pager reset --hard
+hold|git -P reset --hard
+hold|git --git-dir=/p/.git reset --hard
+hold|git --git-dir /p/.git reset --hard
+hold|git --work-tree=. checkout -- f
+hold|git --work-tree . checkout -- f
+hold|git --bare --no-pager stash
+hold|git --literal-pathspecs restore f
+hold|env GIT_DIR=/p git reset --hard
+hold|env -i FOO=1 BAR=2 git reset --hard
+hold|command git checkout main
+hold|nice -n 5 git merge topic
+hold|time git pull --rebase
+hold|cargo test && env X=1 git --no-pager clean -fd
 hold|git checkout -- compiler/src/a.rs
 hold|git checkout HEAD -- compiler/src/a.rs
 hold|git checkout main

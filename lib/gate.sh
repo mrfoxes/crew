@@ -94,8 +94,19 @@ gate_forbidden() {
         { rule[++r] = $0 }
         END {
             command = ENVIRON["GATE_COMMAND"]
-            # git -C <dir> and -c <key=value> do not hide the subcommand.
-            while (gsub(/git +-[Cc] +('"'"'[^'"'"']*'"'"'|"[^"]*"|[^ ]+)/, "git", command)) ;
+            # A wrapper (env VAR=value, command, nice, time) and git'"'"'s
+            # global options do not hide the subcommand.
+            word = "('"'"'[^'"'"']*'"'"'|\"[^\"]*\"|[^ ]+)"
+            wrap = "(^|[ ;&|(])(env|command|nice|time)( +(-n +[0-9]+|[A-Za-z_][A-Za-z_0-9]*=[^ ]*))* +git( |$)"
+            while (match(command, wrap)) {
+                pre = substr(command, 1, RSTART - 1)
+                lead = substr(command, RSTART, 1)
+                command = pre (lead ~ /[ ;&|(]/ ? lead : "") "git " substr(command, RSTART + RLENGTH)
+            }
+            while (gsub("git +-[Cc] +" word, "git", command) \
+                || gsub("git +--(git-dir|work-tree|namespace|exec-path|super-prefix|config-env) +" word, "git", command) \
+                || gsub("git +--(git-dir|work-tree|namespace|exec-path|super-prefix|config-env)=" word, "git", command) \
+                || gsub("git +(--no-pager|--paginate|-p|-P|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks|--no-advice)( |$)", "git ", command)) ;
             for (i = 1; i <= a; i++) gsub(allow[i], "", command)
             for (i = 1; i <= r; i++)
                 if (command ~ rule[i]) { print rule[i]; exit 0 }
