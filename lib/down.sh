@@ -138,13 +138,16 @@ down_ahead() {
 }
 
 # What the checkout at <path>, called <label>, holds that no one has
-# pushed: commits and changed files, a line each.
+# pushed: commits, changed files, and stashes, a line each.
 down_tree() {
     down_ahead "$2" | while IFS= read -r dn_line; do
         echo "$1: unpushed commit $dn_line"
     done
     git -C "$2" status --porcelain 2>/dev/null | while IFS= read -r dn_line; do
         echo "$1: changed file $dn_line"
+    done
+    git -C "$2" stash list 2>/dev/null | while IFS= read -r dn_line; do
+        echo "$1: stash $dn_line"
     done
 }
 

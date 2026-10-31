@@ -118,6 +118,13 @@ rm "$ada/untracked.txt"
 # Pushed, nothing left: leave --clone removes it.
 git -C "$ada" push -q origin HEAD:main
 git -C "$ada" fetch -q origin
+# A stash alone keeps the clone, and is listed.
+echo stashed >>"$ada/c.txt"
+git -C "$ada" stash -q
+check "leave --clone keeps one holding only a stash" "1" "$(crew_leave ada --clone >/dev/null 2>&1; echo $?)"
+check "it lists the stash" "  stash $(git -C "$ada" stash list)" "$(crew_leave ada --clone 2>&1 >/dev/null | sed -n 2p)"
+check "the clone with a stash stays" "yes" "$([ -d "$ada" ] && echo yes)"
+git -C "$ada" stash drop -q
 check "leave --clone removes a clone with nothing left" "removed" "$(crew_leave ada --clone | sed -n 2p | grep -o removed)"
 check "the clone is gone" "no" "$([ -e "$ada" ] && echo yes || echo no)"
 check "and forgotten" "no" "$([ -e "$dir/clones/ada" ] && echo yes || echo no)"

@@ -59,6 +59,7 @@ crew_land() {
     crew_name "$ld_who" || return 2
     ld_dir=$(crew_dir) || return 1
     land_ready || return $?
+    land_changed "$@" || return 1
     land_check "$ld_tree" "$ld_check" || return 1
     land_lock "$ld_who" || return 1
     # A signal while the lock is held must release it too.
@@ -99,6 +100,13 @@ land_ready() {
         echo "crew: $ld_tree is not a git repository" >&2
         return 1
     fi
+}
+
+# Stops a landing whose paths have no change, before the check and the lock.
+land_changed() {
+    [ -z "$(git -C "$ld_tree" status --porcelain -- "$@" 2>/dev/null)" ] || return 0
+    echo "crew: none of the paths has a change, so nothing was checked, locked, or committed" >&2
+    return 1
 }
 
 # Runs the check <command> in the tree <tree>, if there is one; on a failure

@@ -133,6 +133,15 @@ check "the lock was not tried" "0" "$(waits)"
 check "nothing was committed" "0" "$(git rev-list --count origin/main..HEAD)"
 crew_unlock bob >/dev/null
 
+# Paths with no change stop it first, before the check and the lock.
+crew_lock bob >/dev/null
+check "paths with no change stop it" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- c.txt)"
+check "it says so" "1" "$(grep -c '^crew: none of the paths has a change' "$tmp/err")"
+check "the check did not run" "no" "$([ -e "$tmp/ran" ] && echo yes || echo no)"
+check "the lock was not tried" "0" "$(waits)"
+check "the lock is still bob's" "bob" "$(lock)"
+crew_unlock bob >/dev/null
+
 # A lock another holds is waited for, and said whose it is.
 crew_lock bob >/dev/null
 release_at=3

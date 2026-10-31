@@ -75,6 +75,8 @@ command git clone -q "$tmp/origin.git" "$tmp/repo-ada" 2>/dev/null
 echo x >"$tmp/repo-ada/c.txt"
 git -C "$tmp/repo-ada" add c.txt
 git -C "$tmp/repo-ada" commit -q -m "ada's work"
+echo more >>"$tmp/repo-ada/a.txt"
+git -C "$tmp/repo-ada" stash -q
 echo "$tmp/repo-ada" >"$dir/clones/ada"
 echo diff >"$dir/reports/bo.patch"
 crew_lock cy >/dev/null
@@ -83,6 +85,7 @@ out=$(crew_down 1 2>&1)
 status=$?
 second=$(git -C "$tmp/repo" log -1 --format=%h)
 adas=$(git -C "$tmp/repo-ada" log -1 --format=%h)
+adastash=$(git -C "$tmp/repo-ada" stash list)
 check "a crew where one never answers: the wait, the Dones, and what is left" "sent End: to all; waiting up to 1 minutes for Done:
 waiting for: ada bo cy
 ada: Done: sent
@@ -93,11 +96,13 @@ left:
   the shared tree: unpushed commit $second second
   the shared tree: changed file A  b.txt
   ada's clone $tmp/repo-ada: unpushed commit $adas ada's work
+  ada's clone $tmp/repo-ada: stash $adastash
   patch to apply: $tmp/repo/.crew/reports/bo.patch
   the lock is held: cy $(date '+%H:%M')
 stopped the watch in tmux:%5
 stopped the board in tmux:%6" "$(printf '%s\n' "$out" | sed "s|$real|$tmp/repo|g")"
 check "and it exits 1" "1" "$status"
+git -C "$tmp/repo-ada" stash drop -q
 check "the End: is from the owner, to all, in the stream" "# 0001. owner to all: End: land or save a patch, write your report, send Done:" "$(sed -n 1p "$dir/seq/1")"
 check "and points to the protocol" "1" "$(grep -c '"The end" in the protocol' "$dir/seq/1")"
 check "the watch and the board got ctrl-c" "key tmux:%5 ctrl-c

@@ -145,10 +145,11 @@ clone_board() {
 }
 
 # What <clone> holds that origin does not: commits on no branch of origin,
-# changed files, untracked files; nothing when it holds none.
+# changed files, untracked files, stashes; nothing when it holds none.
 clone_left() {
     git -C "$1" log --format='commit %h %s' HEAD --branches --not --remotes=origin
     git -C "$1" status --porcelain | sed 's/^/file /'
+    git -C "$1" stash list | sed 's/^/stash /'
 }
 
 # Removes <name>'s clone when nothing is left in it; else lists what is
