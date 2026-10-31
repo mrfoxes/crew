@@ -42,13 +42,17 @@ forget
 status ann src/a.rs >/dev/null
 check "no conflict with oneself" "" "$(status ann src/a.rs)"
 
-# A directory against a file, either way round.
+# A directory against a file, either way round, with or without a trailing /.
 forget
 status ann "src/a.rs, c.txt" >/dev/null
 check "a directory claim against a file" "1" "$(status bob "src/" | grep -c 'src/ is also claimed by ann (src/a.rs')"
+check "a directory without slash against a file" "1" "$(status bob "src" | grep -c 'src is also claimed by ann (src/a.rs')"
 forget
 status ann "src/" >/dev/null
 check "a file against a directory claim" "1" "$(status bob "src/a.rs" | grep -c 'src/a.rs is also claimed by ann (src/ on')"
+forget
+status ann "src" >/dev/null
+check "a file against a directory without slash" "1" "$(status bob "src/a.rs" | grep -c 'src/a.rs is also claimed by ann (src on')"
 check "a file beside a directory is not under it" "" "$(status bob "src.txt")"
 check "a name that starts like a directory is not under it" "" "$(status bob "src-old/x.rs")"
 
@@ -81,6 +85,10 @@ status cat "src/" >/dev/null
 check "a directory claim counts against the paths under it" "== conflicts
 src/a.rs: ann, bob, cat
 src/b.rs: bob, cat" "$(board)"
+status cat "src" >/dev/null
+check "a directory without slash counts against the paths under it" "== conflicts
+src/a.rs: ann, bob, cat
+src/b.rs: bob, cat" "$(board)"
 check "the conflicts come after the statuses and before the lock" "yes" "$(crew_board 1 | awk '/^== cat/ { s = 1 } /^== conflicts/ { c = s } /^== lock/ { if (c) print "yes" }')"
 
 # The board's unclaimed files.
@@ -99,6 +107,20 @@ src/b.rs
 src/new.rs" "$(unclaimed)"
 status bob "src/" >/dev/null
 check "a directory claim covers the files under it" "0" "$(crew_board 1 | grep -c '^== unclaimed')"
+status bob "src" >/dev/null
+check "a directory without slash covers the files under it" "0" "$(crew_board 1 | grep -c '^== unclaimed')"
+forget
+status ann "src/a.rs" >/dev/null
+echo spaced >"src/two words.rs"
+check "an untracked file with a space is unclaimed" "== unclaimed
+src/b.rs
+src/new.rs
+src/two words.rs" "$(unclaimed)"
+status ann "src/a.rs, src/two words.rs" >/dev/null
+check "a file with a space on Files: is claimed and warns" "1" "$(status bob '"src/two words.rs"' | grep -c 'src/two words.rs is also claimed by ann')"
+check "a file with a space counts in conflicts" "== conflicts
+src/two words.rs: ann, bob" "$(board)"
+rm -f "src/two words.rs"
 forget
 status ann "src/a.rs" >/dev/null
 git add src/b.rs

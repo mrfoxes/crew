@@ -60,6 +60,7 @@ crew_land() {
     ld_dir=$(crew_dir) || return 1
     land_ready || return $?
     land_changed "$@" || return 1
+    land_claims "$@" || return 1
     land_check "$ld_tree" "$ld_check" || return 1
     land_lock "$ld_who" || return 1
     # A signal while the lock is held must release it too.
@@ -102,11 +103,60 @@ land_ready() {
     fi
 }
 
-# Stops a landing whose paths have no change, before the check and the lock.
+# The changed and untracked files under the literal paths <path>..., one a
+# line, renames by their new path.
+land_files() {
+    git --literal-pathspecs -C "$ld_tree" status --porcelain -z --untracked-files=all -- "$@" 2>/dev/null |
+        tr '\0' '\n' | awk '
+            skip { skip = 0; next }
+            { print substr($0, 4) }
+            /^[RC]/ { skip = 1 }'
+}
+
+# Stops a landing on a path outside the project, or when the literal paths
+# have no change, before the check and the lock.
 land_changed() {
-    [ -z "$(git -C "$ld_tree" status --porcelain -- "$@" 2>/dev/null)" ] || return 0
+    for ld_p in "$@"; do
+        case "${ld_p#./}" in
+        /* | .. | ../* | */../* | */..)
+            echo "crew: $ld_p is not a path inside the project" >&2
+            return 1
+            ;;
+        esac
+    done
+    [ -z "$(land_files "$@")" ] || return 0
     echo "crew: none of the paths has a change, so nothing was checked, locked, or committed" >&2
     return 1
+}
+
+# Checks the paths to land against every member's claims, expanding a
+# directory to the changed and untracked files under it.
+land_claims() {
+    claims_root "$ld_tree"
+    for ld_p in "$@"; do
+        ld_path=${ld_p#./}
+        if claims_is_dir "$ld_path"; then
+            ld_sub=$(land_files "$ld_path")
+            if [ -z "$ld_sub" ]; then
+                land_claimed "$ld_dir" "$ld_who" "$ld_p" || return 1
+            else
+                while IFS= read -r ld_f; do
+                    [ -z "$ld_f" ] || land_claimed "$ld_dir" "$ld_who" "$ld_f" || return 1
+                done <<EOF
+$ld_sub
+EOF
+            fi
+            ld_others=$(claims_all "$ld_dir" "$ld_who" | while read -r ld_w ld_q; do
+                ! claims_overlap "$ld_q" "$ld_path" || echo "$ld_w"
+            done | sort -u | tr '\n' ' ' | sed 's/ $//; s/ /, /g')
+            if [ -n "$ld_others" ]; then
+                echo "crew: $ld_path is also claimed by $ld_others: send a Heads-up: and wait, nothing was committed" >&2
+                return 1
+            fi
+        else
+            land_claimed "$ld_dir" "$ld_who" "$ld_p" || return 1
+        fi
+    done
 }
 
 # Runs the check <command> in the tree <tree>, if there is one; on a failure
@@ -139,9 +189,7 @@ land_lock() {
 # What is done under the lock: the paths checked against the claims, the
 # commit, the push. The paths are the arguments.
 land_locked() {
-    for ld_p in "$@"; do
-        land_claimed "$ld_dir" "$ld_who" "$ld_p" || return 1
-    done
+    land_claims "$@" || return 1
     land_commit "$@" || return 1
     land_push
 }
@@ -149,6 +197,7 @@ land_locked() {
 # Whether <path> may be landed by <name>: on its Files: line (a directory
 # claim covers what is under it) and on nobody else's.
 land_claimed() {
+    claims_root "${ld_tree:-$(crew_project "$1")}"
     ld_path=${3#./}
     case "$ld_path" in
     /* | .. | ../* | */../* | */..)
@@ -157,7 +206,7 @@ land_claimed() {
         ;;
     esac
     ld_mine=
-    while read -r ld_c; do
+    while IFS= read -r ld_c; do
         [ -z "$ld_c" ] || ! claims_covers "$ld_c" "$ld_path" || ld_mine=1
     done <<EOF
 $(claims_paths "$1/status/$2.md" 2>/dev/null)
@@ -179,14 +228,14 @@ EOF
 # only, with the message file: a file changed beside them stays uncommitted.
 land_commit() {
     for ld_p in "$@"; do
-        if [ -n "$(git -C "$ld_tree" ls-files --others --exclude-standard -- "${ld_p#./}")" ]; then
-            git -C "$ld_tree" add -- "${ld_p#./}" >&2 || return 1
+        if [ -n "$(git --literal-pathspecs -C "$ld_tree" ls-files --others --exclude-standard -- "${ld_p#./}")" ]; then
+            git --literal-pathspecs -C "$ld_tree" add -- "${ld_p#./}" >&2 || return 1
         fi
         # Each path moves from the front to the back without its ./
         set -- "$@" "${ld_p#./}"
         shift
     done
-    git -C "$ld_tree" commit -q -F "$ld_msg" -- "$@" >&2 || return 1
+    git --literal-pathspecs -C "$ld_tree" commit -q -F "$ld_msg" -- "$@" >&2 || return 1
     ld_hash=$(git -C "$ld_tree" rev-parse --short HEAD)
     ld_subject=$(git -C "$ld_tree" log -1 --format=%s)
 }
@@ -224,7 +273,6 @@ land_push() {
 # a failed check after the rebase it leaves the rebased commit as HEAD and
 # tells owner with both hashes (ORIG_HEAD and HEAD) and the check's output.
 land_rebase() {
-    ld_before=$ld_hash
     if ! git -C "$ld_tree" rebase -q "origin/$ld_branch" >/dev/null 2>&1; then
         ld_files=$(git -C "$ld_tree" diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/ $//')
         git -C "$ld_tree" rebase --abort >/dev/null 2>&1 || :

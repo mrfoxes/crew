@@ -181,6 +181,43 @@ check "a directory claim covers the new file under it" "0" "$(land ann -F "$tmp/
 check "the new file is committed" "dir/x" "$(git show --name-only --format= HEAD)"
 check "the lock is free" "free" "$(lock)"
 check "a path outside the project stops it" "1" "$(land ann -F "$tmp/message" --to bob -- ../x)"
+
+# Literal pathspecs only, directories without a trailing slash, files under a
+# directory claim, and a file whose name holds a space.
+edit a.txt
+edit b.txt
+status ann ":(top)* :/ * ? [ab].txt a.txt"
+crew_lock bob >/dev/null
+check "pathspec :(top)* is treated as a literal path" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- ':(top)*')"
+check "pathspec :/ is treated as a literal path" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- ':/')"
+check "glob * is treated as a literal path" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- '*')"
+check "glob ? is treated as a literal path" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- '?')"
+check "glob [ab].txt is treated as a literal path" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- '[ab].txt')"
+check "globs and magic never ran the check or tried the lock" "no 0" "$([ -e "$tmp/ran" ] && echo yes || echo no) $(waits)"
+echo y >dir/y
+status ann "dir/y"
+status bob "dir"
+check "a file under another member's directory claim stops before check and lock" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir/y)"
+check "it says the file is also claimed by the directory holder" "1" "$(grep -c '^crew: dir/y is also claimed by bob' "$tmp/err")"
+status ann "dir"
+status bob "dir/y"
+check "landing a directory stops when a file under it is claimed by another" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir)"
+check "it names the file under the directory" "1" "$(grep -c '^crew: dir/y is also claimed by bob' "$tmp/err")"
+status ann "dir/x"
+status bob "b.txt"
+echo x2 >dir/x
+check "landing a directory stops when an unclaimed file under it changed" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir)"
+check "it names the unclaimed file under the directory" "1" "$(grep -c "^crew: dir/y is not on ann's Files: line" "$tmp/err")"
+check "none of the directory conflicts ran the check or tried the lock" "no 0" "$([ -e "$tmp/ran" ] && echo yes || echo no) $(waits)"
+crew_unlock bob >/dev/null
+rm dir/y
+status ann "dir"
+check "a directory without a trailing slash lands the files under it" "0" "$(land ann -F "$tmp/message" --to bob -- dir)"
+check "the changed file under the directory is committed" "dir/x" "$(git show --name-only --format= HEAD)"
+echo spaced >"dir/two words.txt"
+status ann '"dir/two words.txt"'
+check "a file whose name holds a space lands" "0" "$(land ann -F "$tmp/message" --to bob -- "dir/two words.txt")"
+check "the file with a space is committed" "dir/two words.txt" "$(git show --name-only --format= HEAD)"
 tidy
 status ann "a.txt new.txt clone.txt"
 status bob "b.txt"
