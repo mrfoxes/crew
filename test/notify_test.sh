@@ -182,4 +182,17 @@ round >/dev/null
 clock 5000
 check "a Done: from someone else does not count" "1" "$(round | grep -c '^12:00:00 idle codex')"
 
+# --all watches every member with a pane, read again at each round.
+gate_all=1
+mkdir -p "$dir/panes" "$gate_state/pane"
+rm -f "$dir"/panes/*
+echo tmux:%31 >"$dir/panes/m1"
+gate_members
+check "all: the members with a pane" " m1" "$names"
+check "all: their panes" "tmux:%31" "$(cat "$gate_state/pane/m1")"
+echo tmux:%32 >"$dir/panes/m2"
+gate_members
+check "all: a member spawned later" " m1 m2" "$names"
+gate_all=""
+
 finish

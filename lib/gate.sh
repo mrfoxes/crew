@@ -210,19 +210,23 @@ crew_watch() {
     done
 }
 
-# Reads the gate's arguments into $names and $gate_dry, finds the rules and
-# the panes, and makes the state directory $gate_state under the crew's tmp.
+# Reads the gate's arguments into $names, $gate_all, and $gate_dry, finds
+# the rules and the panes, and makes the state directory $gate_state under
+# the crew's tmp. --all watches every member with a pane, read again at
+# each round, so that a member spawned later is watched too.
 gate_setup() {
     gate_dry=""
+    gate_all=""
     names=""
     for arg in "$@"; do
         case "$arg" in
         --dry) gate_dry=--dry ;;
+        --all) gate_all=1 ;;
         *) names="$names $arg" ;;
         esac
     done
-    if [ -z "$names" ]; then
-        echo "usage: crew gate <name>... [--dry], or crew watch the same" >&2
+    if [ -z "$names" ] && [ -z "$gate_all" ]; then
+        echo "usage: crew gate <name>... | --all [--dry], or crew watch the same" >&2
         return 2
     fi
     dir=$(crew_dir) || return 1
@@ -232,6 +236,18 @@ gate_setup() {
     gate_dirs "$gate_state"
     for name in $names; do
         crew_pane "$name" >"$gate_state/pane/$name" || return 1
+    done
+}
+
+# With --all, the members with a pane now, and their panes.
+gate_members() {
+    [ -n "${gate_all:-}" ] || return 0
+    names=""
+    for m_file in "$dir"/panes/*; do
+        [ -s "$m_file" ] || continue
+        m_name=$(basename "$m_file")
+        names="$names $m_name"
+        cat "$m_file" >"$gate_state/pane/$m_name"
     done
 }
 
@@ -251,6 +267,7 @@ gate_round() {
     if [ -n "$(gate_idle_minutes)" ]; then
         gate_clock=$(gate_now)
     fi
+    gate_members
     for name in $names; do
         pane=$(cat "$gate_state/pane/$name")
         gate_look "$name" "$pane"

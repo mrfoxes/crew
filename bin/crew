@@ -24,6 +24,8 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"
 . "$CREW_HOME/lib/cost.sh"
+. "$CREW_HOME/lib/crewfile.sh"
+. "$CREW_HOME/lib/up.sh"
 
 usage() {
     cat <<'EOF'
@@ -45,6 +47,8 @@ For everyone
 
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
+  up [<preset>] [--dry]         bring the crew of the Crewfile up, or back:
+                                tabs, members, invites, layouts
   doctor                        check what a crew needs: terminal, agents, skills, gh
   panes                         every pane, who joined it, and its kind
   cost [name...]                what the members spent: tokens, and dollars by the rates
@@ -74,9 +78,12 @@ For the coordinator
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
   key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
-  gate <name>... [--dry]        approve their prompts, hold the forbidden ones
+  gate <name>... [--all] [--dry]
+                                approve their prompts, hold the forbidden ones;
+                                --all: every member with a pane, now and later
   relay                         wake recipients for every sender, from this pane
-  watch <name>... [--dry]       gate and relay in one pane
+  watch <name>... [--all] [--dry]
+                                gate and relay in one pane
   archive                       put the session's stream and files aside, start over
   version                       which crew this is
 
@@ -95,6 +102,7 @@ cmd=${1:-help}
 case "$cmd" in
 help) cat "$CREW_HOME/share/protocol.md" ;;
 init) crew_init "$@" ;;
+up) crew_up "$@" ;;
 doctor) crew_doctor "$@" ;;
 dir) crew_dir "$@" ;;
 join) crew_join "$@" ;;

@@ -92,7 +92,7 @@ check "a grid of four" "a b/c d" "$(rows grid a b c d)"
 check "a grid of one" "a" "$(rows grid a)"
 check "a grid of none" "" "$(rows grid)"
 check "a fixed grid" "a b c/d e f/g" "$(rows 3x2 a b c d e f g)"
-check "main and a grid beside it" "main a/b c/d" "$(rows main a b c d)"
+check "main and a column beside it" "main a/b/c/d" "$(rows main a b c d)"
 check "rows of names" "a b c/d e" "$(rows 'a,b,c / d,e')"
 kind_record "$dir" t1 claude
 kind_record "$dir" t2 codex

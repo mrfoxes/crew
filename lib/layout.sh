@@ -88,7 +88,8 @@ tab_drop() {
 tab_anchor() {
     t_anchor=""
     for t_member in $(tab_members "$1" "$2"); do
-        t_pane=$(cat "$1/panes/$t_member" 2>/dev/null) || continue
+        t_pane=$(tab_pane "$1" "$t_member")
+        [ -n "$t_pane" ] || continue
         term_gone "$t_pane" || t_anchor=$t_pane
     done
     echo "$t_anchor"
@@ -116,7 +117,7 @@ tab_of_pane() {
 #                     over two
 #   <columns>x<rows>  rows of <columns> panes, filled in the tab's order
 #   main              the tab's first pane whole on the left, the others
-#                     as a grid beside it
+#                     one over another beside it, as tmux's main-vertical
 #   a,b,c / d,e       the members named, a row between slashes
 #
 # A tab's entries are member names, or panes (iterm:<id>, tmux:<id>) for a
@@ -170,7 +171,7 @@ layout_rows() {
         [ $# -gt 0 ] || return 0
         echo "main $1"
         shift
-        l_layout=grid
+        l_layout=1x$#
         ;;
     esac
     [ $# -gt 0 ] || return 0

@@ -219,6 +219,59 @@ A model with no line shows its tokens and `no rate for <model>`. The last
 section of `crew board`, `== cost`, shows each member's total and, where the
 log has times (Codex and Claude Code), the last hour's.
 
+## One command, the whole crew
+
+A crew described once in its `Crewfile`, in the crew's directory, comes
+up with `crew up`, from the coordinator's pane: one line for each tab and
+each member, in the order they are placed.
+
+```
+# Crewfile: tabs and members, in the order crew up places them.
+tab main layout=main watch board
+tab proof layout=table
+member claude   reviewer=claude2 -- claude --model claude-opus-5-5 --effort high
+member claude2  reviewer=claude clone cache=.lake -- claude --model claude-opus-5-5
+tab runtime layout=grid
+member agy      reviewer=codex mute budget=20 -- agy
+member codex    reviewer=agy mute budget=60 -- codex
+member tess                              # started and joined by hand
+```
+
+- `tab <name> [layout=<layout>] [watch] [board]`: the first tab is the
+  one `crew up` runs in, the coordinator's, named `<name>`; `watch` opens
+  a pane beside the coordinator running `crew watch --all`, which gates
+  every member with a pane, those spawned later too, and `board` one
+  running `crew board --live`. Every next tab opens for its first member.
+  `layout=` is one of `crew layout`'s: `table`, `grid` (the default),
+  `<columns>x<rows>`, or `main`.
+- `member <name> [option]... [-- <line>]` belongs to the last tab above
+  it. After ` -- ` the line is the owner's shell's, verbatim, `#` and
+  `&&` included, run in the project's root or the member's clone. A member
+  with no line is started and joined by hand: crew up never spawns it.
+- Options: `kind=<kind>` (else read from the line), `mute`, `noinvite`
+  (a member is invited by default), `clone` and `cache=<dir>`, the latter
+  repeatable, `reviewer=<member>` (crew land), `budget=<dollars>`.
+- A `#` word starts a comment before ` -- `. An unknown word, an option on
+  the wrong line, a name crew does not take, a member twice, a reviewer
+  who is not a member, or a cache with no clone stops `crew up` before it
+  does anything, naming the file and the line.
+
+```
+crew up                     # the crew of the Crewfile, up or back
+crew up --dry               # what it would do, touching nothing
+crew up lean                # start the Crewfile from the preset lean
+```
+
+`crew up` makes the crew's directory when there is none, then, tab by
+tab, spawns each member without a live pane in its tab, names and colors
+it, gives it its clone, mutes it, lays the tab out by its layout, and
+invites every member spawned, all at once. Run again, it brings back only
+what is missing: a closed pane returns in its place, a live agent is never
+restarted, and a member with a pane the Crewfile does not list is named
+and left alone. A preset is a Crewfile in `~/.config/crew/presets/<name>`
+(under `$XDG_CONFIG_HOME`): `crew up <preset>` copies it to a crew that
+has no Crewfile, and refuses one that has its own, which is the truth.
+
 ## Kinds of agent
 
 What crew knows of each agent is one line of `share/kinds`: the name ps
@@ -342,7 +395,7 @@ agents running on, and keeps the layout for the tab in `layouts/<tab>`:
 crew layout table --tab proof               # a row for each kind
 crew layout grid --tab proof                # as square as the count allows: 5 is 3 over 2
 crew layout 3x2 --tab proof                 # rows of 3, in the tab's order
-crew layout main --tab main                 # the first pane whole on the left, a grid beside it
+crew layout main --tab main                 # the first pane whole on the left, the others one over another
 crew layout claude,claude2,claude3 / agy,agy2   # these rows, in the first one's tab
 crew layout                                 # every tab again, by the layout it has
 ```
@@ -448,6 +501,8 @@ lib/term.sh         the terminal contract, and what both keep alike: find our ow
 lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
 lib/term-tmux.sh    tmux's half of it
 lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layouts
+lib/crewfile.sh     the Crewfile read, checked, and asked
+lib/up.sh           crew up: the crew of the Crewfile brought up, or back
 lib/clones.sh       a member's clone: made, reused, shown on the board, removed
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
@@ -469,6 +524,8 @@ Claude Code names its project directories); `crew dir` prints it, and
 
 ```
 README.md                  the plan for this session (optional)
+Crewfile                   the crew's tabs and members, for crew up (optional)
+up/watch, up/board         the panes crew up opened for the watch and the board
 messages/NNNN-a-to-b-*.md  the stream
 status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
