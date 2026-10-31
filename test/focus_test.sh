@@ -38,8 +38,9 @@ git init -q "$tmp/repo"
 cd "$tmp/repo" || exit 1
 dir=$(crew_init)
 echo tmux:%4 >"$dir/panes/codex"
-term_focus() { echo "focus $1"; }
-term_zoom() { echo "zoom $1"; }
+# The terminal's half is faked; term_focus and term_zoom stay crew's.
+tmux_focus() { echo "focus tmux:$1"; }
+tmux_zoom() { echo "zoom tmux:$1"; }
 term_self() { echo tmux:%1; }
 check "focus a member" "focus tmux:%4" "$(crew_focus codex)"
 check "focus keeps where it came from" "tmux:%1" "$(cat "$dir/tmp/focus.from")"
