@@ -20,6 +20,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/clones.sh"
+. "$CREW_HOME/lib/land.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"
@@ -47,6 +48,11 @@ For everyone
   dir                           the crew's directory
   lock <name>                   take the push lock
   unlock <name> | --force       release it
+  land <name> -F <file> [--check <command>] [--to <member>] -- <path>...
+                                land in one command: run the check, take the
+                                lock, commit those paths only, push, release
+                                the lock, tell the reviewer (--to, else the
+                                Crewfile's reviewer=) with Pushed:
 
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
@@ -118,6 +124,7 @@ report) crew_write report "$@" ;;
 board) crew_board "$@" ;;
 lock) crew_lock "$@" ;;
 unlock) crew_unlock "$@" ;;
+land) crew_land "$@" ;;
 panes) crew_panes "$@" ;;
 cost) crew_cost "$@" ;;
 spawn) crew_spawn "$@" ;;

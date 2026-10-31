@@ -57,6 +57,8 @@ approve|git push --follow-tags origin topic
 approve|git push origin main && rm -r /p/.crew/lock
 approve|git push -u origin topic
 approve|git push origin --delete tmp-codex
+approve|crew land ada -F /tmp/message -- src/a.rs docs/
+approve|crew land ada -F /tmp/message --check 'cargo test && cargo fmt --check' --to bob -- src/a.rs
 approve|git -C /p checkout -b topic
 approve|git checkout -b topic origin/main
 approve|git switch -c topic

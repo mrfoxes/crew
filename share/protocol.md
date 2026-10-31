@@ -105,6 +105,25 @@ build directory are shared:
 
 ## Landing
 
+`crew land` takes all of it in one command, and leaves the lock free whatever
+happens. Write the commit message to a file, then:
+
+```
+crew land <you> -F <message file> --check '<the project checks>' -- <path>...
+```
+
+It runs the check in your working tree, takes the lock (trying every 10
+seconds for 5 minutes, and saying who holds it), refuses a path that is not
+on your `Files:` line or that another member claims, adds your new files,
+commits those paths and nothing else, pushes, unlocks, and sends your
+reviewer `Pushed:` with the hash and the subject. The reviewer is
+`--to <member>`, else the `reviewer=` of your line in the Crewfile; with
+neither it stops before anything else. If the push is rejected it tells
+`owner` with `Question:` and does not pull or rebase. A stop leaves your
+files as they are: fix what it says and run it again.
+
+A crew that lands by hand follows these steps, which are what the command does:
+
 1. The project's checks pass (format, lint, tests), or fail only in a
    teammate's files: tell them, and do not land on top of a build they broke.
 2. `crew lock <you>`. If it is taken, keep working and retry.
@@ -124,6 +143,11 @@ works there as anywhere. Nobody shares your files, index, or build
 directory; you land through `origin`, on `main`. Your commits carry the
 project's identity: check `git config user.email` once, and tell the
 coordinator if it is not the project's.
+
+`crew land` works from a clone as well: it commits your paths and pushes your
+branch to `origin`. It never pulls, so when `origin` has moved the push is
+rejected and it tells `owner`; to bring your clone up to date first, land by
+hand as follows.
 
 1. The project's checks pass.
 2. `crew lock <you>`. If it is taken, keep working and retry.

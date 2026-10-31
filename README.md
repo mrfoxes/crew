@@ -124,6 +124,28 @@ path under it. The board adds `== conflicts`, each path two members claim, and
 `== unclaimed`, each file changed in the tree that nobody claims, each only
 when it has a line.
 
+### Landing in one command
+
+```
+crew land ada -F /tmp/msg --check 'sh test/run.sh' -- src/a.rs docs/
+crew land ada -F /tmp/msg --to bob -- src/a.rs     # a reviewer the Crewfile does not name
+```
+
+`crew land` does what the protocol's Landing says, in order: it finds the
+reviewer (`--to`, else `reviewer=` on the member's Crewfile line; with neither
+it stops before anything else), runs the check through `sh -c` in the
+member's working tree and stops on a failure, takes the lock (every 10
+seconds for 5 minutes, saying who holds it), checks that each path is on the
+member's `Files:` line and on no other member's, adds the new ones, commits
+those paths only (`git commit -F <file> -- <path>...`), pushes, and releases
+the lock in every case. Then it sends the reviewer `Pushed: <hash>
+<subject>`, with the commit's stat. It lands from the member's clone when it
+has one (to its branch of `origin`), else from the project's tree (to the
+branch's upstream). A rejected push is told to `owner` as a `Question:`; the
+command never pulls or rebases, and the commit stays where it is. `crew
+board` shows `reviewed by <member>` on the header of each member the
+Crewfile gives a reviewer.
+
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
 keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
@@ -537,6 +559,7 @@ lib/crewfile.sh     the Crewfile read, checked, and asked
 lib/up.sh           crew up: the crew of the Crewfile brought up, or back
 lib/live.sh         crew board --live: a line a member, redrawn
 lib/clones.sh       a member's clone: made, reused, shown on the board, removed
+lib/land.sh         crew land: check, lock, commit the member's paths, push, unlock, Pushed:
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
