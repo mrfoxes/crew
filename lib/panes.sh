@@ -27,12 +27,7 @@ crew_join() {
         return 2
     fi
     name=$1
-    crew_name "$name" || return 2
-    case "$name" in all | owner)
-        echo "crew: '$name' is a recipient, not a member" >&2
-        return 2
-        ;;
-    esac
+    crew_member "$name" || return 2
     dir=$(crew_dir) || return 1
     recorded=$(cat "$dir/panes/$name" 2>/dev/null) || recorded=""
     if [ "${2:-}" = --pane ] && [ -n "${3:-}" ]; then
@@ -87,6 +82,41 @@ crew_leave() {
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
 
+# Mutes <name>, marked by muted/<name>: a message to all no longer wakes it,
+# one to its name still does, and crew unread shows it both.
+crew_mute() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew mute <name>" >&2
+        return 2
+    fi
+    crew_member "$1" || return 2
+    dir=$(crew_dir) || return 1
+    mkdir -p "$dir/muted"
+    : >"$dir/muted/$1"
+    echo "$1 is muted: a message to all no longer wakes it, one to $1 still does"
+}
+
+crew_unmute() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew unmute <name>" >&2
+        return 2
+    fi
+    crew_member "$1" || return 2
+    dir=$(crew_dir) || return 1
+    rm -f "$dir/muted/$1"
+    echo "$1 is woken by messages to all again"
+}
+
+# A member's name: a name, and neither of the recipients all and owner.
+crew_member() {
+    crew_name "$1" || return
+    case "$1" in all | owner)
+        echo "crew: '$1' is a recipient, not a member" >&2
+        return 1
+        ;;
+    esac
+}
+
 # Every pane crew can see, with the member joined to it.
 crew_panes() {
     dir=$(crew_dir 2>/dev/null) || dir=""
@@ -135,14 +165,14 @@ crew_key() {
     done
 }
 
-# Opens a pane beside this one, in a new tab with --tab, or under <member>'s
-# pane with --below, running <command> in the project's root, joined as
-# <name>. The agent still runs 'crew join <name>' to learn the protocol; its
-# pane is known from the start, and with --join it is told to as soon as it
-# is up.
+# Opens a pane beside this one, in a new tab with --tab, or under or over
+# <member>'s pane with --below or --above, running <command> in the project's
+# root, joined as <name>. The agent still runs 'crew join <name>' to learn the
+# protocol; its pane is known from the start, and with --join it is told to as
+# soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab | --below <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --below <member> | --above <member>] [--join] <command>..." >&2
         return 2
     fi
     name=$1
@@ -155,11 +185,11 @@ crew_spawn() {
     while [ $# -gt 0 ]; do
         case "$1" in
         --tab) where=tab ;;
-        --below)
+        --below | --above)
+            where=${1#--}
             shift
             [ $# -gt 0 ] || break
             anchor=$(crew_pane "$1") || return 1
-            where=below
             ;;
         --join) join=1 ;;
         *) break ;;
@@ -167,7 +197,7 @@ crew_spawn() {
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab | --below <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --below <member> | --above <member>] [--join] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -189,9 +219,11 @@ crew_spawn() {
 }
 
 # Waits until the agent in <name>'s pane is up and its screen has settled,
-# at most <seconds> (60), then tells it to join. A prompt waiting there (a
-# trust dialog) is printed instead: answer it with crew key, then invite
-# again. A line typed before the agent is up would go to the shell.
+# at most <seconds> (60), then tells it to join and to work in caveman mode:
+# $caveman in a prompt is what calls Codex's skill of that name. A prompt
+# waiting there (a trust dialog) is printed instead: answer it with crew key,
+# then invite again. A line typed before the agent is up would go to the
+# shell.
 crew_invite() {
     if [ $# -lt 1 ]; then
         echo "usage: crew invite <name> [seconds]" >&2
@@ -212,7 +244,7 @@ crew_invite() {
                 echo "crew: answer it with 'crew key $name ...', then 'crew invite $name'" >&2
                 return 1
             fi
-            crew_poke "$name" "Run: crew join $name. Then follow the protocol it prints."
+            crew_poke "$name" "Run: crew join $name. Then follow the protocol it prints. Work in caveman mode (\$caveman) from now on."
             echo "$name invited"
             return
         fi
@@ -241,7 +273,8 @@ shell_word() {
 # notification for the owner. The line holds the number, the sender, and
 # the command, never the subject: an agent may read a character of free
 # text (@, $) as a command of its own. A member with no pane, or none at
-# all, is named: the message waits in the stream.
+# all, is named: the message waits in the stream. So is a muted member, for
+# a message to all.
 crew_wake() {
     dir=$1
     n=$2
@@ -259,6 +292,10 @@ crew_wake() {
     esac
     for who in $members; do
         [ "$who" != "$from" ] || continue
+        if [ "$to" = all ] && [ -e "$dir/muted/$who" ]; then
+            echo "crew: $who is muted; the message waits for 'crew unread $who'" >&2
+            continue
+        fi
         line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$n" "$from" "$who")
         # Codex takes the line through its daemon, which needs no terminal;
         # its pane is the way when the thread is gone.

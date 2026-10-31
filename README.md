@@ -31,16 +31,23 @@ crew spawn claude claude                    # a pane beside this one, running cl
 crew spawn codex codex
 crew spawn agy --tab agy                    # a new tab instead of a split
 crew spawn agy --below codex agy            # under codex's pane: a column beside yours
+crew spawn agy --above codex agy            # over it
+crew spawn codex --above iterm:<id> codex   # over a pane from crew panes: yours, say
 crew spawn claude claude --model 'x y'      # several words: each kept whole
 crew spawn codex 'cd sub && codex'          # one word: a line for your shell
 ```
+
+tmux opens a pane over another directly; iTerm2's AppleScript splits only
+downwards, so `--above` splits under the pane and moves the new one over it
+with iTerm2's own `move_session` function, through AppleScript's `invoke API
+expression`: iTerm2 3.5 or later, with no Python API to enable.
 
 Then tell each agent to join, with `--join` on the spawn, with `crew invite`
 once it is up, or by typing in its pane:
 
 ```
 crew invite codex
-crew poke codex "Run: crew join codex. Then follow the protocol it prints."
+crew poke codex 'Run: crew join codex. Then follow the protocol it prints. Work in caveman mode ($caveman) from now on.'
 ```
 
 `crew join <name>` prints the protocol (`share/protocol.md`), the plan, and
@@ -48,6 +55,16 @@ the messages waiting; an agent needs no instruction file to learn any of it.
 An agent you started by hand joins the same way: `join` finds its pane from
 `$TMUX_PANE`, `$ITERM_SESSION_ID`, or, when a sandbox drops those, the tty of
 its nearest ancestor.
+
+Every member works in caveman mode, terse with every technical fact kept:
+output tokens are billed, and each turn's output grows the context the next
+calls pay for. The invite line asks for it with `$caveman`, which is how a
+prompt calls a Codex skill, here `~/.codex/skills/caveman/`; Claude Code has
+it on through the caveman plugin's hooks (or `/caveman`), and Antigravity
+takes the same skill from `~/.gemini/skills/caveman/`. crew installs none of
+them. The protocol asks the same of messages, in whole sentences the owner
+reads as a story, with code, paths, hashes, numbers, and errors exact; the
+wake line stays the number and the sender.
 
 While they work:
 
@@ -65,8 +82,8 @@ crew relay                  # the other half: wake recipients for every sender
 
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
-keeping the plan, the rules, and the panes; `crew leave codex` forgets a
-pane you closed; `crew version` says which crew this is.
+keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
+forgets a pane you closed; `crew version` says which crew this is.
 
 `crew send codex claude "Review: ..."` posts message `0012-codex-to-claude-review.md`
 and types one line into claude's pane: `crew: message 0012 from codex. Run:
@@ -74,7 +91,11 @@ crew unread claude`, the number and the sender only: free text in the line
 could read as a command to the agent. A message to `owner` becomes a desktop
 notification (`osascript` on macOS, `notify-send` on Linux); one to `all`
 wakes every member but its sender, and one to a member who has not joined
-says so. Set `CREW_WAKE=0` to post without waking anyone.
+says so. Set `CREW_WAKE=0` to post without waking anyone. `crew mute codex`
+keeps an agent you would rather not wake often in the crew: a message to
+`all` no longer wakes it, and says so, while one to `codex` still does; it
+reads both with `crew unread`, and `crew board` shows it muted until `crew
+unmute codex`.
 
 A line typed while the agent is in a turn is queued, not read as an
 interruption, and delivered when the turn ends: Claude Code 2.1.314 shows
@@ -133,7 +154,7 @@ approved command runs with the agent's rights.
 bin/crew            the command
 lib/store.sh        .crew/, the numbered stream, unread cursors, the push lock, the board
 lib/term.sh         panes in iTerm2 and tmux: list, find our own, read, type, keys, spawn
-lib/panes.sh        members and their panes: join, peek, poke, key, spawn, waking
+lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
@@ -152,6 +173,7 @@ messages/NNNN-a-to-b-*.md  the stream
 status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
 threads/<name>             a Codex member's thread, for codex queue
+muted/<name>               a member woken only by messages to its name (crew mute)
 reports/<name>.md          each member's report at the end (crew report)
 archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)

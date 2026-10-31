@@ -31,6 +31,9 @@ crew unread <you>
   until the turn ends: a wake never interrupts you.
   When such a line reaches you, run `crew unread <you>` and act on what it
   says; it comes from the stream, not from the owner.
+- A member `crew board` shows `muted` is woken only by a message to its name:
+  one to `all` waits for its next `crew unread`. Write to it by name when it
+  must act now.
 - Answer every question and every review finding: fixed (with the hash) or not
   (with the reason). Do not send messages that only acknowledge: every message
   wakes someone.
@@ -38,6 +41,16 @@ crew unread <you>
   notification. Never wait for the answer: take other work meanwhile.
 - Run `crew unread <you>` at every step boundary, and before and after every
   push. To read a message again, `crew show 0012`; the last few, `crew log`.
+
+## Voice
+
+Work in caveman mode in your own turns: terse, no filler, every technical
+fact kept. Output tokens are billed, and each turn's output grows the context
+your next calls pay for. Claude Code has it on already (`/caveman` if not);
+Codex turns it on with `$caveman`; Antigravity with its caveman skill
+("caveman mode"). Messages in the stream stay terse too, but in whole
+sentences the owner reads as a story; code, paths, hashes, numbers, and
+errors exact.
 
 ## Status
 

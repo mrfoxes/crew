@@ -198,9 +198,9 @@ term_poke() {
     term_key "$1" enter
 }
 
-# Opens a pane beside this one (split), in a new tab (tab), or under <pane>
-# (below), runs <line> there through the owner's shell, so the pane outlives
-# it, and prints the new pane.
+# Opens a pane beside this one (split), in a new tab (tab), or under or over
+# <pane> (below, above), runs <line> there through the owner's shell, so the
+# pane outlives it, and prints the new pane.
 term_spawn() {
     where=$1
     line=$2
@@ -209,7 +209,8 @@ term_spawn() {
         case "$where:$anchor" in
         tab:*) id=$(tmux new-window -P -F '#{pane_id}') ;;
         below:tmux:*) id=$(tmux split-window -v -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
-        below:*)
+        above:tmux:*) id=$(tmux split-window -v -b -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
+        below:* | above:*)
             echo "crew: $anchor is not a tmux pane" >&2
             return 1
             ;;
@@ -220,8 +221,8 @@ term_spawn() {
         return
     fi
     case "$where:$anchor" in
-    below:iterm:*) me=$anchor ;;
-    below:*)
+    below:iterm:* | above:iterm:*) me=$anchor ;;
+    below:* | above:*)
         echo "crew: $anchor is not an iTerm2 pane" >&2
         return 1
         ;;
@@ -236,6 +237,40 @@ term_spawn() {
         open='tell w to set n to current session of (create tab with default profile)'
     elif [ "$where" = below ]; then
         open='tell s to set n to (split horizontally with default profile)'
+    elif [ "$where" = above ]; then
+        # AppleScript splits only below: the new pane is split off <pane>,
+        # then moved over it with iTerm2's own move_session (3.5 and later).
+        # Its docs read before: true as over, its code as under: both are
+        # tried, and the one kept lists the new pane first, as a tab lists
+        # its panes from the top. A pane left under is closed. Each check
+        # walks every tab again: the loop's references count windows from
+        # the front, which a move may reorder, and AppleScript cannot take
+        # the contents of such a reference.
+        open='set f to current session of t
+                        tell s to set n to (split horizontally with default profile)
+                        set nid to unique id of n
+                        try
+                            repeat with i from 1 to 2
+                                set b to item i of {"false", "true"}
+                                invoke API expression "iterm2.move_session(session: \"" & nid & "\", destination: \"" & (item 1 of argv) & "\", vertical: false, before: " & b & ")"
+                                set placed to false
+                                repeat with w2 in windows
+                                    repeat with t2 in tabs of w2
+                                        repeat with x in sessions of t2
+                                            set u to unique id of x
+                                            if u is nid then set placed to true
+                                            if u is nid or u is (item 1 of argv) then exit repeat
+                                        end repeat
+                                    end repeat
+                                end repeat
+                                if placed then exit repeat
+                            end repeat
+                            if not placed then error "the new pane stayed under it"
+                        on error e
+                            tell n to close
+                            error "no pane over " & (item 1 of argv) & ": " & e & " (iTerm2 3.5 or later moves one there)"
+                        end try
+                        tell f to select'
     else
         # Beside this pane while the tab holds an odd number, below it while
         # even: three or four panes make a grid, not a row of slivers.

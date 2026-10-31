@@ -279,6 +279,15 @@ check "board messages" "3" "$(printf '%s\n' "$board" | grep -c '^00[0-9][0-9]-')
 check "board wants a count" "2" "$(crew_board three >/dev/null 2>&1; echo $?)"
 check "peek wants a count" "2" "$(crew_peek tmux:%1 many >/dev/null 2>&1; echo $?)"
 
+# Spawning over a pane: tmux, faked, splits before it; a pane of the other
+# terminal is refused before either is asked.
+tmux() { echo "$*" >>"$tmp/tmux.args"; [ "$1" != split-window ] || echo %5; }
+check "spawn above in tmux" "tmux:%5" "$(TMUX=1 term_spawn above true tmux:%3)"
+check "spawn above in tmux splits over the pane" "split-window -v -b -t %3 -P -F #{pane_id}" "$(sed -n 1p "$tmp/tmux.args")"
+check "spawn above in tmux refuses an iTerm2 pane" "1" "$(TMUX=1 term_spawn above true iterm:X 2>/dev/null; echo $?)"
+check "spawn above in iTerm2 refuses a tmux pane" "1" "$(TMUX='' term_spawn above true tmux:%3 2>/dev/null; echo $?)"
+tmux() { echo "tmux $*"; }
+
 # Spawning: the line the owner's shell gets, with the pane faked.
 term_spawn() { printf '%s\n' "$2" >"$tmp/spawn.line"; echo tmux:%9; }
 check "spawn" "agy: tmux:%9" "$(crew_spawn agy claude --model 'x y' "it's")"
@@ -292,6 +301,12 @@ crew_spawn codex --below agy codex >/dev/null
 check "spawn below a member" "below tmux:%9" "$(cat "$tmp/spawn.where")"
 check "spawn below one with no pane" "1" "$(crew_spawn codex --below nobody codex >/dev/null 2>&1; echo $?)"
 check "spawn below wants a member" "2" "$(crew_spawn codex --below >/dev/null 2>&1; echo $?)"
+crew_spawn codex --above agy codex >/dev/null
+check "spawn above a member" "above tmux:%9" "$(cat "$tmp/spawn.where")"
+crew_spawn codex --above iterm:X codex >/dev/null
+check "spawn above a pane" "above iterm:X" "$(cat "$tmp/spawn.where")"
+check "spawn above one with no pane" "1" "$(crew_spawn codex --above nobody codex >/dev/null 2>&1; echo $?)"
+check "spawn above wants a member" "2" "$(crew_spawn codex --above >/dev/null 2>&1; echo $?)"
 rm -f "$dir/panes/agy" "$dir/panes/codex"
 # The terminal, as every machine sees it: one tmux pane, %7.
 term_list() { printf 'tmux:%%7\t/dev/ttys001\tsh\n'; }
@@ -399,6 +414,20 @@ rm -f "$dir/panes/codex"
 codex() { echo "codex $*" >"$tmp/codex.args"; }
 check "wake to all reaches a member with a thread only" "tmux:%7 <- crew: message 0012 from agy. Run: crew unread claude
 codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" 2>&1; cat "$tmp/codex.args")"
+# A muted member is woken by a message to its name, not by one to all, and
+# reads both.
+check "mute" "codex is muted: a message to all no longer wakes it, one to codex still does" "$(crew_mute codex)"
+rm -f "$tmp/codex.args"
+check "wake to all passes over a muted member" "tmux:%7 <- crew: message 0012 from agy. Run: crew unread claude
+crew: codex is muted; the message waits for 'crew unread codex'" "$(crew_wake "$dir" 12 agy all "x" 2>&1)"
+check "wake to all queues nothing to a muted member" "" "$(cat "$tmp/codex.args" 2>/dev/null)"
+check "wake to a muted member by name" "codex queue --thread abc-123 --message crew: message 0012 from claude. Run: crew unread codex" "$(crew_wake "$dir" 12 claude codex "x"; cat "$tmp/codex.args")"
+echo x | crew_send claude all "Heads-up: to everyone" >/dev/null
+check "a muted member reads a message to all" "1" "$(crew_unread codex | grep -c 'claude to all: Heads-up: to everyone$')"
+check "mute refuses a recipient" "2" "$(crew_mute all >/dev/null 2>&1; echo $?)"
+check "unmute" "codex is woken by messages to all again" "$(crew_unmute codex)"
+rm -f "$tmp/codex.args"
+check "wake to all reaches an unmuted member" "codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" >/dev/null 2>&1; cat "$tmp/codex.args")"
 check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/threads/codex" 2>/dev/null)"
 
 # The board tells a pane that is gone.
@@ -407,6 +436,9 @@ echo "tmux:%8" >"$dir/panes/agy"
 check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (tmux:%8 gone, 0 min ago)$')"
 printf 'Agent: claude\n' >"$dir/status/claude.md"
 check "board tells a pane that is there" "1" "$(crew_board 1 | grep -c '^== claude (tmux:%7, 0 min ago)$')"
+crew_mute claude >/dev/null
+check "board tells a muted member" "1" "$(crew_board 1 | grep -c '^== claude (tmux:%7, muted, 0 min ago)$')"
+crew_unmute claude >/dev/null
 rm -f "$dir/panes/agy"
 
 # Inviting: once something other than the shell runs in the pane and the
@@ -414,8 +446,8 @@ rm -f "$dir/panes/agy"
 term_tty() { echo /dev/ttys001; }
 term_running() { return 0; }
 show codex-idle
-check "invite" "tmux:%7 <- Run: crew join claude. Then follow the protocol it prints.
-claude invited" "$(crew_invite claude 5)"
+check "invite" 'tmux:%7 <- Run: crew join claude. Then follow the protocol it prints. Work in caveman mode ($caveman) from now on.
+claude invited' "$(crew_invite claude 5)"
 show codex-trust
 check "invite finds a prompt waiting" "crew: claude waits on a prompt: Trust this folder? Codex can read, edit, and run files here, subject to your permission settings. Folder settings can run code automatically, even without a model request. Continue only if you trust these files. Your trust decision will be saved. › 1. Trust and continue 2. Back to Agent Command Center enter continue · esc back" "$(crew_invite claude 5 2>&1 >/dev/null | sed -n 1p)"
 term_running() { return 1; }

@@ -40,11 +40,14 @@ For everyone
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   panes                         every pane, and who joined it
-  spawn <name> [--tab | --below <member>] [--join] <cmd>...
+  spawn <name> [--tab | --below <member> | --above <member>] [--join] <cmd>...
                                 open a pane running <cmd> for <name>: beside
-                                this one, in a new tab, or under <member>'s
-  invite <name> [seconds]       once its agent is up, tell it to join
+                                this one, in a new tab, or under or over
+                                <member>'s
+  invite <name> [seconds]       once its agent is up, tell it to join, in caveman mode
   leave <name>                  forget <name>'s pane
+  mute <name>                   wake <name> only for messages to its name
+  unmute <name>                 wake it for messages to all again
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
   key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
@@ -54,8 +57,9 @@ For the coordinator
   archive                       put the session's stream and files aside, start over
   version                       which crew this is
 
-<name> is lower-case letters, digits, and dashes; peek, poke, and key also
-take a pane (iterm:<id>, tmux:<id>) from 'crew panes'.
+<name> is lower-case letters, digits, and dashes; peek, poke, key, and
+spawn's --below and --above also take a pane (iterm:<id>, tmux:<id>) from
+'crew panes'.
 EOF
 }
 
@@ -83,6 +87,8 @@ panes) crew_panes "$@" ;;
 spawn) crew_spawn "$@" ;;
 invite) crew_invite "$@" ;;
 leave) crew_leave "$@" ;;
+mute) crew_mute "$@" ;;
+unmute) crew_unmute "$@" ;;
 peek) crew_peek "$@" ;;
 poke) crew_poke "$@" ;;
 key) crew_key "$@" ;;
