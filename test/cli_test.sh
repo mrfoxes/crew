@@ -55,6 +55,19 @@ check "leave" "0" "$(crew leave tess >/dev/null; echo $?)"
 check "down with nothing to wait for" "nobody to wait for: no member has a pane or a line in the Crewfile
 nothing is left" "$(crew down)"
 check "archive" "0" "$(crew archive >/dev/null; echo $?)"
+# The version from the tag, in a checkout of its own: with no tag the commit,
+# at a tag the tag, past it what git describe writes.
+mkdir -p "$tmp/home" && cp -R "$CREW_HOME/bin" "$CREW_HOME/lib" "$tmp/home"
+git init -q "$tmp/home" && git -C "$tmp/home" add bin lib
+git -C "$tmp/home" -c user.name=t -c user.email=t@example.com commit -q -m first
+day=$(git -C "$tmp/home" log -1 --format=%cs)
+hash=$(git -C "$tmp/home" log -1 --format=%h)
+check "version with no tag" "crew $hash ($day)" "$(sh "$tmp/home/bin/crew" version)"
+git -C "$tmp/home" tag v1.0.0
+check "version at a tag" "crew v1.0.0 ($day)" "$(sh "$tmp/home/bin/crew" version)"
+git -C "$tmp/home" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m second
+hash=$(git -C "$tmp/home" log -1 --format=%h)
+check "version past a tag" "crew v1.0.0-1-g$hash ($day)" "$(sh "$tmp/home/bin/crew" version)"
 check "version" "0" "$(crew version >/dev/null; echo $?)"
 check "an unknown command" "2" "$(crew nosuch >/dev/null 2>&1; echo $?)"
 

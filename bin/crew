@@ -110,6 +110,11 @@ EOF
 }
 
 version() {
+    # The tag when the checkout has one, as git describe writes it past it.
+    if v=$(git -C "$CREW_HOME" describe --tags --match "v*" 2>/dev/null); then
+        echo "crew $v ($(git -C "$CREW_HOME" log -1 --format=%cs))"
+        return
+    fi
     git -C "$CREW_HOME" log -1 --format='crew %h (%cs)' 2>/dev/null || echo "crew at $CREW_HOME"
 }
 

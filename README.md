@@ -156,7 +156,9 @@ Crewfile gives a reviewer.
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
 keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
-forgets a pane you closed; `crew version` says which crew this is.
+forgets a pane you closed; `crew version` says which crew this is: the tag
+when the checkout has one (`crew v1.0.0 (2026-11-02)`, and
+`crew v1.0.0-3-g17aac8d (2026-11-05)` three commits past it), else the commit.
 
 `crew send codex claude "Review: ..."` posts message `0012-codex-to-claude-review.md`
 and types one line into claude's pane: `crew: message 0012 from codex. Run:
@@ -613,6 +615,10 @@ share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (ba
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
 .github/workflows/  the tests on Ubuntu and macOS, at every push
+LICENSE             MIT
+CHANGELOG.md        what each version adds, by area, with its issues
+CONTRIBUTING.md     the rules a change follows, and the checks before a push
+SECURITY.md         what the gate is and is not, and how to report a vulnerability
 ```
 
 In a project, `.crew/` at its root, or `~/.crew/<project>/` after `crew init
