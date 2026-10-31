@@ -212,7 +212,100 @@ check "the project's tree was not touched" "$before" "$(git rev-parse HEAD)"
 check "the lock is free" "free" "$(lock)"
 check "the reviewer is told" "1" "$(sent ann bob "pushed-$hash")"
 check "the message says where it landed from" "1" "$(grep -c "Landed from $tmp/work/proj-ann" "$dir"/messages/*-ann-to-bob-pushed-$hash-*)"
-rm "$dir/clones/ann"
+git -C "$tmp/work/proj-ann" checkout -q -- c.txt
+
+# Two clones over a moved origin: a clean rebase and second check, a conflict,
+# a check that fails after the rebase, and crew sync.
+git clone -q "$tmp/origin.git" "$tmp/work/proj-bob" 2>/dev/null
+echo "$tmp/work/proj-bob" >"$dir/clones/bob"
+edit "$tmp/work/proj-bob/b.txt"
+printf 'Bob lands first\n' >"$tmp/bob-msg"
+check "bob lands from his clone" "0" "$(land bob -F "$tmp/bob-msg" --to ann -- b.txt)"
+bob_val=$(cat "$tmp/work/proj-bob/b.txt")
+
+# ann's clone is behind origin/main: crew land fetches, rebases, runs --check
+# again on the rebased tree (which now has bob's b.txt), and pushes.
+: >"$tmp/checks"
+edit "$tmp/work/proj-ann/a.txt"
+check "ann lands over a moved origin" "0" "$(land ann -F "$tmp/message" --to bob --check "cat b.txt >>'$tmp/checks'" -- a.txt)"
+hash=$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD)
+check "origin has ann's rebased commit" "Add the things" "$(origin_head)"
+check "the parent on origin is bob's commit" "Bob lands first" "$(git -C "$tmp/origin.git" log -1 --format=%s main~1)"
+check "the check ran before and after the rebase" "2" "$(wc -l <"$tmp/checks" | tr -d ' ')"
+check "the second check saw bob's change" "$bob_val" "$(tail -n 1 "$tmp/checks")"
+check "the lock is free after a rebased land" "free" "$(lock)"
+check "the reviewer is told the rebased hash" "1" "$(sent ann bob "pushed-$hash")"
+
+# crew sync: refuses the shared tree and a dirty clone, syncs a clean clone,
+# and aborts a conflicting rebase leaving the clone as it was.
+check "sync with no arguments" "2" "$(crew_sync >/dev/null 2>&1; echo $?)"
+check "sync refuses a member in the shared tree" "1" "$(crew_sync cat >/dev/null 2>"$tmp/err"; echo $?)"
+check "it says crew sync is for a clone" "1" "$(grep -c 'shared tree' "$tmp/err")"
+echo dirty >"$tmp/work/proj-bob/b.txt"
+check "sync refuses a dirty clone" "1" "$(crew_sync bob >/dev/null 2>"$tmp/err"; echo $?)"
+check "it says the clone has changes" "1" "$(grep -c 'has changes; left as it is' "$tmp/err")"
+check "the dirty file stays" "dirty" "$(cat "$tmp/work/proj-bob/b.txt")"
+git -C "$tmp/work/proj-bob" checkout -q -- b.txt
+check "sync brings bob's clean clone up to origin/main" "0" "$(crew_sync bob >"$tmp/out" 2>"$tmp/err"; echo $?)"
+check "bob's clone is at ann's commit" "$hash" "$(git -C "$tmp/work/proj-bob" rev-parse --short HEAD)"
+
+# A conflict while crew sync rebases a local commit: aborted, clone unchanged.
+echo "bob conflict" >"$tmp/work/proj-bob/a.txt"
+git -C "$tmp/work/proj-bob" commit -q -am "Bob local a"
+bob_local=$(git -C "$tmp/work/proj-bob" rev-parse HEAD)
+edit "$tmp/work/proj-ann/a.txt"
+check "ann lands another change to a.txt" "0" "$(land ann -F "$tmp/message" --to bob -- a.txt)"
+check "sync aborts on a conflict" "1" "$(crew_sync bob >/dev/null 2>"$tmp/err"; echo $?)"
+check "sync names the conflicting file" "1" "$(grep -c 'conflicted in a.txt' "$tmp/err")"
+check "bob's clone is left at its commit" "$bob_local" "$(git -C "$tmp/work/proj-bob" rev-parse HEAD)"
+check "no rebase is in progress after sync conflict" "no" "$([ -d "$tmp/work/proj-bob/.git/rebase-merge" ] || [ -d "$tmp/work/proj-bob/.git/rebase-apply" ] && echo yes || echo no)"
+check "bob's working tree is clean" "" "$(git -C "$tmp/work/proj-bob" status --porcelain)"
+git -C "$tmp/work/proj-bob" reset -q --hard origin/main
+
+# A conflict while crew land rebases under the lock: git rebase --abort
+# restores the commit as it was, releases the lock, and tells owner with the
+# conflicting files.
+status bob "a.txt b.txt"
+status ann "a.txt new.txt clone.txt"
+git -C "$tmp/work/proj-ann" reset -q --hard origin~1
+status bob "a.txt"
+status ann "new.txt"
+edit "$tmp/work/proj-bob/a.txt"
+check "bob lands a.txt" "0" "$(land bob -F "$tmp/bob-msg" --to ann -- a.txt)"
+status bob "b.txt"
+status ann "a.txt new.txt clone.txt"
+edit "$tmp/work/proj-ann/a.txt"
+check "a rebase conflict on land stops it" "1" "$(land ann -F "$tmp/message" --to bob -- a.txt)"
+ann_commit=$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD)
+check "the commit stays as HEAD in the clone" "Add the things" "$(git -C "$tmp/work/proj-ann" log -1 --format=%s)"
+check "no rebase is left in progress" "no" "$([ -d "$tmp/work/proj-ann/.git/rebase-merge" ] || [ -d "$tmp/work/proj-ann/.git/rebase-apply" ] && echo yes || echo no)"
+check "the clone's working tree is clean" "" "$(git -C "$tmp/work/proj-ann" status --porcelain)"
+check "the lock is free after a conflict" "free" "$(lock)"
+check "origin stays at bob's commit" "Bob lands first" "$(origin_head)"
+check "owner is told of the conflict" "1" "$(sent ann owner "question-rebase-of-$ann_commit-conflicted")"
+check "the message names the conflicting file" "1" "$(grep -c 'a.txt' "$dir"/messages/*-ann-to-owner-question-rebase-of-"$ann_commit"-conflicted*)"
+git -C "$tmp/work/proj-ann" reset -q --hard origin/main
+
+# A check that fails after a clean rebase: nothing is pushed, the rebased
+# commit stays as HEAD, and both hashes (ORIG_HEAD and HEAD) and the check's
+# output are in the message to owner.
+edit "$tmp/work/proj-bob/b.txt"
+check "bob lands b.txt to move origin" "0" "$(land bob -F "$tmp/bob-msg" --to ann -- b.txt)"
+bob_head=$(git -C "$tmp/work/proj-bob" rev-parse --short HEAD)
+edit "$tmp/work/proj-ann/a.txt"
+check "a check failing after rebase stops the push" "1" "$(land ann -F "$tmp/message" --to bob --check "if [ \"\$(git rev-parse --short HEAD~1)\" = '$bob_head' ]; then echo 'after-rebase-boom'; exit 4; fi" -- a.txt)"
+rebased_hash=$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD)
+orig_hash=$(git -C "$tmp/work/proj-ann" rev-parse --short ORIG_HEAD)
+check "the two hashes differ" "yes" "$([ "$orig_hash" != "$rebased_hash" ] && echo yes)"
+check "origin did not receive the commit" "Bob lands first" "$(origin_head)"
+check "the rebased commit stays as the clone's HEAD" "Add the things" "$(git -C "$tmp/work/proj-ann" log -1 --format=%s)"
+check "and its parent is origin/main" "$bob_head" "$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD~1)"
+check "the lock is free after a post-rebase check failure" "free" "$(lock)"
+check "owner is told of the failed check after rebase" "1" "$(sent ann owner "question-check-failed-after-rebasing-$orig_hash")"
+check "the message names ORIG_HEAD" "yes" "$(grep -q "$orig_hash" "$dir"/messages/*-ann-to-owner-question-check-failed-after-rebasing-"$orig_hash"* && echo yes)"
+check "the message names the rebased HEAD" "yes" "$(grep -q "$rebased_hash" "$dir"/messages/*-ann-to-owner-question-check-failed-after-rebasing-"$orig_hash"* && echo yes)"
+check "the message has the check's output" "yes" "$(grep -q '^after-rebase-boom$' "$dir"/messages/*-ann-to-owner-question-check-failed-after-rebasing-"$orig_hash"* && echo yes)"
+rm "$dir/clones/ann" "$dir/clones/bob"
 
 # Arguments.
 check "no arguments" "2" "$(land)"

@@ -174,3 +174,44 @@ clone_leave() {
     rm -f "$1/clones/$2"
     echo "$2's clone $c_path is removed: nothing was left in it"
 }
+
+# crew sync <name>: in <name>'s own clone only (refused in the shared tree,
+# and with changes in the tree), fetches origin and rebases its branch onto
+# origin/<branch>. On a conflict it aborts the rebase, says which files
+# conflict, and leaves the clone as it was.
+crew_sync() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew sync <name>" >&2
+        return 2
+    fi
+    crew_name "$1" || return 2
+    c_dir=$(crew_dir) || return 1
+    c_path=$(clone_of "$c_dir" "$1")
+    if [ -z "$c_path" ] || [ "$c_path" = "$(crew_project "$c_dir")" ]; then
+        echo "crew: $1 has no clone: crew sync only runs in a member's own clone, never in the shared tree" >&2
+        return 1
+    fi
+    if [ ! -d "$c_path/.git" ]; then
+        echo "crew: $1's clone $c_path is gone" >&2
+        return 1
+    fi
+    if [ -n "$(git -C "$c_path" status --porcelain)" ]; then
+        echo "crew: $c_path has changes; left as it is" >&2
+        return 1
+    fi
+    c_branch=$(git -C "$c_path" symbolic-ref --short -q HEAD) || {
+        echo "crew: $c_path is not on a branch; left as it is" >&2
+        return 1
+    }
+    if ! git -C "$c_path" fetch -q origin >&2; then
+        echo "crew: could not fetch origin in $c_path" >&2
+        return 1
+    fi
+    if ! git -C "$c_path" rebase -q "origin/$c_branch" >/dev/null 2>&1; then
+        c_files=$(git -C "$c_path" diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/ $//')
+        git -C "$c_path" rebase --abort >/dev/null 2>&1 || :
+        echo "crew: rebasing $c_path onto origin/$c_branch conflicted${c_files:+ in $c_files}; aborted and left as it was" >&2
+        return 1
+    fi
+    echo "$1 synced to origin/$c_branch ($(git -C "$c_path" rev-parse --short HEAD))"
+}

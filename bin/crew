@@ -49,11 +49,14 @@ For everyone
   dir                           the crew's directory
   lock <name>                   take the push lock
   unlock <name> | --force       release it
+  sync <name>                   fetch origin and rebase <name>'s clean clone onto it
   land <name> -F <file> [--check <command>] [--to <member>] -- <path>...
                                 land in one command: run the check, take the
-                                lock, commit those paths only, push, release
-                                the lock, tell the reviewer (--to, else the
-                                Crewfile's reviewer=) with Pushed:
+                                lock, commit those paths only, rebase a clone
+                                onto origin and re-run the check when origin
+                                moved, push, release the lock, tell the
+                                reviewer (--to, else the Crewfile's reviewer=)
+                                with Pushed:
 
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
@@ -137,6 +140,7 @@ report) crew_write report "$@" ;;
 board) crew_board "$@" ;;
 lock) crew_lock "$@" ;;
 unlock) crew_unlock "$@" ;;
+sync) crew_sync "$@" ;;
 land) crew_land "$@" ;;
 panes) crew_panes "$@" ;;
 cost) crew_cost "$@" ;;

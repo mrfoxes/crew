@@ -148,8 +148,13 @@ those paths only (`git commit -F <file> -- <path>...`), pushes, and releases
 the lock in every case. Then it sends the reviewer `Pushed: <hash>
 <subject>`, with the commit's stat. It lands from the member's clone when it
 has one (to its branch of `origin`), else from the project's tree (to the
-branch's upstream). A rejected push is told to `owner` as a `Question:`; the
-command never pulls or rebases, and the commit stays where it is. `crew
+branch's upstream). In a clone, under the lock, it fetches `origin` and, when
+`origin/<branch>` has moved, rebases onto it and runs `--check` again on the
+rebased tree before pushing (a conflict aborts the rebase, restores the commit
+as it was, and messages `owner`; a failed check after a rebase leaves the
+rebased commit in place without pushing and messages `owner` with `ORIG_HEAD`,
+`HEAD`, and the check output). In the shared tree it never pulls or rebases; a
+rejected push is told to `owner` as a `Question:`. `crew
 board` shows `reviewed by <member>` on the header of each member the
 Crewfile gives a reviewer.
 
@@ -398,6 +403,7 @@ member joins the same crew.
 
 ```
 crew spawn lean --clone --cache .lake claude    # ../proj-lean, with the project's .lake copied
+crew sync lean                                  # fetch origin and rebase lean's clean clone onto it
 crew board                                      # under lean: clone: ../proj-lean, 2 behind origin/main
 crew leave lean --clone                         # removes it when nothing is left
 ```
@@ -424,9 +430,12 @@ crew leave lean --clone                         # removes it when nothing is lef
   not (commits, changed and untracked files), and removes it only when
   there is nothing; otherwise it stays. `crew leave <name>` alone keeps the
   clone and `clones/<name>`, so the board still shows it.
-- The gate holds `git pull` and `git rebase` for every member, a clone's
-  too: the protocol has the member ask the coordinator, who answers with
-  `crew key`. A project that wants them free has its own `.crew/forbid`.
+- `crew sync <name>` fetches `origin` and rebases `<name>`'s clean clone onto
+  `origin/<branch>`, aborting on conflict and naming the conflicting files;
+  it refuses the shared tree and a clone with uncommitted changes.
+- The gate holds raw `git pull` and `git rebase` for every member, a clone's
+  too (`crew sync` and `crew land` run their own rebase safely inside the
+  clone). A project that wants them free has its own `.crew/forbid`.
 
 ## Tabs
 
@@ -602,8 +611,8 @@ lib/crewfile.sh     the Crewfile read, checked, and asked
 lib/up.sh           crew up: the crew of the Crewfile brought up, or back
 lib/live.sh         crew board --live: a line a member, redrawn
 lib/down.sh         crew down: End: sent, Done: waited for, what is left said, panes stopped and closed
-lib/clones.sh       a member's clone: made, reused, shown on the board, removed
-lib/land.sh         crew land: check, lock, commit the member's paths, push, unlock, Pushed:
+lib/clones.sh       a member's clone: made, reused, synced, shown on the board, removed
+lib/land.sh         crew land: check, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only

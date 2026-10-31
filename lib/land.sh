@@ -183,12 +183,18 @@ land_commit() {
     ld_subject=$(git -C "$ld_tree" log -1 --format=%s)
 }
 
-# Pushes the commit: a clone to its own branch of origin, a member of the
-# shared tree to the branch's upstream. A push that fails is told to the
-# owner; nothing is pulled or rebased, and the commit stays where it is.
+# Pushes the commit: a clone fetches first and, when origin/<branch> has
+# moved, rebases onto it and runs the check again before pushing to its own
+# branch of origin; a member of the shared tree pushes to the branch's
+# upstream and never rebases. A push that fails is told to the owner.
 land_push() {
     if [ -n "$(clone_of "$ld_dir" "$ld_who")" ]; then
         ld_branch=$(git -C "$ld_tree" symbolic-ref --short HEAD)
+        git -C "$ld_tree" fetch -q origin >/dev/null 2>&1 || :
+        if git -C "$ld_tree" rev-parse --verify -q "origin/$ld_branch" >/dev/null &&
+            ! git -C "$ld_tree" merge-base --is-ancestor "origin/$ld_branch" HEAD; then
+            land_rebase || return 1
+        fi
         ld_pushed=$(git -C "$ld_tree" push origin "$ld_branch" 2>&1) && return 0
     else
         ld_pushed=$(git -C "$ld_tree" push 2>&1) && return 0
@@ -201,6 +207,41 @@ land_push() {
         echo
         printf '%s\n' "$ld_pushed" | tail -n 20
     } | crew_send "$ld_who" owner "Question: push of $ld_hash rejected" >/dev/null
+    return 1
+}
+
+# In a clone whose origin/<branch> has moved: rebases the new commit onto it
+# and runs the check again on the rebased tree. On a conflict it aborts the
+# rebase (restoring the commit as it was) and tells owner with the files; on
+# a failed check after the rebase it leaves the rebased commit as HEAD and
+# tells owner with both hashes (ORIG_HEAD and HEAD) and the check's output.
+land_rebase() {
+    ld_before=$ld_hash
+    if ! git -C "$ld_tree" rebase -q "origin/$ld_branch" >/dev/null 2>&1; then
+        ld_files=$(git -C "$ld_tree" diff --name-only --diff-filter=U | tr '\n' ' ' | sed 's/ $//')
+        git -C "$ld_tree" rebase --abort >/dev/null 2>&1 || :
+        echo "crew: rebasing $ld_hash onto origin/$ld_branch conflicted${ld_files:+ in $ld_files}; aborted, the owner is told, and the commit stays as it was" >&2
+        {
+            echo "I committed $ld_hash \"$ld_subject\" in $ld_tree, and rebasing onto origin/$ld_branch conflicted${ld_files:+ in: $ld_files}."
+            echo "I ran git rebase --abort, so the commit is still there as $ld_hash, unpushed, and the lock is released."
+            echo "Tell me what to do."
+        } | crew_send "$ld_who" owner "Question: rebase of $ld_hash conflicted" >/dev/null
+        return 1
+    fi
+    ld_before=$(git -C "$ld_tree" rev-parse --short ORIG_HEAD 2>/dev/null) || ld_before=$ld_hash
+    ld_hash=$(git -C "$ld_tree" rev-parse --short HEAD)
+    [ -n "$ld_check" ] || return 0
+    if ld_out=$(cd "$ld_tree" && sh -c "$ld_check" 2>&1 </dev/null); then
+        return 0
+    fi
+    echo "crew: the check failed after rebasing $ld_before to $ld_hash, so nothing was pushed: $ld_check" >&2
+    printf '%s\n' "$ld_out" | tail -n 20 | sed 's/^/  /' >&2
+    {
+        echo "I committed $ld_before \"$ld_subject\" in $ld_tree and rebased it onto origin/$ld_branch as $ld_hash, and the check failed on the rebased tree: $ld_check"
+        echo "Nothing was pushed; the rebased commit $ld_hash stays as HEAD (before the rebase: $ld_before), and the lock is released."
+        echo
+        printf '%s\n' "$ld_out" | tail -n 20
+    } | crew_send "$ld_who" owner "Question: check failed after rebasing $ld_before to $ld_hash" >/dev/null
     return 1
 }
 
