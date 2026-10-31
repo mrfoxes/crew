@@ -180,10 +180,93 @@ crew_unread() {
     [ "$count" -gt 0 ] || echo "No new messages for $me."
 }
 
+# Prints the last <count> messages (5 when not given), whole, in order.
+crew_log() {
+    crew_count "${1:-5}" "crew log [count]" || return 2
+    dir=$(crew_dir) || return 1
+    for n in $(ls "$dir/seq" | sort -n | tail -n "${1:-5}"); do
+        printf '\n'
+        cat "$dir/seq/$n"
+    done
+}
+
+# Prints the messages numbered <number>..., whole, as they were sent.
+crew_show() {
+    if [ $# -lt 1 ]; then
+        echo "usage: crew show <number>..." >&2
+        return 2
+    fi
+    dir=$(crew_dir) || return 1
+    for n in "$@"; do
+        crew_count "$n" "crew show <number>..." || return 2
+        n=$(printf '%s' "$n" | sed 's/^0*//')
+        if [ ! -f "$dir/seq/${n:-0}" ]; then
+            echo "crew: there is no message $n" >&2
+            return 1
+        fi
+        printf '\n'
+        cat "$dir/seq/$n"
+    done
+}
+
+# Writes <name>'s <kind> (status or report) from stdin to status/<name>.md
+# or reports/<name>.md and prints the path: a command, so an agent's sandbox
+# needs no leave to write outside its tree.
+crew_write() {
+    kind=$1
+    if [ $# -ne 2 ]; then
+        echo "usage: crew $kind <name>, the text on stdin" >&2
+        return 2
+    fi
+    crew_name "$2" || return 2
+    dir=$(crew_dir) || return 1
+    case "$kind" in
+    status) file=$dir/status/$2.md ;;
+    *) file=$dir/reports/$2.md ;;
+    esac
+    [ ! -t 0 ] || echo "crew: type the $kind, then press ctrl-d" >&2
+    cat >"$file"
+    echo "$file"
+}
+
+# Puts the session's stream, cursors, statuses, reports, and wake claims
+# under archive/<date and time>/ and starts the stream over, keeping the
+# plan, the rules, the project, the lock, and the panes. Not under a relay,
+# whose count would go on from the old stream.
+crew_archive() {
+    dir=$(crew_dir) || return 1
+    if crew_relay_alive "$dir"; then
+        echo "crew: a relay runs; stop it before the archive" >&2
+        return 1
+    fi
+    if [ -z "$(find "$dir/messages" "$dir/status" "$dir/reports" -type f | head -n 1)" ]; then
+        echo "crew: nothing to archive"
+        return
+    fi
+    to=$dir/archive/$(date '+%Y-%m-%d-%H%M%S')
+    mkdir -p "$to"
+    for d in messages seq cursors status reports; do
+        mv "$dir/$d" "$to/"
+        mkdir "$dir/$d"
+    done
+    rm -rf "$dir"/tmp/wake.* "$dir/relay.last"
+    echo "$to"
+}
+
+# The time, for a line of a log the owner reads.
+crew_stamp() {
+    date '+%H:%M:%S'
+}
+
 # When <file> was last written, in seconds since the epoch: GNU stat takes
 # -c, BSD stat -f (where -c is an error; on GNU, -f reports the file system).
 crew_mtime() {
     stat -c %Y "$1" 2>/dev/null || stat -f %m "$1"
+}
+
+# How long ago <file> was last written, in whole minutes.
+crew_age() {
+    echo $((($(date +%s) - $(crew_mtime "$1")) / 60))
 }
 
 # The push lock: one of the crew lands at a time.
@@ -200,7 +283,7 @@ crew_lock() {
         return
     fi
     held=$(cat "$dir/lock/owner" 2>/dev/null || echo "someone")
-    age=$((($(date +%s) - $(crew_mtime "$dir/lock")) / 60))
+    age=$(crew_age "$dir/lock")
     echo "crew: the lock is held by $held, for $age minutes; keep working and retry" >&2
     [ "$age" -lt 10 ] || echo "crew: past 10 minutes it is stale: ask its owner, then 'crew unlock --force'" >&2
     return 1
@@ -232,7 +315,8 @@ crew_board() {
     dir=$(crew_dir) || return 1
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue
-        echo "== $(basename "$f" .md) ($(cat "$dir/panes/$(basename "$f" .md)" 2>/dev/null || echo "no pane"))"
+        who=$(basename "$f" .md)
+        echo "== $who ($(cat "$dir/panes/$who" 2>/dev/null || echo "no pane"), $(crew_age "$f") min ago)"
         cat "$f"
         echo
     done

@@ -36,14 +36,14 @@ crew unread <you>
 - `owner` is for what only the owner can decide; it reaches them as a desktop
   notification. Never wait for the answer: take other work meanwhile.
 - Run `crew unread <you>` at every step boundary, and before and after every
-  push.
+  push. To read a message again, `crew show 0012`; the last few, `crew log`.
 
 ## Status
 
-Keep `status/<you>.md` in the crew's directory true, rewritten at every
-step:
+Keep your status true, rewritten at every step:
 
 ```
+crew status <you> <<'EOF'
 Agent: <you>
 Start: 21:45  End: 22:45
 Issue: what you are on, and the step
@@ -51,9 +51,11 @@ Files: every path you are editing, new ones too
 Pushed: hash and subject, CI pending, green, or red
 Next: the next step
 Blocked on: nothing, or what
+EOF
 ```
 
-`crew board` shows every status, the lock, the latest messages, and CI.
+`crew board` shows every status with its age, the lock, the latest messages,
+and CI.
 
 ## One working tree, many hands
 
@@ -102,7 +104,9 @@ fix), or one line saying it is clean.
 When your time is up: every commit you pushed is green, every message to you
 is answered, and unfinished work either lands as a step its message calls
 partial or is saved as `reports/<you>.patch` in the crew's directory
-(`git diff -- <your paths>`, new files listed in the report) with your files
-put back by `git checkout HEAD -- <your paths>`, which the gate holds for the
-coordinator. Write `reports/<you>.md` there (commits, issues, reviews given
-and got, what the next crew should do first), then send `all` your `Done:`.
+(`git diff -- <your paths> > "$(crew dir)/reports/<you>.patch"`, new files
+listed in the report) with your files put back by
+`git checkout HEAD -- <your paths>`, which the gate holds for the
+coordinator. Write your report (`crew report <you>`, the text on stdin:
+commits, issues, reviews given and got, what the next crew should do first),
+then send `all` your `Done:`.

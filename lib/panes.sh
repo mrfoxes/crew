@@ -62,6 +62,18 @@ crew_join() {
     crew_unread "$name"
 }
 
+# Forgets <name>'s pane: messages to <name> wait in the stream from now on.
+crew_leave() {
+    if [ $# -ne 1 ]; then
+        echo "usage: crew leave <name>" >&2
+        return 2
+    fi
+    crew_name "$1" || return 2
+    dir=$(crew_dir) || return 1
+    rm -f "$dir/panes/$1"
+    echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
+}
+
 # Every pane crew can see, with the member joined to it.
 crew_panes() {
     dir=$(crew_dir 2>/dev/null) || dir=""
@@ -208,23 +220,32 @@ crew_notify() {
 # their own; while it runs, 'crew send' leaves the waking to it.
 crew_relay() {
     dir=$(crew_dir) || return 1
-    if crew_relay_alive "$dir"; then
-        echo "crew: a relay runs already (pid $(cat "$dir/relay.pid"))" >&2
-        return 1
-    fi
-    # Messages sent before now were woken by their senders.
-    last=$dir/relay.last
-    ls "$dir/seq" | sort -n | tail -n 1 >"$last"
+    crew_relay_start "$dir" || return 1
     # A signal ends the loop, not just the sleep it interrupts.
     trap 'rm -f "$dir/relay.pid"' EXIT
     trap exit INT TERM
-    echo "relay: waking for $dir"
+    echo "$(crew_stamp) relay: waking for $dir"
     while :; do
-        # Rewritten every second: its age tells crew send whether a relay runs.
-        echo $$ >"$dir/relay.pid"
-        crew_relay_step "$dir" "$last"
+        crew_relay_beat "$dir"
         sleep 1
     done
+}
+
+# Gets a relay for <dir> ready: refuses while one runs, and notes the last
+# number sent, since the messages before now were woken by their senders.
+crew_relay_start() {
+    if crew_relay_alive "$1"; then
+        echo "crew: a relay runs already (pid $(cat "$1/relay.pid"))" >&2
+        return 1
+    fi
+    ls "$1/seq" | sort -n | tail -n 1 >"$1/relay.last"
+}
+
+# One beat of the relay for <dir>: the heartbeat, whose age tells crew send
+# whether a relay runs, then a step.
+crew_relay_beat() {
+    echo $$ >"$1/relay.pid"
+    crew_relay_step "$1" "$1/relay.last"
 }
 
 # One step of the relay: wakes the recipients of every message past the
@@ -244,7 +265,7 @@ crew_relay_step() {
         from=$(crew_field "$f" From)
         to=$(crew_field "$f" To)
         crew_wake "$dir" "$n" "$from" "$to" "$(sed -n "1s/^# [0-9]*\. $from to $to: //p" "$f")"
-        printf 'relay: %04d from %s to %s\n' "$n" "$from" "$to"
+        printf '%s relay: %04d from %s to %s\n' "$(crew_stamp)" "$n" "$from" "$to"
     done
 }
 

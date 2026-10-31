@@ -49,13 +49,21 @@ its nearest ancestor.
 While they work:
 
 ```
-crew board                  # statuses, push lock, latest messages, git, CI
+crew board                  # statuses with their age, push lock, latest messages, git, CI
+crew log 3                  # the last 3 messages, whole
+crew show 12                # message 0012
 crew peek codex 20          # the last 20 lines of codex's pane
 crew poke codex "<line>"    # type a line and press Return
 crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
-crew gate codex claude      # answer their approval prompts, hold the forbidden
-crew relay                  # wake recipients for every sender, from this pane
+crew watch codex claude     # answer their prompts and wake recipients, from this pane
+crew gate codex claude      # the first half of watch: answer prompts, hold the forbidden
+crew relay                  # the other half: wake recipients for every sender
 ```
+
+At the end, `crew archive` puts the stream, the cursors, the statuses, and
+the reports under `archive/<date and time>/` and starts the stream over,
+keeping the plan, the rules, and the panes; `crew leave codex` forgets a
+pane you closed; `crew version` says which crew this is.
 
 `crew send codex claude "Review: ..."` posts message `0012-codex-to-claude-review.md`
 and types one line into claude's pane: `crew: message 0012 from codex. Run:
@@ -82,11 +90,11 @@ relay claim it with `tmp/wake.NNNN`, and whoever claims first wakes.
 ## The gate
 
 `crew gate <name>...` reads their panes every two seconds and answers the
-approval prompts it recognises, printing one line for each:
+approval prompts it recognises, printing one line for each, with the time:
 
 ```
-approved codex: cargo test --test editors
-HOLD codex (git +reset): git reset --hard
+21:45:03 approved codex: cargo test --test editors
+21:47:10 HOLD codex (git +reset): git reset --hard
 ```
 
 It recognises Codex's "Would you like to run the following command?" and
@@ -99,8 +107,8 @@ prompt. Antigravity 1.4.11 with `toolPermission: always-proceed` asks for
 nothing but trust, so the gate has nothing to approve for it. Right before
 it presses, the gate reads the pane again and presses only for the same
 prompt; a screen it has answered is not answered again until the pane
-redraws. Run it under a
-watcher that shows you each line, and keep in mind what it means: an
+redraws. `crew watch <name>...` is the gate and the relay in one pane. Run
+either where you see each line, and keep in mind what a line means: an
 approved command runs with the agent's rights.
 
 ## Where things live
@@ -125,9 +133,10 @@ Claude Code names its project directories); `crew dir` prints it, and
 ```
 README.md                  the plan for this session (optional)
 messages/NNNN-a-to-b-*.md  the stream
-status/<name>.md           what each member is doing now
+status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
-reports/<name>.md          each member's report at the end
+reports/<name>.md          each member's report at the end (crew report)
+archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)
 project                    the project's path
 relay.pid, relay.last      the relay's heartbeat and last number, while one runs

@@ -152,26 +152,55 @@ gate_look() {
         gate_say "$held" "gate: cannot press $key in $name's pane $pane"
         return 0
     }
-    echo "approved $name: $command"
+    echo "$(crew_stamp) approved $name: $command"
     printf '%s' "$screen" >"$answered"
     rm -f "$held"
 }
 
-# Prints <line> unless it is the one already in <file>, and keeps it there.
+# Prints <line>, with the time, unless it is the one already in <file>, and
+# keeps it there.
 gate_say() {
     [ "$2" != "$(cat "$1" 2>/dev/null)" ] || return 0
-    echo "$2"
+    echo "$(crew_stamp) $2"
     printf '%s' "$2" >"$1"
 }
 
 # Watches the panes of <name>... every two seconds and prints one line a
 # prompt:
 #
-#   approved codex: cargo test --test editors
-#   HOLD codex (git +reset): git reset --hard
+#   21:45:03 approved codex: cargo test --test editors
+#   21:47:10 HOLD codex (git +reset): git reset --hard
 #
 # With --dry it answers nothing and says what it would do.
 crew_gate() {
+    gate_setup "$@" || return
+    # A signal ends the loop, not just the sleep it interrupts.
+    trap 'rm -rf "$gate_state"' EXIT
+    trap exit INT TERM
+    while :; do
+        gate_round
+        sleep 2
+    done
+}
+
+# The gate and the relay in one pane: 'crew watch <name>... [--dry]'
+# answers their prompts and wakes the recipients of every message.
+crew_watch() {
+    gate_setup "$@" || return
+    crew_relay_start "$dir" || return 1
+    trap 'rm -rf "$gate_state" "$dir/relay.pid"' EXIT
+    trap exit INT TERM
+    echo "$(crew_stamp) relay: waking for $dir"
+    while :; do
+        crew_relay_beat "$dir"
+        gate_round
+        sleep 2
+    done
+}
+
+# Reads the gate's arguments into $names and $gate_dry, finds the rules and
+# the panes, and makes the state directory $gate_state under the crew's tmp.
+gate_setup() {
     gate_dry=""
     names=""
     for arg in "$@"; do
@@ -181,24 +210,22 @@ crew_gate() {
         esac
     done
     if [ -z "$names" ]; then
-        echo "usage: crew gate <name>... [--dry]" >&2
+        echo "usage: crew gate <name>... [--dry], or crew watch the same" >&2
         return 2
     fi
     dir=$(crew_dir) || return 1
     gate_rules=$dir/forbid
     [ -f "$gate_rules" ] || gate_rules=$CREW_HOME/share/forbid
     gate_state=$(mktemp -d "$dir/tmp/gate.XXXXXX") || return 1
-    # A signal ends the loop, not just the sleep it interrupts.
-    trap 'rm -rf "$gate_state"' EXIT
-    trap exit INT TERM
     mkdir -p "$gate_state/held" "$gate_state/answered" "$gate_state/pane"
     for name in $names; do
         crew_pane "$name" >"$gate_state/pane/$name" || return 1
     done
-    while :; do
-        for name in $names; do
-            gate_look "$name" "$(cat "$gate_state/pane/$name")"
-        done
-        sleep 2
+}
+
+# One look at every pane the gate watches.
+gate_round() {
+    for name in $names; do
+        gate_look "$name" "$(cat "$gate_state/pane/$name")"
     done
 }

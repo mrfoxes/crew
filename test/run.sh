@@ -13,6 +13,8 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 export CREW_WAKE=0
+# Every line of a log carries the time: one time here.
+crew_stamp() { echo 12:00:00; }
 
 passed=0
 failed=0
@@ -177,21 +179,21 @@ term_read() {
 term_key() { echo "pressed $2"; }
 show codex-run
 check "gate approves" "pressed y
-approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
 check "gate answers a screen once" "" "$(gate_look codex tmux:%1)"
 show codex-idle
 check "gate idle" "" "$(gate_look codex tmux:%1)"
 show codex-run
 check "gate approves again after a redraw" "pressed y
-approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
 show codex-wrapped
-check "gate holds the wrapped stash" "HOLD codex (git +(stash|restore|clean|rebase|pull|merge|checkout|switch|cherry-pick|am)( |\$)): cd /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess && git sta sh push -m wip" "$(gate_look codex tmux:%1)"
+check "gate holds the wrapped stash" "12:00:00 HOLD codex (git +(stash|restore|clean|rebase|pull|merge|checkout|switch|cherry-pick|am)( |\$)): cd /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess && git sta sh push -m wip" "$(gate_look codex tmux:%1)"
 check "gate says a hold once" "" "$(gate_look codex tmux:%1)"
 show claude-fetch
-check "gate holds a fetch" "HOLD claude (not a command): Do you want to allow Claude to fetch this content? ❯ 1. Yes 2. Yes, and don't ask again for example.com 3. No, and tell Claude what to do differently (esc)" "$(gate_look claude tmux:%2)"
+check "gate holds a fetch" "12:00:00 HOLD claude (not a command): Do you want to allow Claude to fetch this content? ❯ 1. Yes 2. Yes, and don't ask again for example.com 3. No, and tell Claude what to do differently (esc)" "$(gate_look claude tmux:%2)"
 gate_dry=--dry
 show claude-run
-check "gate dry" "would approve claude: touch /private/tmp/crew-fixture-touch" "$(gate_look claude tmux:%2)"
+check "gate dry" "12:00:00 would approve claude: touch /private/tmp/crew-fixture-touch" "$(gate_look claude tmux:%2)"
 # The press waits for a second read: the same prompt is answered, one gone
 # in between is not.
 gate_dry=""
@@ -201,7 +203,7 @@ check "gate presses nothing for a prompt gone" "" "$(gate_look codex tmux:%1)"
 rm -f "$gate_state/answered/codex"
 show codex-run codex-run
 check "gate presses for the same prompt" "pressed y
-approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
 
 # The stream: init, numbering under contention, routing, and the lock.
 git init -q "$tmp/repo"
@@ -271,7 +273,7 @@ check "unlock" "lock released" "$(crew_unlock codex)"
 # The board, and joining with a pane given.
 printf 'Agent: codex\nIssue: #1\n' >"$dir/status/codex.md"
 board=$(crew_board 3)
-check "board status" "== codex (no pane)" "$(printf '%s\n' "$board" | grep -x '== codex (no pane)')"
+check "board status" "== codex (no pane, 0 min ago)" "$(printf '%s\n' "$board" | grep -x '== codex (no pane, 0 min ago)')"
 check "board lock" "== lock: free" "$(printf '%s\n' "$board" | grep -x '== lock: free')"
 check "board messages" "3" "$(printf '%s\n' "$board" | grep -c '^00[0-9][0-9]-')"
 check "board wants a count" "2" "$(crew_board three >/dev/null 2>&1; echo $?)"
@@ -315,7 +317,7 @@ n=$(number "$f")
 echo "$((n - 1))" >"$tmp/relay.last"
 nn=$(printf '%04d' "$n")
 check "relay step wakes the new message" "tmux:%7 <- crew: message $nn from codex. Run: crew unread claude
-relay: $nn from codex to claude" "$(crew_relay_step "$dir" "$tmp/relay.last")"
+12:00:00 relay: $nn from codex to claude" "$(crew_relay_step "$dir" "$tmp/relay.last")"
 check "relay step moves on" "$n" "$(cat "$tmp/relay.last")"
 check "relay step wakes nothing twice" "" "$(crew_relay_step "$dir" "$tmp/relay.last")"
 touch -t 202001010000 "$dir/relay.pid"
@@ -326,6 +328,40 @@ echo body | crew_send codex claude "Heads-up: silent" >/dev/null
 check "relay step leaves woken and silent messages alone" "" "$(crew_relay_step "$dir" "$tmp/relay.last")"
 check "relay step still moves on" "$((n + 2))" "$(cat "$tmp/relay.last")"
 rm -f "$dir/relay.pid"
+
+# Reading the stream again: the last few, or one by number.
+check "log" "3" "$(crew_log 3 | grep -c '^# ')"
+check "log ends with the last" "$((n + 2))" "$(crew_log 1 | sed -n 's/^# \([0-9]*\)\..*/\1/p' | sed 's/^0*//')"
+check "log wants a count" "2" "$(crew_log five >/dev/null 2>&1; echo $?)"
+check "show" "# 0009. agy to claude: Question: which allocator?" "$(crew_show 0009 | sed -n 2p)"
+check "show two" "2" "$(crew_show 9 10 | grep -c '^# ')"
+check "show a missing one" "1" "$(crew_show 9999 >/dev/null 2>&1; echo $?)"
+
+# Status and report from stdin, and the age of a status on the board.
+check "status" "$dir/status/agy.md" "$(printf 'Agent: agy\nNext: nothing\n' | crew_write status agy)"
+check "status written" "Next: nothing" "$(sed -n 2p "$dir/status/agy.md")"
+check "board shows the age" "1" "$(crew_board 1 | grep -c '^== agy (no pane, 0 min ago)$')"
+check "report" "$dir/reports/agy.md" "$(echo finished | crew_write report agy)"
+check "status wants a name" "2" "$(echo x | crew_write status >/dev/null 2>&1; echo $?)"
+check "gate wants a name" "2" "$(gate_setup --dry >/dev/null 2>&1; echo $?)"
+
+# Leaving, and the archive: the stream starts over; the plan and the panes stay.
+check "leave" "claude has no pane now; messages to claude wait for 'crew unread claude'" "$(crew_leave claude)"
+check "leave forgets the pane" "" "$(cat "$dir/panes/claude" 2>/dev/null)"
+echo plan >"$dir/README.md"
+echo "tmux:%7" >"$dir/panes/claude"
+echo 1 >"$dir/relay.pid"
+check "archive waits for the relay" "1" "$(crew_archive >/dev/null 2>&1; echo $?)"
+rm -f "$dir/relay.pid"
+to=$(crew_archive)
+check "archive" "$dir/archive" "$(dirname "$to")"
+check "archive keeps the messages" "$((n + 2))" "$(ls "$to/messages" | wc -l | tr -d ' ')"
+check "archive keeps the statuses" "2" "$(ls "$to/status" | wc -l | tr -d ' ')"
+check "archive starts the stream over" "" "$(ls "$dir/seq")"
+check "archive keeps the plan and the panes" "plan tmux:%7" "$(cat "$dir/README.md" "$dir/panes/claude" | tr '\n' ' ' | sed 's/ $//')"
+check "archive forgets the wake claims" "" "$(ls -d "$dir"/tmp/wake.* 2>/dev/null)"
+check "nothing to archive" "crew: nothing to archive" "$(crew_archive)"
+check "numbers start over" "0001" "$(basename "$(echo x | crew_send codex claude "Plan: again")" | cut -c1-4)"
 
 printf '%d passed, %d failed\n' "$passed" "$failed"
 [ "$failed" -eq 0 ]
