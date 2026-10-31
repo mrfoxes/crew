@@ -7,18 +7,33 @@ set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
 CREW_HOME=$(dirname "$here")
+# The libraries are checked on their own: following them from every test
+# file would make ShellCheck read them all once a file.
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/store.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/kinds.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/claims.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/term.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/layout.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/clones.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/panes.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/gate.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/doctor.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/cost.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/crewfile.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/up.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/live.sh"
 export CREW_WAKE=0
 # No test notifies the owner; the ones that test notifying fake crew_notify.
@@ -61,6 +76,7 @@ fixture_read() {
     # shellcheck disable=SC2086 # the names, one a word
     set -- $screens
     [ "$i" -le $# ] || i=$#
+    f=""
     eval "f=\$$i"
     echo $((i + 1)) >"$tmp/read.n"
     case "$f" in
