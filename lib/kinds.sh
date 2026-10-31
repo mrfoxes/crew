@@ -93,13 +93,16 @@ kind_record() {
 
 # Whether the screen on stdin shows <kind>'s input line: a line near the
 # bottom, its box drawn or not, that is the kind's idle mark alone or the
-# mark and a space (❯ Try "…", › Ask Codex, >). A kind with no mark, or
-# one crew does not know, never shows it.
+# mark and a space (❯ Try "…", › Ask Codex, >). Claude Code draws a
+# no-break space after its mark, which counts as a space; the screen is
+# read as bytes, the same in every locale. A kind with no mark, or one crew
+# does not know, never shows it.
 kind_drawn() {
     k_mark=$(kind_field "$1" idle)
     [ -n "$k_mark" ] || return 1
-    awk -v m="$k_mark" '
+    LC_ALL=C awk -v m="$k_mark" '
         {
+            gsub(/\302\240/, " ")
             gsub(/│|┃|╭|╮|╰|╯/, "")
             sub(/^[ \t]+/, "")
             sub(/[ \t]+$/, "")
