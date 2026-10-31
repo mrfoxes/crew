@@ -114,16 +114,31 @@ land_files() {
             /^[RC]/ { skip = 1 }'
 }
 
+# Normalizes a relative path: strips leading ./, collapses repeated /,
+# strips /./, and removes a trailing /. so aliased spellings match.
+land_norm() {
+    printf '%s\n' "$1" | awk '{
+        while (sub(/^\.\//, "")) {}
+        gsub(/\/\/+/, "/")
+        while (sub(/\/\.\//, "/")) {}
+        sub(/\/\.$/, "")
+        print $0
+    }'
+}
+
 # Stops a landing on a path outside the project, or when the literal paths
 # have no change, before the check and the lock.
 land_changed() {
     for ld_p in "$@"; do
-        case "${ld_p#./}" in
-        /* | .. | ../* | */../* | */..)
+        ld_path=$(land_norm "$ld_p")
+        case "$ld_path" in
+        "" | . | /* | .. | ../* | */../* | */..)
             echo "crew: $ld_p is not a path inside the project" >&2
             return 1
             ;;
         esac
+        set -- "$@" "$ld_path"
+        shift
     done
     [ -z "$(land_files "$@")" ] || return 0
     echo "crew: none of the paths has a change, so nothing was checked, locked, or committed" >&2
@@ -135,7 +150,7 @@ land_changed() {
 land_claims() {
     claims_root "$ld_tree"
     for ld_p in "$@"; do
-        ld_path=${ld_p#./}
+        ld_path=$(land_norm "$ld_p")
         if claims_is_dir "$ld_path"; then
             ld_sub=$(land_files "$ld_path")
             if [ -z "$ld_sub" ]; then
@@ -147,7 +162,10 @@ land_claims() {
 $ld_sub
 EOF
             fi
-            ld_others=$(claims_all "$ld_dir" "$ld_who" | while read -r ld_w ld_q; do
+            ld_others=$(claims_all "$ld_dir" "$ld_who" | while IFS= read -r ld_line; do
+                [ -n "$ld_line" ] || continue
+                ld_w=${ld_line%% *}
+                ld_q=$(land_norm "${ld_line#* }")
                 ! claims_overlap "$ld_q" "$ld_path" || echo "$ld_w"
             done | sort -u | tr '\n' ' ' | sed 's/ $//; s/ /, /g')
             if [ -n "$ld_others" ]; then
@@ -199,16 +217,18 @@ land_locked() {
 # claim covers what is under it) and on nobody else's.
 land_claimed() {
     claims_root "${ld_tree:-$(crew_project "$1")}"
-    ld_path=${3#./}
+    ld_path=$(land_norm "$3")
     case "$ld_path" in
-    /* | .. | ../* | */../* | */..)
+    "" | . | /* | .. | ../* | */../* | */..)
         echo "crew: $3 is not a path inside the project" >&2
         return 1
         ;;
     esac
     ld_mine=
     while IFS= read -r ld_c; do
-        [ -z "$ld_c" ] || ! claims_covers "$ld_c" "$ld_path" || ld_mine=1
+        [ -n "$ld_c" ] || continue
+        ld_c=$(land_norm "$ld_c")
+        ! claims_covers "$ld_c" "$ld_path" || ld_mine=1
     done <<EOF
 $(claims_paths "$1/status/$2.md" 2>/dev/null)
 EOF
@@ -216,7 +236,10 @@ EOF
         echo "crew: $ld_path is not on $2's Files: line: claim it with crew status, then land" >&2
         return 1
     fi
-    ld_others=$(claims_all "$1" "$2" | while read -r ld_w ld_q; do
+    ld_others=$(claims_all "$1" "$2" | while IFS= read -r ld_line; do
+        [ -n "$ld_line" ] || continue
+        ld_w=${ld_line%% *}
+        ld_q=$(land_norm "${ld_line#* }")
         ! claims_overlap "$ld_q" "$ld_path" || echo "$ld_w"
     done | sort -u | tr '\n' ' ' | sed 's/ $//; s/ /, /g')
     if [ -n "$ld_others" ]; then
@@ -229,11 +252,12 @@ EOF
 # only, with the message file: a file changed beside them stays uncommitted.
 land_commit() {
     for ld_p in "$@"; do
-        if [ -n "$(git --literal-pathspecs -C "$ld_tree" ls-files --others --exclude-standard -- "${ld_p#./}")" ]; then
-            git --literal-pathspecs -C "$ld_tree" add -- "${ld_p#./}" >&2 || return 1
+        ld_path=$(land_norm "$ld_p")
+        if [ -n "$(git --literal-pathspecs -C "$ld_tree" ls-files --others --exclude-standard -- "$ld_path")" ]; then
+            git --literal-pathspecs -C "$ld_tree" add -- "$ld_path" >&2 || return 1
         fi
-        # Each path moves from the front to the back without its ./
-        set -- "$@" "${ld_p#./}"
+        # Each path moves from the front to the back normalized.
+        set -- "$@" "$ld_path"
         shift
     done
     git --literal-pathspecs -C "$ld_tree" commit -q -F "$ld_msg" -- "$@" >&2 || return 1

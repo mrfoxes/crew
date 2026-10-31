@@ -224,9 +224,31 @@ status bob "b.txt"
 echo x2 >dir/x
 check "landing a directory stops when an unclaimed file under it changed" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir)"
 check "it names the unclaimed file under the directory" "1" "$(grep -c "^crew: dir/y is not on ann's Files: line" "$tmp/err")"
-check "none of the directory conflicts ran the check or tried the lock" "no 0" "$([ -e "$tmp/ran" ] && echo yes || echo no) $(waits)"
+status ann "dir//y"
+status bob "dir/y"
+check "an aliased path dir//y stops against another member's dir/y claim" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir//y)"
+check "it says dir/y is also claimed by bob" "1" "$(grep -c '^crew: dir/y is also claimed by bob' "$tmp/err")"
+status ann "dir/./y"
+check "an aliased path dir/./y stops against another member's dir/y claim" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir/./y)"
+status ann "dir/y"
+status bob "dir//y"
+check "landing dir/y stops against another member's aliased dir//y claim" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- dir/y)"
+echo trail >"trailing "
+status ann '"trailing "'
+status bob '"trailing "'
+check "a path with a trailing space stops when another member also claims it" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- "trailing ")"
+check "it says the trailing-space path is also claimed by bob" "1" "$(grep -c '^crew: trailing  is also claimed by bob' "$tmp/err")"
+echo lead >" leading"
+status ann '" leading"'
+status bob '" leading"'
+check "a path with a leading space stops when another member also claims it" "1" "$(land ann -F "$tmp/message" --to bob --check 'echo ran >"$tmp/ran"' -- " leading")"
+check "none of the directory, alias, or space conflicts ran the check or tried the lock" "no 0" "$([ -e "$tmp/ran" ] && echo yes || echo no) $(waits)"
 crew_unlock bob >/dev/null
-rm dir/y
+rm dir/y " leading"
+status ann '"trailing "'
+status bob "b.txt"
+check "a path with a trailing space lands when claimed only by the member" "0" "$(land ann -F "$tmp/message" --to bob -- "trailing ")"
+check "the file with a trailing space is committed" "trailing " "$(git show --name-only --format= HEAD)"
 status ann "dir"
 check "a directory without a trailing slash lands the files under it" "0" "$(land ann -F "$tmp/message" --to bob -- dir)"
 check "the changed file under the directory is committed" "dir/x" "$(git show --name-only --format= HEAD)"
