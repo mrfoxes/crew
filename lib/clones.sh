@@ -71,6 +71,9 @@ clone_ready() {
     else
         clone_make "$c_root" "$c_path" "$c_url" || return 1
     fi
+    # Keep the link when an agent drops CREW_DIR from its tool environment.
+    c_crew=$(cd "$c_dir" && pwd -P) || return 1
+    git -C "$c_path" config --local crew.dir "$c_crew" || return 1
     clone_identity "$c_root" "$c_path"
     clone_caches "$c_root" "$c_path" "$4" >&2
     mkdir -p "$c_dir/clones"

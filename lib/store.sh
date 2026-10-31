@@ -15,8 +15,9 @@ crew_root() {
 }
 
 # The project's .crew: $CREW_DIR, else the nearest .crew at or above the
-# working directory, else the one at the main checkout's root, else the one
-# kept at home for this project (crew init --home). A crew's directory holds
+# working directory, else the clone's local crew.dir setting, else the one
+# at the main checkout's root, else the one kept at home for this project
+# (crew init --home). A crew's directory holds
 # the stream's numbers in seq/: ~/.crew itself, which holds the crews kept at
 # home, is not one.
 crew_dir() {
@@ -33,6 +34,14 @@ crew_dir() {
         [ "$d" = / ] && break
         d=$(dirname "$d")
     done
+    if d=$(git config --local --get crew.dir 2>/dev/null); then
+        if [ -d "$d/seq" ]; then
+            printf '%s\n' "$d"
+            return
+        fi
+        printf 'crew: git config crew.dir points to no initialized crew at %s\n' "$d" >&2
+        return 1
+    fi
     root=$(crew_root)
     for d in "$root/.crew" "$(crew_home_dir "$root")"; do
         if [ -d "$d/seq" ]; then
