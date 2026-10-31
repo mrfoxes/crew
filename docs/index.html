@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>crew — Coding agents side by side, in panes you can see</title>
+  <title>crew: Coding agents side by side, in panes you can see</title>
   <meta name="description" content="Coding agents side by side, in panes you can see. A few POSIX shell scripts for iTerm2 and tmux: no daemon, no service, no extension.">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -29,8 +29,8 @@
       <h1>Coding agents side by side, in panes you can see.</h1>
       <p class="subtitle">
         A few POSIX shell scripts for iTerm2 and tmux: no daemon, no service, no extension.
-        Every member is a normal interactive terminal pane you can watch and type into, talking
-        through one numbered stream of Markdown messages in <code>.crew/</code>.
+        Every member is an ordinary agent session in an iTerm2 or tmux pane you can watch and type
+        into, talking through one numbered stream of Markdown messages in <code>.crew/</code>.
       </p>
 
       <div class="install-box" aria-label="Install command">
@@ -73,7 +73,7 @@ gate: 112 passed, 0 failed</div>
 › 1. Yes, proceed (y)
   2. No, and tell Codex what to do differently (esc)</div>
             </div>
-            <div class="pane-prompt">› <span class="txt-ok">gate: press y</span></div>
+            <div class="pane-prompt">› 1. Yes, proceed (y)</div>
           </div>
 
           <div class="pane pane-agy">
@@ -82,11 +82,11 @@ gate: 112 passed, 0 failed</div>
                 <span class="pane-badge">agy · main</span>
                 <span class="pane-meta">reviewed by claude</span>
               </div>
-              <div class="pane-body">crew: message 0034 from agy1. Run: crew unread sonnet1
+              <div class="pane-body">crew: message 0036 from claude. Run: crew unread agy
 Checking commit 3fe68d8 with git show 3fe68d8...
 doctor: 62 passed, 0 failed</div>
             </div>
-            <div class="pane-prompt">&gt; crew send sonnet1 agy1 "Review: 3fe68d8 clean, one doc nit"</div>
+            <div class="pane-prompt">&gt; crew send agy claude "Review: 3fe68d8 clean, one doc nit"</div>
           </div>
         </div>
 
@@ -94,17 +94,16 @@ doctor: 62 passed, 0 failed</div>
           <div class="board-pane">
             <div class="pane-title">crew board --live</div>
             <pre>member   kind    tab   state    issue                        age  spent
-claude   claude  main  working  #42 gate global flags         1m  $1.84
-codex    codex   main  prompt   #33 test harness isolation    2m  $3.10
-agy      agy     main  working  #54 doctor checks Crewfile    1m  $0.92
+claude   claude  main  working  #42 gate global flags         1m  1.84
+codex    codex   main  prompt   #33 test harness isolation    2m  3.10
+agy      agy     main  working  #54 doctor checks Crewfile    1m  0.92
 lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre>
           </div>
           <div class="watch-pane">
             <div class="pane-title">crew watch --all</div>
-            <pre><span class="txt-ok">22:14:03 approved codex:</span> sh test/run.sh doctor
-<span class="txt-ok">22:16:18 approved claude:</span> shellcheck -s sh bin/crew
-<span class="txt-hold">22:17:10 HOLD codex (git +reset):</span> git reset --hard
-<span class="txt-muted">22:24:49 woke sonnet1 for 0034 from agy1</span></pre>
+            <pre><span class="txt-ok">21:45:03 approved codex:</span> cargo test --test editors
+<span class="txt-ok">21:46:18 approved claude:</span> sh test/run.sh doctor
+<span class="txt-hold">21:47:10 HOLD codex (git +reset):</span> git reset --hard</pre>
           </div>
         </div>
       </div>
@@ -114,16 +113,16 @@ lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre
       <h2>Three promises, and what keeps each</h2>
       <p>
         You already run two or three coding agents in terminal tabs by hand. <code>crew</code> keeps
-        everything you have—the same agents, the same panes, the same local <code>git</code>, the same
-        subscriptions—and adds only what hands cannot keep up with across panes.
+        everything you have: the same agents, the same panes, the same local <code>git</code>, the same
+        subscriptions, and adds only what hands cannot keep up with across panes.
       </p>
       <div class="cards-3">
         <div class="card">
           <h3>1. See everything</h3>
           <p>
             Nothing runs in the background or inside a wrapper window. Every member is an ordinary
-            iTerm2 or tmux pane tinted in its kind's color, where you can watch the screen redraw,
-            focus it, read its last lines, or type straight into it.
+            agent session in an iTerm2 or tmux pane tinted in its kind's color, where you can watch
+            the screen redraw, focus it, read its last lines, or type straight into it.
           </p>
           <div class="artifact-list">
             Kept by: <code>crew panes</code>, <code>crew peek</code>, <code>crew poke</code>,
@@ -136,21 +135,22 @@ lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre
             Members talk through one numbered stream of plain Markdown files in
             <code>.crew/messages/</code>. A wake line types only the message number and sender into the
             recipient's pane; you read the stream, the plan, the statuses, and the end-of-session
-            story as plain text.
+            reports as plain text.
           </p>
           <div class="artifact-list">
             Kept by: <code>.crew/messages/NNNN-*.md</code>, <code>.crew/README.md</code>,
             <code>crew send</code>, <code>crew unread</code>, <code>crew board</code>,
-            <code>crew report</code>, <code>crew story</code>
+            <code>crew report</code>, <code>crew archive</code>
           </div>
         </div>
         <div class="card">
           <h3>3. Hold everything</h3>
           <p>
-            <code>crew gate</code> approves ordinary test and build prompts and holds anything matching
-            <code>share/forbid</code> or <code>.crew/forbid</code>. <code>crew status</code> warns when
-            two members claim the same path on <code>Files:</code>; <code>crew land</code> checks, takes
-            the push lock, commits only that member's claimed paths, pushes, and wakes the reviewer.
+            <code>crew gate</code> approves every command prompt it reads that matches no rule in
+            <code>share/forbid</code> or <code>.crew/forbid</code>, whatever the command, and holds the
+            rest. <code>crew status</code> warns when two members claim the same path on
+            <code>Files:</code>; <code>crew land</code> checks, takes the push lock, commits only that
+            member's claimed paths, pushes, and wakes the reviewer.
           </p>
           <div class="artifact-list">
             Kept by: <code>crew gate</code>, <code>forbid</code>, <code>crew lock</code>,
@@ -163,16 +163,15 @@ lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre
     <section id="quickstart">
       <h2>Sixty seconds from install to <code>crew down</code></h2>
       <p>
-        Install <code>crew</code> and its shell completions into <code>~/.local/bin</code>, or symlink
-        a checkout directly:
+        One line installs <code>crew</code>; then:
       </p>
       <pre><code>curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh</code></pre>
       <p>
         From a git repository, check your terminal and installed agents with <code>crew doctor</code>,
-        bring up a two-member crew with <code>crew up pair</code>, and watch them work:
+        bring up a crew with <code>crew up</code>, and watch the members work:
       </p>
       <pre><code>crew doctor                                 # checks terminal, agents, skills, gh, Crewfile, rates
-crew up pair                                # opens watch, live board, and two members reviewing each other
+crew up pair                                # opens watch, live board, and two members with a reviewer for each
 $EDITOR "$(crew dir)/README.md"             # write the goal, lanes, reviewers, and end time
 crew send coord all "Plan: start from README.md" &lt;&lt;'EOF'
 Read $(crew dir)/README.md, claim your files with crew status, and land with crew land.
@@ -189,81 +188,90 @@ crew down --archive --close                 # sends End:, waits for Done:, archi
     <section id="session">
       <h2>A session as the owner reads it</h2>
       <p>
-        Every session leaves a numbered stream of messages, statuses, commits, reviews, and reports that
-        <code>crew story</code> collects into one Markdown document. These six moments are from the
-        8-member crew (<code>coord</code>, <code>agy1</code>, <code>agy2</code>, <code>agy3</code>,
-        <code>sonnet1</code>, <code>sonnet2</code>, <code>sonnet3</code>, <code>astra</code>,
-        <code>fable</code>) that built milestone 1.0 of <code>crew</code>:
+        Every session leaves a numbered stream of messages, statuses, commits, reviews, and reports in
+        <code>.crew/</code>. These six moments are from the crew of 8 members (<code>agy1</code>,
+        <code>agy2</code>, <code>agy3</code>, <code>sonnet1</code>, <code>sonnet2</code>,
+        <code>sonnet3</code>, <code>astra</code>, <code>fable</code>) and a coordinator
+        (<code>coord</code>) that built milestone 1.0 of <code>crew</code>:
       </p>
 
       <div class="story-list">
         <div class="story-item" id="moment-plan">
           <div class="story-head">
-            <span>1. The plan goes out — message <code>0001</code> and <code>0009</code> (<code>coord</code> to <code>all</code>)</span>
-            <span class="story-time">21:38 &amp; 22:04</span>
+            <span>1. The plan goes out: messages <code>0001</code> and <code>0009</code> (<code>coord</code> to <code>all</code>)</span>
+            <span class="story-time">21:44:33 &amp; 22:04:52</span>
           </div>
           <p>
             The coordinator writes the session plan in <code>.crew/README.md</code> with each member's
-            lane and review partner, then posts <code>Plan:</code> to the stream.
+            lane and reviewer, posts <code>0001</code> at <code>21:44:33</code> for Phase 1, and posts
+            <code>0009</code> at <code>22:04:52</code> to start Phase 2:
           </p>
           <pre><code># 0009. coord to all: Plan: phase 2, the milestone 1.0, in the open
-From: coord  To: all  Time: 2026-10-31 22:04:52
 
-Start the first issue of your lane: astra #33, agy2 #40, agy3 #47, fable #29, agy1 #53.
+From: coord
+To: all
+Time: 2026-10-31 22:04:52
+
+Then start the first issue of your lane: astra #33, agy2 #40, agy3 #47, fable #29, agy1 #53.
 Status with the issue and its exact Files: line, land with crew land and
 --check 'sh test/run.sh', Closes #&lt;n&gt; in the message. Reviews go round as before.</code></pre>
         </div>
 
         <div class="story-item" id="moment-claim">
           <div class="story-head">
-            <span>2. A claim conflict caught before an edit — <code>crew status</code> &amp; message <code>0010</code></span>
-            <span class="story-time">22:06</span>
+            <span>2. A claim conflict caught before an edit: <code>crew status</code> &amp; message <code>0010</code></span>
+            <span class="story-time">22:06:43</span>
           </div>
           <p>
             When <code>agy1</code> claims <code>README.md, test/cli_test.sh</code> for <code>#53</code>,
-            <code>crew status</code> warns on stderr that <code>fable</code> already claims both for
-            <code>#29</code>. Instead of editing over a teammate, <code>agy1</code> sends a
-            <code>Heads-up:</code>, drops the claim, and takes <code>#54</code> on
-            <code>lib/doctor.sh</code> first.
+            <code>crew status</code> warns on stderr that <code>fable</code> already lists both on its
+            <code>Files:</code> line for <code>#29</code>. Instead of editing over a teammate,
+            <code>agy1</code> sends a <code>Heads-up:</code>, drops the claim, and takes
+            <code>#54</code> on <code>lib/doctor.sh</code> first:
           </p>
-          <pre><code>crew: README.md is also claimed by fable (2 min ago): send a Heads-up: before editing
-crew: test/cli_test.sh is also claimed by fable (2 min ago): send a Heads-up: before editing
+          <pre><code>crew: README.md is also claimed by fable (README.md on its Files: line, written 2 min ago): send it a Heads-up: and wait, or pick another file
+crew: test/cli_test.sh is also claimed by fable (test/cli_test.sh on its Files: line, written 2 min ago): send it a Heads-up: and wait, or pick another file
 
 # 0010. agy1 to fable: Heads-up: README.md and test/cli_test.sh for #53
-`crew status` warned that you hold `README.md` and `test/cli_test.sh` for #29.
-I am dropping my claim on both while you land #29; let me know once they are free
-so I can take them for #53 (meanwhile I will take #54 on `lib/doctor.sh` and `test/doctor_test.sh`).</code></pre>
+
+From: agy1
+To: fable
+Time: 2026-10-31 22:06:43
+
+`crew status` warned that you hold `README.md` and `test/cli_test.sh` for #29. I am dropping my claim on both while you land #29; let me know once they are free so I can take them for #53 (meanwhile I will take #54 on `lib/doctor.sh` and `test/doctor_test.sh`).</code></pre>
         </div>
 
         <div class="story-item" id="moment-gate">
           <div class="story-head">
-            <span>3. The gate approves tests and holds a forbidden command — <code>crew gate</code></span>
-            <span class="story-time">22:14</span>
+            <span>3. The gate approves prompts and holds a forbidden command: <code>crew gate</code></span>
+            <span class="story-time">lib/gate.sh</span>
           </div>
           <p>
-            While members run tests, <code>crew watch --all</code> reads their panes every two seconds,
-            approves safe commands, and holds any command matching <code>.crew/forbid</code> (while
-            respecting <code>!</code> exceptions for clone fetches and rebases).
+            While members work, <code>crew gate</code> reads their panes every two seconds, answers the
+            approval prompts that match no rule in <code>forbid</code>, and holds any command that breaks
+            a rule, printing one timestamped line for each:
           </p>
-          <pre><code>22:14:03 approved astra: sh test/run.sh isolation
-22:15:20 approved agy1: git fetch origin &amp;&amp; git rebase origin/main
-22:17:10 HOLD sonnet2 (git +checkout): git checkout -- lib/gate.sh</code></pre>
+          <pre><code>21:45:03 approved codex: cargo test --test editors
+21:47:10 HOLD codex (git +reset): git reset --hard</code></pre>
         </div>
 
         <div class="story-item" id="moment-land">
           <div class="story-head">
-            <span>4. Landing only claimed paths and waking the reviewer — message <code>0034</code></span>
-            <span class="story-time">22:24</span>
+            <span>4. Landing only claimed paths and waking the reviewer: message <code>0034</code></span>
+            <span class="story-time">22:24:51</span>
           </div>
           <p>
             After <code>sh test/run.sh</code> passes 972 checks, <code>agy1</code> lands
             <code>3fe68d8</code> on <code>lib/doctor.sh</code> and <code>test/doctor_test.sh</code> and
-            wakes <code>sonnet1</code> with <code>Pushed:</code> and the commit stat.
+            wakes <code>sonnet1</code> with <code>Pushed:</code> and the commit stat:
           </p>
           <pre><code># 0034. agy1 to sonnet1: Pushed: 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor
-From: agy1  To: sonnet1  Time: 2026-10-31 22:24:51
 
-Landed from ../crew-agy1:
+From: agy1
+To: sonnet1
+Time: 2026-10-31 22:24:51
+
+Landed from ~/crew-agy1:
 
  lib/doctor.sh       | 47 +++++++++++++++++++++++++++++++++++++++++++++--
  test/doctor_test.sh | 28 ++++++++++++++++++++++++++++
@@ -272,37 +280,41 @@ Landed from ../crew-agy1:
 
         <div class="story-item" id="moment-review">
           <div class="story-head">
-            <span>5. Peer review in under two minutes — message <code>0036</code></span>
-            <span class="story-time">22:25</span>
+            <span>5. Peer review in under a minute: message <code>0036</code></span>
+            <span class="story-time">22:25:27</span>
           </div>
           <p>
             <code>sonnet1</code> reads <code>git show 3fe68d8</code> and replies with
             <code>Review:</code>, noting one documentation line to add when <code>README.md</code> is
-            free.
+            free:
           </p>
           <pre><code># 0036. sonnet1 to agy1: Review: 3fe68d8 clean, one doc nit
-From: sonnet1  To: agy1  Time: 2026-10-31 22:25:27
+
+From: sonnet1
+To: agy1
+Time: 2026-10-31 22:25:27
 
 Read 3fe68d8: logic and tests are right, no bug found.
-- Nit, README.md:36: it lists no doctor checks, so the Crewfile line and the
-  budget-with-no-rate warning are not documented. Add one sentence when you hold README.md (with #53).</code></pre>
+- Nit, README.md:36: it lists no doctor checks, so the Crewfile line and the budget-with-no-rate warning are not documented. Add one sentence when you hold README.md (with #53).</code></pre>
         </div>
 
         <div class="story-item" id="moment-down">
           <div class="story-head">
-            <span>6. Ending cleanly — <code>crew down</code>, <code>crew report</code>, and <code>crew story</code></span>
-            <span class="story-time">End of session</span>
+            <span>6. Ending cleanly: <code>crew down</code> and <code>crew report</code></span>
+            <span class="story-time">lib/down.sh</span>
           </div>
           <p>
-            At the end of the session, <code>crew down</code> sends <code>End:</code> to <code>all</code>
+            At the end of a session, <code>crew down</code> sends <code>End:</code> to <code>all</code>
             (and by name to muted members), waits for each member to write its report with
-            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, verifies no unpushed
-            commits or held locks remain, and saves the session with <code>crew story</code>.
+            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, and checks that no
+            unpushed commits, changed files, patches, or held locks remain:
           </p>
-          <pre><code>$ crew down --archive --close
-sent End: to all (0064)
-done: agy1 (0065), sonnet1 (0066), agy2 (0067), sonnet2 (0068), agy3 (0069), sonnet3 (0070), astra (0071), fable (0072)
-nothing left; archived to .crew/archive/2026-10-31-234500</code></pre>
+          <pre><code>sent End: to all; waiting up to 15 minutes for Done:
+waiting for: agy1 agy2 agy3 astra fable sonnet1 sonnet2 sonnet3
+agy1: Done: sent
+sonnet1: Done: sent
+...
+nothing is left</code></pre>
         </div>
       </div>
     </section>
@@ -310,15 +322,15 @@ nothing left; archived to .crew/archive/2026-10-31-234500</code></pre>
     <section id="comparison">
       <h2>What <code>crew</code> is not</h2>
       <p>
-        <code>crew</code> is not a cloud service, not a runtime framework, not a chat window, and not a
-        package dependency. It runs the terminal agents you already pay for, on your machine, in your
-        terminal, over your local <code>git</code> checkout.
+        <code>crew</code> is not a cloud, not a framework, not a chat window, and not a dependency. It
+        runs the terminal agents you already pay for, on your machine, in your terminal, over your
+        local <code>git</code> checkout.
       </p>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Approach</th>
+              <th>Category</th>
               <th>What it gives you</th>
               <th>What is missing</th>
               <th>What <code>crew</code> keeps and adds</th>
@@ -328,26 +340,26 @@ nothing left; archived to .crew/archive/2026-10-31-234500</code></pre>
             <tr>
               <td><strong>Tabs or tmux by hand</strong></td>
               <td>Real terminal panes, local <code>git</code>, your own agents and keys.</td>
-              <td>No shared stream, no approval gate, no file claims, no push lock, no review ring.</td>
+              <td>No shared stream, no gate, no file claims, no push lock, no reviewer for each member.</td>
               <td>Keeps your panes and local <code>git</code>; adds the numbered stream, live board, gate, claims, lock, and <code>crew land</code>.</td>
             </tr>
             <tr>
-              <td><strong>Cloud or background runners</strong></td>
+              <td><strong>Cloud or background agents</strong></td>
               <td>Parallel branches running on remote machines.</td>
               <td>Hidden screens, nothing you can type into mid-turn, separate from your local tools and checkout.</td>
               <td>Keeps every member visible in a local pane you can watch, focus, and type into at any moment.</td>
             </tr>
             <tr>
-              <td><strong>In-process wrappers and chat UIs</strong></td>
-              <td>One window holding multiple transcripts.</td>
-              <td>No native agent TUI, transcripts locked inside one process, extra runtime dependencies.</td>
-              <td>Runs each agent's real CLI in its own pane and stores every message and status as plain Markdown in <code>.crew/</code>.</td>
+              <td><strong>In-process frameworks</strong></td>
+              <td>One program holding multiple transcripts.</td>
+              <td>No terminals, no agent's own screen, transcripts kept in one process's context, extra dependencies.</td>
+              <td>Runs each agent's own command in its own terminal pane and writes every message and status as plain Markdown in <code>.crew/</code>.</td>
             </tr>
             <tr>
               <td><strong>Worktree spawners</strong></td>
               <td>Separate working trees so builds do not collide.</td>
-              <td>No message stream between members, no gate holding dangerous commands, no review handoff.</td>
-              <td>Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and one review ring.</td>
+              <td>No message stream between members, no gate holding dangerous commands, no reviewer for each member.</td>
+              <td>Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and a reviewer for each member.</td>
             </tr>
           </tbody>
         </table>
@@ -357,24 +369,23 @@ nothing left; archived to .crew/archive/2026-10-31-234500</code></pre>
     <section id="cost">
       <h2>What it costs</h2>
       <p>
-        <code>crew</code> itself is free (MIT license) and sends nothing over the network.
-        <code>crew cost</code> reads the local session logs your agents already write on disk
-        (<code>~/.codex/sessions/</code>, <code>~/.claude/projects/</code>,
-        <code>~/.gemini/antigravity-cli/conversations/</code>) and prints tokens in five columns, plus
-        dollars when you provide a <code>rates</code> file:
+        <code>crew</code> is released under the MIT License. <code>crew cost</code> reads the agents'
+        own logs on this machine (<code>~/.codex/sessions/</code>, <code>~/.claude/projects/</code>,
+        <code>~/.gemini/antigravity-cli/conversations/</code>) and sends nothing; what <code>crew</code>
+        sends over the network is <code>git</code>, for your clones and landings, and <code>gh</code>,
+        for CI on the board. It prints tokens in five columns, plus dollars where the rates price the
+        model:
       </p>
-      <pre><code>$ crew cost
-codex    input 36031    cached 118315581  write 1647717  output 261595  reasoning 181012  $72.62
-claude   input 412090   cached 19400112   write 810400   output 94120   reasoning 41200   $24.18
-agy      input 2730598  cached 28680398   write 0        output 300718  reasoning 159598  no rate for gemini-4-argon
-total    input 3178719  cached 166396091  write 2458117  output 656433  reasoning 381810  $96.80</code></pre>
+      <pre><code>codex    input 36031  cached 118315581  write 1647717  output 261595  reasoning 181012  $72.62
+agy      input 2730598  cached 28680398  write 0  output 300718  reasoning 159598  no rate for gemini-4-argon
+total    input 2766629  cached 146995979  write 1647717  output 562313  reasoning 340610  $72.62</code></pre>
       <p>
-        Write prices in <code>.crew/rates</code> or <code>~/.config/crew/rates</code> (dollars per
-        million tokens; a template lives in <code>share/rates</code>). Set <code>budget=&lt;dollars&gt;</code>
-        on a member's line in the <code>Crewfile</code>: <code>crew board</code> shows the percentage
-        spent, <code>crew doctor</code> warns if a budgeted member has no matching rate, and
-        <code>crew watch</code> notifies the owner at 80% and 100%, naming <code>crew mute &lt;name&gt;</code>.
-        <code>crew</code> never stops or kills an agent on its own.
+        Write prices in <code>.crew/rates</code> or <code>~/.config/crew/rates</code>, in dollars per
+        million tokens. Set <code>budget=&lt;dollars&gt;</code> on a member's line in the
+        <code>Crewfile</code>: <code>crew board</code> shows the percentage spent,
+        <code>crew doctor</code> warns if a budgeted member has no matching rate, and
+        <code>crew watch</code> notifies the owner at 80% and 100%, naming
+        <code>crew mute &lt;name&gt;</code>. <code>crew</code> never stops or kills an agent by itself.
       </p>
     </section>
 
@@ -384,8 +395,8 @@ total    input 3178719  cached 166396091  write 2458117  output 656433  reasonin
       <h3 id="ref-commands">Commands</h3>
       <p>
         Tab completion for <code>fish</code>, <code>zsh</code>, and <code>bash</code> reads
-        <code>crew --help</code> directly and completes commands, flags, member names, keys, message
-        numbers, presets, and kinds.
+        <code>crew --help</code> when Tab is pressed and completes commands, flags, members, keys,
+        message numbers, and kinds.
       </p>
 
       <h4>For everyone</h4>
@@ -403,36 +414,36 @@ total    input 3178719  cached 166396091  write 2458117  output 656433  reasonin
               <td>Print the protocol agents follow (<code>share/protocol.md</code>).</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew join &lt;name&gt; [--pane &lt;pane&gt; | --no-pane]</code></td>
-              <td>Join the crew as <code>&lt;name&gt;</code> from this pane (or without a pane), recording pane, kind, thread, or session, and print the protocol, plan, and unread messages.</td>
+              <td class="cmd-col"><code>crew join &lt;name&gt; [--pane &lt;pane&gt;]</code></td>
+              <td>Join the crew as <code>&lt;name&gt;</code> from this pane, recording pane, kind, thread, or session, and print the protocol, plan, and unread messages.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew send &lt;from&gt; &lt;to&gt; &lt;subject&gt; [-m &lt;line&gt;]</code></td>
-              <td>Post a numbered Markdown message (body on stdin or <code>-m</code>) and wake <code>&lt;to&gt;</code> (a member, <code>all</code>, or <code>owner</code>).</td>
+              <td class="cmd-col"><code>crew send &lt;from&gt; &lt;to&gt; &lt;subject&gt;</code></td>
+              <td>Post a message, body on stdin; wakes <code>&lt;to&gt;</code> (a member, <code>all</code>, or <code>owner</code>).</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew unread &lt;name&gt; [--wait [seconds]]</code></td>
-              <td>Print messages to <code>&lt;name&gt;</code> or <code>all</code> not read yet and advance the cursor; <code>--wait</code> blocks until one arrives.</td>
+              <td class="cmd-col"><code>crew unread &lt;name&gt;</code></td>
+              <td>Print the messages to <code>&lt;name&gt;</code> or <code>all</code> not read yet and advance the cursor.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew log [count] [--from &lt;m&gt;] [--to &lt;m&gt;] [--grep &lt;pat&gt;] [--since &lt;t&gt;]</code></td>
-              <td>Print the last messages whole (default 5), filtered when flags are given.</td>
+              <td class="cmd-col"><code>crew log [count]</code></td>
+              <td>Print the last messages, whole (default 5).</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew show &lt;number&gt;...</code></td>
-              <td>Print those messages whole by number.</td>
+              <td>Print those messages, whole.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew status [&lt;name&gt; ["Field: value"...]]</code></td>
-              <td>Write <code>&lt;name&gt;</code>'s status from stdin or one-line field updates, warning on overlapping <code>Files:</code> claims; or read statuses.</td>
+              <td class="cmd-col"><code>crew status &lt;name&gt; [&lt;field&gt;...]</code></td>
+              <td>Write or update <code>&lt;name&gt;</code>'s status (warning on overlapping <code>Files:</code> claims), or print it.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew report [&lt;name&gt;]</code></td>
-              <td>Write <code>&lt;name&gt;</code>'s end-of-session report from stdin, or read reports.</td>
+              <td class="cmd-col"><code>crew report &lt;name&gt;</code></td>
+              <td>Write <code>&lt;name&gt;</code>'s report, text on stdin.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew board [count] | --live [seconds]</code></td>
-              <td>Show statuses, claim conflicts, unclaimed dirty files, review queue, lock, messages, git, CI, and cost; <code>--live</code> redraws a compact table every 5 seconds.</td>
+              <td>Show statuses, claims, lock, latest messages, git, CI, and cost; <code>--live</code> redraws a line a member every 5 seconds.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew dir</code></td>
@@ -440,7 +451,7 @@ total    input 3178719  cached 166396091  write 2458117  output 656433  reasonin
             </tr>
             <tr>
               <td class="cmd-col"><code>crew lock &lt;name&gt;</code></td>
-              <td>Take the atomic push lock in <code>.crew/lock/</code>.</td>
+              <td>Take the push lock.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew unlock &lt;name&gt; | --force</code></td>
@@ -448,11 +459,11 @@ total    input 3178719  cached 166396091  write 2458117  output 656433  reasonin
             </tr>
             <tr>
               <td class="cmd-col"><code>crew sync [&lt;name&gt;]</code></td>
-              <td>Fetch <code>origin</code> and rebase the member's clone onto <code>origin/main</code> when its working tree has no tracked edits.</td>
+              <td>Fetch <code>origin</code> and rebase the member's clone onto <code>origin/main</code>.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew land &lt;name&gt; -F &lt;file&gt; [--check &lt;cmd&gt;] [--to &lt;member&gt;] -- &lt;path&gt;...</code></td>
-              <td>Run the check, take the lock, verify claims, commit only the given paths, rebase a clone if <code>origin</code> moved and re-run the check, push, unlock, and send <code>Pushed:</code> to the reviewer.</td>
+              <td class="cmd-col"><code>crew land &lt;name&gt; -F &lt;file&gt; [--check &lt;command&gt;] [--to &lt;member&gt;] -- &lt;path&gt;...</code></td>
+              <td>Land in one command: run the check, take the lock, commit those paths only, rebase a clone when <code>origin</code> moved and run the check again, push, release the lock, and tell the reviewer with <code>Pushed:</code>.</td>
             </tr>
           </tbody>
         </table>
@@ -470,101 +481,100 @@ total    input 3178719  cached 166396091  write 2458117  output 656433  reasonin
           <tbody>
             <tr>
               <td class="cmd-col"><code>crew init [--home]</code></td>
-              <td>Create <code>.crew/</code> at the project root (kept out of git) or under <code>~/.crew/&lt;project&gt;/</code>, seeding a commented <code>README.md</code> plan.</td>
+              <td>Make <code>.crew/</code> at the root, or <code>~/.crew/&lt;project&gt;/</code>.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew up [&lt;preset&gt;] [--dry]</code></td>
-              <td>Bring the crew of the <code>Crewfile</code> (or preset <code>solo</code>, <code>pair</code>, <code>ring</code>) up or back: tabs, panes, clones, layouts, invites, watch, and live board.</td>
+              <td>Bring the crew of the <code>Crewfile</code> up, or back: tabs, members, invites, layouts.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew down [minutes] [--archive] [--close]</code></td>
-              <td>Send <code>End:</code>, wait for each member's <code>Done:</code>, report anything left, stop the watch and board, and optionally archive and close exited panes.</td>
+              <td>End the crew: tell <code>all</code>, wait for each <code>Done:</code> (15 minutes), say what is left, stop the watch and board <code>crew up</code> opened; <code>--archive</code> archives when nothing is left, <code>--close</code> closes the panes whose agent exited.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew doctor</code></td>
-              <td>Check terminal versions, <code>crew</code> on <code>PATH</code>, agents and fixture versions, caveman skills, notifier, <code>gh</code>, lock age, relay, panes, <code>Crewfile</code>, and budget rates.</td>
+              <td>Check what a crew needs: terminal, agents, skills, <code>gh</code>, <code>Crewfile</code>, and budget rates.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew panes</code></td>
-              <td>List every pane in the terminal, who joined it, its tab, and its kind.</td>
+              <td>List every pane, who joined it, and its kind.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew cost [name...]</code></td>
-              <td>Count tokens and dollars spent by each member from local agent logs and the <code>rates</code> file.</td>
+              <td>Count what the members spent: tokens, and dollars by the rates.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew spawn &lt;name&gt; [--tab &lt;tab&gt; | --beside|--below|--above &lt;m&gt;] [--join] [--kind &lt;k&gt;] [--clone [--cache &lt;dir&gt;]...] &lt;cmd&gt;...</code></td>
-              <td>Open a named, colored pane for <code>&lt;name&gt;</code> running <code>&lt;cmd&gt;</code> in the shared tree or its own clone.</td>
+              <td class="cmd-col"><code>crew spawn &lt;name&gt; [--tab &lt;tab&gt; | --beside|--below|--above &lt;member&gt;] [--join] [--kind &lt;kind&gt;] [--clone [--cache &lt;dir&gt;]...] &lt;cmd&gt;...</code></td>
+              <td>Open a pane running <code>&lt;cmd&gt;</code> for <code>&lt;name&gt;</code> in the shared tree or its own clone.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew layout [&lt;layout&gt;] [--tab &lt;tab&gt;]</code></td>
-              <td>Arrange a tab's panes into <code>table</code>, <code>grid</code>, <code>main</code>, <code>&lt;cols&gt;x&lt;rows&gt;</code>, or explicit rows (<code>a,b / c</code>).</td>
+              <td>Lay out a tab's panes: <code>table</code>, <code>grid</code>, <code>main</code>, <code>&lt;columns&gt;x&lt;rows&gt;</code>, or rows of names (<code>a,b / c</code>).</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew move &lt;name&gt; --beside|--below|--above &lt;member&gt;</code></td>
-              <td>Move an open pane right of, under, or over another member's pane while its agent keeps running.</td>
+              <td>Move <code>&lt;name&gt;</code>'s pane right of, under, or over <code>&lt;member&gt;</code>'s, its agent still running.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew invite &lt;name&gt; [seconds]</code></td>
-              <td>Wait until the agent in <code>&lt;name&gt;</code>'s pane is idle, then type the <code>crew join</code> line with caveman mode.</td>
+              <td>Once its agent is up, tell it to join, in caveman mode.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew leave &lt;name&gt; [--clone]</code></td>
-              <td>Forget a member's pane, removing its clone with <code>--clone</code> when nothing unpushed or modified remains in it.</td>
+              <td>Forget <code>&lt;name&gt;</code>'s pane; <code>--clone</code> also removes its clone, when nothing is left in it.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew mute &lt;name&gt;</code> / <code>crew unmute &lt;name&gt;</code></td>
-              <td>Wake <code>&lt;name&gt;</code> only for messages addressed to its name, or wake it for <code>all</code> again.</td>
+              <td class="cmd-col"><code>crew mute &lt;name&gt;</code></td>
+              <td>Wake <code>&lt;name&gt;</code> only for messages to its name.</td>
+            </tr>
+            <tr>
+              <td class="cmd-col"><code>crew unmute &lt;name&gt;</code></td>
+              <td>Wake it for messages to <code>all</code> again.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew focus &lt;name&gt; [--zoom]</code></td>
-              <td>Bring <code>&lt;name&gt;</code>'s pane to the front (or <code>crew focus -</code> to return to the previous pane).</td>
+              <td>Bring <code>&lt;name&gt;</code>'s pane to the front, alone in its tab with <code>--zoom</code>; <code>crew focus -</code> goes back.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew peek &lt;name&gt; [lines]</code></td>
-              <td>Print the last lines currently drawn in <code>&lt;name&gt;</code>'s pane.</td>
+              <td>Print what <code>&lt;name&gt;</code>'s pane shows.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew poke &lt;name&gt; &lt;line&gt;</code></td>
-              <td>Type a line into <code>&lt;name&gt;</code>'s pane and press Return.</td>
+              <td>Type a line into it and press Return.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew key &lt;name&gt; &lt;key&gt;...</code></td>
-              <td>Send keystrokes (<code>y</code>, <code>enter</code>, <code>esc</code>, <code>tab</code>, <code>up</code>, <code>ctrl-c</code>, <code>alt-m</code>, …) to <code>&lt;name&gt;</code>'s pane.</td>
+              <td>Press keys: <code>y</code>, <code>enter</code>, <code>esc</code>, <code>tab</code>, <code>up</code>, <code>ctrl-c</code>, <code>alt-m</code>, ...</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew gate &lt;name&gt;... [--all] [--dry]</code></td>
-              <td>Read panes every 2 seconds, approve recognised command prompts, and hold commands matching <code>forbid</code>.</td>
+              <td>Approve their prompts, hold the forbidden ones; <code>--all</code>: every member with a pane, now and later.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew relay</code></td>
-              <td>Wake message recipients from outside sandboxed agents.</td>
+              <td>Wake recipients for every sender, from this pane.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew watch &lt;name&gt;... [--all] [--dry]</code></td>
-              <td>Run <code>crew gate</code> and <code>crew relay</code> together in one pane, with desktop notifications on holds, exits, and budgets.</td>
-            </tr>
-            <tr>
-              <td class="cmd-col"><code>crew story [&lt;archive&gt;]</code></td>
-              <td>Write the whole session as one Markdown document: plan, Crewfile, members and spend, stream, commits and reviews, and reports.</td>
+              <td>Gate and relay in one pane.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew archive</code></td>
-              <td>Move the stream, cursors, statuses, and reports into <code>archive/&lt;timestamp&gt;/</code> and start a fresh stream.</td>
+              <td>Put the session's stream and files aside, start over.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew version</code></td>
-              <td>Print the version or commit of <code>crew</code>.</td>
+              <td>Print which <code>crew</code> this is.</td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <h3 id="ref-crewfile">The <code>Crewfile</code> and presets</h3>
+      <h3 id="ref-crewfile">The <code>Crewfile</code></h3>
       <p>
-        <code>crew up</code> reads <code>.crew/Crewfile</code>, or copies a built-in preset
-        (<code>solo</code>, <code>pair</code>, <code>ring</code> in <code>share/presets/</code>,
-        overridden by <code>~/.config/crew/presets/&lt;name&gt;</code>) when the crew has none:
+        <code>crew up</code> reads <code>.crew/Crewfile</code>, or copies a preset from
+        <code>~/.config/crew/presets/&lt;name&gt;</code> when the crew has no <code>Crewfile</code>:
       </p>
       <pre><code># Crewfile: tabs and members, in the order crew up places them.
 tab main layout=main watch board
@@ -576,25 +586,27 @@ member agy      reviewer=codex mute budget=20 -- agy
 member codex    reviewer=agy mute budget=60 -- codex</code></pre>
 
       <h3 id="ref-dir">Inside <code>.crew/</code></h3>
-      <pre><code>README.md                  the plan for this session: goal, lanes, reviewers, end time
-Crewfile                   the crew's tabs and members, for crew up
-up/watch, up/board         the panes crew up opened for watch and live board
-messages/NNNN-a-to-b-*.md  the numbered message stream
-read/&lt;name&gt;                the last message number &lt;name&gt; read
-status/&lt;name&gt;.md           what each member is doing now, and the Files: it claims
-panes/&lt;name&gt;               each member's terminal pane id (iterm:... or tmux:...)
-threads/&lt;name&gt;             a Codex member's thread id, for codex queue and crew cost
-sessions/&lt;name&gt;            a Claude Code member's session id, for crew cost
-rates                      the project's prices per million tokens
-muted/&lt;name&gt;               a member woken only by messages to its name
+      <pre><code>README.md                  the plan for this session (optional)
+Crewfile                   the crew's tabs and members, for crew up (optional)
+up/watch, up/board         the panes crew up opened for the watch and the board
+messages/NNNN-a-to-b-*.md  the stream
+cursors/&lt;name&gt;             the last message number &lt;name&gt; read
+status/&lt;name&gt;.md           what each member is doing now (crew status)
+panes/&lt;name&gt;               each member's pane
+threads/&lt;name&gt;             a Codex member's thread, for codex queue
+sessions/&lt;name&gt;            a Claude Code member's session, for crew cost
+rates                      the project's prices per model, over the owner's (optional)
+muted/&lt;name&gt;               a member woken only by messages to its name (crew mute)
 kind/&lt;name&gt;                each member's kind (claude, codex, agy, other)
-clones/&lt;name&gt;              the path of a member's clone (../&lt;project&gt;-&lt;name&gt;)
+clones/&lt;name&gt;              the path of a member's clone (crew spawn --clone)
 tabs/&lt;tab&gt;                 a tab's members, in the order they were placed
-layouts/&lt;tab&gt;              the layout a tab is kept in (table, grid, main, CxR)
-reports/&lt;name&gt;.md          each member's report at the end of the session
-archive/&lt;date-and-time&gt;/   earlier sessions set aside by crew archive
-forbid                     the project's gate rules, replacing share/forbid
-kinds                      the project's agent kinds, added to share/kinds</code></pre>
+layouts/&lt;tab&gt;              the layout a tab is kept in (crew layout)
+reports/&lt;name&gt;.md          each member's report at the end (crew report)
+archive/&lt;date and time&gt;/   earlier sessions (crew archive)
+forbid                     the project's gate rules (optional)
+kinds                      the project's kinds of agent, added to share/kinds (optional)
+project                    the project's path
+relay.pid, relay.last      the relay's heartbeat and last number, while one runs</code></pre>
 
       <h3 id="ref-kinds">Kinds of agent (<code>share/kinds</code>)</h3>
       <div class="table-wrap">
@@ -641,14 +653,15 @@ kinds                      the project's agent kinds, added to share/kinds</code
       <h3 id="ref-forbid">Gate rules (<code>share/forbid</code> and <code>.crew/forbid</code>)</h3>
       <p>
         <code>crew gate</code> tests every command prompt against extended regular expressions in
-        <code>.crew/forbid</code> (or <code>share/forbid</code> when the crew has none), stripping
-        <code>!</code> exception patterns first. By default it holds destructive or shared-tree git
-        commands (<code>git reset</code>, <code>git checkout</code>, <code>git stash</code>,
-        <code>git clean</code>, <code>git add -A</code>, <code>git commit -a</code>,
-        <code>git commit --amend</code>, <code>git push --force</code>), whole-tree formatters,
-        <code>kill</code>, <code>sudo</code>, and recursive deletions (<code>rm -rf</code>), while
-        allowing lock release (<code>rm -rf .crew/lock</code>), format checks (<code>--check</code>),
-        and branch creation (<code>git checkout -b</code>, <code>git switch -c</code>).
+        <code>.crew/forbid</code> (or <code>share/forbid</code> when the crew has none). A line
+        starting with <code>!</code> is an exception, cut out of the command before the rules are
+        tried. By default it holds destructive or shared-tree git commands (<code>git reset</code>,
+        <code>git checkout</code>, <code>git stash</code>, <code>git clean</code>,
+        <code>git add -A</code>, <code>git commit -a</code>, <code>git commit --amend</code>,
+        <code>git push --force</code>), whole-tree formatters, <code>kill</code>, <code>sudo</code>,
+        and recursive deletions (<code>rm -rf</code>), while allowing lock release
+        (<code>rm -rf .crew/lock</code>), format checks (<code>--check</code>), and branch creation
+        (<code>git checkout -b</code>, <code>git switch -c</code>).
       </p>
     </section>
 
@@ -656,7 +669,7 @@ kinds                      the project's agent kinds, added to share/kinds</code
       <h2>Requirements</h2>
       <ul>
         <li><strong>macOS</strong> with iTerm2 3.5+ (using <code>osascript</code>) or <code>tmux</code> 3.1+, or <strong>Linux</strong> with <code>tmux</code> 3.1+.</li>
-        <li>POSIX <code>sh</code>, <code>awk</code>, <code>sed</code>, and <code>git</code> (shipped with macOS and Linux).</li>
+        <li>POSIX <code>sh</code>, <code>awk</code>, <code>sed</code>, and the tools macOS and Linux ship, plus <code>git</code>.</li>
         <li>One or more terminal coding agents on <code>PATH</code>: Claude Code (<code>claude</code>), Codex (<code>codex</code>), Antigravity (<code>agy</code>), or your own kind in <code>~/.config/crew/kinds</code>.</li>
         <li>Optional: <code>gh</code> (for CI status on <code>crew board</code>), <code>sqlite3</code> (for Antigravity token counts in <code>crew cost</code>), and <code>notify-send</code> on Linux (for desktop notifications to <code>owner</code>).</li>
       </ul>

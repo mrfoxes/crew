@@ -21,11 +21,21 @@ check "tagline on the site" "1" \
 check "portable install one-liner on the site" "2" \
     "$(grep -c 'curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh' "$html")"
 
-# Every command listed in crew --help appears as 'crew <command>' on the site.
-cmds=$(sh "$CREW_HOME/bin/crew" --help | awk '/^  [a-z][a-z-]*([ |]|$)/ { print $1 }')
+# Every command listed in crew --help appears as 'crew <command>' on the site,
+# and every 'crew <command>' in the reference table exists in crew --help.
+help=$(sh "$CREW_HOME/bin/crew" --help)
+cmds=$(printf '%s\n' "$help" | awk '/^  [a-z][a-z-]*([ |]|$)/ { print $1 }')
 for cmd in $cmds; do
     check "site documents crew $cmd" "1" \
         "$(grep -q "crew $cmd" "$html" && echo 1 || echo 0)"
+done
+site_cmds=$(
+    sed -n 's/.*<td class="cmd-col"><code>crew \([a-z][a-z-]*\).*/\1/p' "$html" |
+        sort -u
+)
+for cmd in $site_cmds; do
+    check "site command crew $cmd is in crew --help" "1" \
+        "$(printf '%s\n' "$cmds" | grep -qx "$cmd" && echo 1 || echo 0)"
 done
 
 # Every internal #anchor link resolves to an id="" in docs/index.html.
@@ -54,15 +64,17 @@ check "no external script or style host" "" "$ext_assets"
 
 # Light and dark theme rules and mobile breakpoint in style.css.
 check "dark theme media query in style.css" "1" \
-    "$(grep -c 'prefers-color-scheme: dark' "$css")"
+    "$(grep -q 'prefers-color-scheme: dark' "$css" && echo 1 || echo 0)"
 check "mobile media query in style.css" "1" \
-    "$(grep -c '@media (max-width:' "$css")"
+    "$(grep -q '@media (max-width:' "$css" && echo 1 || echo 0)"
 
 # Words to avoid (case-insensitive whole words): orchestration, swarm,
-# autonomous, AI, agentic.
+# autonomous, AI, agentic, and no em dashes or local machine paths.
 for bad in orchestration swarm autonomous ai agentic; do
     hits=$(grep -i -E "(^|[^a-zA-Z])$bad([^a-zA-Z]|$)" "$html" "$css" || :)
     check "word '$bad' not used on the site" "" "$hits"
 done
+check "no em dash on the site" "" "$(grep -E '—|&mdash;' "$html" || :)"
+check "no local /Users/ path on the site" "" "$(grep '/Users/' "$html" || :)"
 
 finish
