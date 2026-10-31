@@ -258,6 +258,7 @@ crew_down() {
         --close) dn_closing=1 ;;
         *)
             crew_count "$dn_arg" "crew down [minutes] [--archive] [--close]" || return 2
+            # shellcheck disable=SC2154 # count_n is set by crew_count, in lib/store.sh
             dn_minutes=$count_n
             ;;
         esac

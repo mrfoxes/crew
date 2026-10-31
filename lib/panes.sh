@@ -190,6 +190,7 @@ crew_peek() {
     fi
     crew_count "${2:-30}" "crew peek <name> [lines]" || return 2
     pane=$(crew_pane "$1") || return 1
+    # shellcheck disable=SC2154 # count_n is set by crew_count, in lib/store.sh
     term_read "$pane" | grep -v '^[[:space:]]*$' | tail -n "$count_n"
 }
 

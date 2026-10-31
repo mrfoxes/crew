@@ -130,6 +130,7 @@ live_frame() {
 # pane never shows half of one. A narrow pane cuts each line at its right.
 crew_board_live() {
     crew_count "${1:-5}" "crew board --live [seconds]" positive || return 2
+    # shellcheck disable=SC2154 # count_n is set by crew_count, in lib/store.sh
     v_every=$count_n
     dir=$(crew_dir) || return 1
     trap 'echo; exit' INT TERM
