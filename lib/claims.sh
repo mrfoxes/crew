@@ -137,24 +137,52 @@ claims_conflicts() {
     done
 }
 
-# The files changed in the project's working tree (renames by their new
-# path, untracked files one by one) that are on nobody's Files: line.
-# Nothing outside git.
-claims_unclaimed() {
-    cl_root=$(crew_project "$1")
-    cl_all=$(claims_all "$1")
-    git -C "$cl_root" status --porcelain -z --untracked-files=all 2>/dev/null |
+# The files changed in the git tree <root> (renames by their new path,
+# untracked files one by one), one a line. Nothing outside git.
+claims_changed() {
+    git -C "$1" status --porcelain -z --untracked-files=all 2>/dev/null |
         tr '\0' '\n' | awk '
             skip { skip = 0; next }
             { print substr($0, 4) }
-            /^[RC]/ { skip = 1 }' | while IFS= read -r cl_p; do
+            /^[RC]/ { skip = 1 }'
+}
+
+# The files changed in the project's working tree that are on nobody's
+# Files: line.
+claims_unclaimed() {
+    cl_root=$(crew_project "$1")
+    cl_all=$(claims_all "$1")
+    claims_changed "$cl_root" | while IFS= read -r cl_p; do
         cl_taken=
         while read -r _ cl_q; do
             ! claims_covers "$cl_q" "$cl_p" || cl_taken=1
-        done <<EOF
+        done <<EOF2
 $cl_all
-EOF
+EOF2
         [ -n "$cl_taken" ] || echo "$cl_p"
+    done
+}
+
+# The files changed in each member's clone that the member's own Files: line
+# does not claim, as "<path> (<member>'s clone)".
+claims_clone_unclaimed() {
+    for cl_c in "$1"/clones/*; do
+        [ -f "$cl_c" ] || continue
+        cl_who=$(basename "$cl_c")
+        cl_path=$(cat "$cl_c")
+        [ -d "$cl_path" ] || continue
+        cl_root=$cl_path
+        cl_mine=
+        [ ! -f "$1/status/$cl_who.md" ] || cl_mine=$(claims_paths "$1/status/$cl_who.md")
+        claims_changed "$cl_path" | while IFS= read -r cl_p; do
+            cl_taken=
+            while IFS= read -r cl_q; do
+                [ -z "$cl_q" ] || ! claims_covers "$cl_q" "$cl_p" || cl_taken=1
+            done <<EOF2
+$cl_mine
+EOF2
+            [ -n "$cl_taken" ] || echo "$cl_p ($cl_who's clone)"
+        done
     done
 }
 
@@ -174,5 +202,5 @@ claims_board_conflicts() {
 }
 
 claims_board_unclaimed() {
-    claims_unclaimed "$1" | claims_section unclaimed
+    { claims_unclaimed "$1"; claims_clone_unclaimed "$1"; } | claims_section unclaimed
 }

@@ -133,6 +133,30 @@ e.txt" "$(unclaimed)"
 git reset -q --hard
 check "a tree back to clean has no section" "0" "$(crew_board 1 | grep -c '^== unclaimed')"
 
+# A member's clone: its changed files its own Files: line does not claim
+# show under its name, the shared tree's unclaimed files stay as they were.
+forget
+git clone -q "$tmp/repo" "$tmp/repo-ann" 2>/dev/null
+mkdir -p "$dir/clones"
+echo "$tmp/repo-ann" >"$dir/clones/ann"
+status ann "src/a.rs" >/dev/null
+check "a clean clone adds nothing" "0" "$(crew_board 1 | grep -c "ann's clone")"
+echo more >>"$tmp/repo-ann/src/a.rs"
+check "a changed file its member claims" "0" "$(crew_board 1 | grep -c "ann's clone")"
+echo more >>"$tmp/repo-ann/src/b.rs"
+echo new >"$tmp/repo-ann/src/fresh.rs"
+check "changed files its member does not claim" "== unclaimed
+src/b.rs (ann's clone)
+src/fresh.rs (ann's clone)" "$(unclaimed)"
+status bob "src/b.rs, src/fresh.rs" >/dev/null
+check "another member's claim does not cover a clone's file" "2" "$(crew_board 1 | grep -c "ann's clone")"
+status ann "src/" >/dev/null
+check "a directory claim covers the clone's files under it" "0" "$(crew_board 1 | grep -c "ann's clone")"
+status ann "src/a.rs" >/dev/null
+echo "$tmp/gone" >"$dir/clones/ann"
+check "a clone that is gone adds nothing" "0" "$(crew_board 1 | grep -c "ann's clone")"
+rm "$dir/clones/ann"
+
 # Nothing outside git.
 mkdir "$tmp/plain"
 cd "$tmp/plain" || exit 1

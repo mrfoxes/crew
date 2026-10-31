@@ -226,6 +226,16 @@ crew_tty() { return 0; }
 check "status prints when stdin is a terminal" "$(printf 'Agent: agy\nNext: two\nFiles: a.txt\nPushed: 1234567')" "$(crew_write status agy)"
 crew_tty() { [ -t 0 ]; }
 check "status rejects a bad field" "2" "$(crew_write status agy "not a field" >/dev/null 2>&1; echo $?)"
+# Unread messages on the board: counted by member, no cursor moved.
+(crew_unread agy >/dev/null)
+echo "unread one" | crew_send codex agy "Heads-up: unread" >/dev/null
+echo "unread two" | crew_send claude all "Heads-up: unread to all" >/dev/null
+check "unread count" "2" "$(crew_unread_count "$dir" agy)"
+check "unread count skips own" "0" "$(crew_unread_count "$dir" claude)"
+check "board header counts unread" "1" "$(crew_board 1 | grep -c '^== agy (codex, tab runtime, no pane, 2 unread, 0 min ago)$')"
+check "counting leaves the cursor" "2" "$(crew_unread_count "$dir" agy)"
+(crew_unread agy >/dev/null)
+check "read, no count on the header" "0" "$(crew_board 1 | grep '^== agy' | grep -c 'unread')"
 check "board shows the age and the kind" "1" "$(crew_board 1 | grep -c '^== agy (codex, tab runtime, no pane, 0 min ago)$')"
 check "report" "$dir/reports/agy.md" "$(echo finished | crew_write report agy)"
 check "status wants a name" "2" "$(echo x | crew_write status >/dev/null 2>&1; echo $?)"
@@ -241,7 +251,7 @@ check "archive waits for the relay" "1" "$(crew_archive >/dev/null 2>&1; echo $?
 rm -f "$dir/relay.pid"
 to=$(crew_archive)
 check "archive" "$dir/archive" "$(dirname "$to")"
-check "archive keeps the messages" "$((n + 3))" "$(ls "$to/messages" | wc -l | tr -d ' ')"
+check "archive keeps the messages" "$((n + 5))" "$(ls "$to/messages" | wc -l | tr -d ' ')"
 check "archive keeps the statuses" "2" "$(ls "$to/status" | wc -l | tr -d ' ')"
 check "archive starts the stream over" "" "$(ls "$dir/seq")"
 check "archive keeps the plan and the panes" "plan tmux:%7" "$(cat "$dir/README.md" "$dir/panes/claude" | tr '\n' ' ' | sed 's/ $//')"
@@ -291,6 +301,8 @@ rm -f "$tmp/codex.args"
 check "wake to all reaches an unmuted member" "codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" >/dev/null 2>&1; cat "$tmp/codex.args")"
 check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/threads/codex" 2>/dev/null)"
 
+(crew_unread agy >/dev/null)
+(crew_unread claude >/dev/null)
 # The board tells a pane that is gone.
 printf 'Agent: agy\n' >"$dir/status/agy.md"
 echo "tmux:%8" >"$dir/panes/agy"

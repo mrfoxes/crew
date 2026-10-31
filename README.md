@@ -188,7 +188,10 @@ tree, `crew status` warns, on stderr, of each path on the `Files:` line that
 another member's status lists (with who, and how many minutes ago) and writes
 the status anyway; a path ending in `/` claims every path under it. The board
 adds `== conflicts`, each path two members claim, and `== unclaimed`, each file
-changed in the tree that nobody claims, each only when it has a line.
+changed in the tree that nobody claims, each only when it has a line. A member
+with a clone also has its changed files its own `Files:` line does not claim
+listed there, as `path (name's clone)`, and its header on the board adds
+`N unread` while messages wait for it (`+` marks it on the live board).
 
 ### Landing in one command
 

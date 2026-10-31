@@ -255,6 +255,22 @@ crew_waiting() {
     return 1
 }
 
+# Prints how many messages <name> has not read in the crew <dir>: the ones
+# crew unread would print, counted, with no cursor moved.
+crew_unread_count() {
+    uc_last=$(cat "$1/cursors/$2" 2>/dev/null || echo 0)
+    uc_count=0
+    for uc_n in $(ls "$1/seq" | sort -n); do
+        [ "$uc_n" -gt "$uc_last" ] || continue
+        uc_to=$(crew_field "$1/seq/$uc_n" To)
+        if { [ "$uc_to" = "$2" ] || [ "$uc_to" = all ]; } &&
+            [ "$(crew_field "$1/seq/$uc_n" From)" != "$2" ]; then
+            uc_count=$((uc_count + 1))
+        fi
+    done
+    echo "$uc_count"
+}
+
 # Prints the last <count> messages (5 when not given), whole, in order. The
 # filters keep the messages --from or --to a name, or whose text matches
 # --grep <pattern>; they combine, and the count applies after them.
@@ -544,7 +560,9 @@ crew_board() {
         kind=$(kind_member "$dir" "$who")
         tab=$(tab_of "$dir" "$who")
         reviewer=$(crewfile_get "$dir" "$who" reviewer)
-        echo "== $who (${kind:+$kind, }${tab:+tab $tab, }$pane, ${reviewer:+reviewed by $reviewer, }$(crew_age "$f") min ago)"
+        unread=$(crew_unread_count "$dir" "$who")
+        [ "$unread" = 0 ] && unread= || unread="$unread unread, "
+        echo "== $who (${kind:+$kind, }${tab:+tab $tab, }$pane, ${reviewer:+reviewed by $reviewer, }$unread$(crew_age "$f") min ago)"
         clone_board "$dir" "$who" "$(crew_project "$dir")"
         cat "$f"
         echo

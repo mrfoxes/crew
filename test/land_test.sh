@@ -84,6 +84,8 @@ edit b.txt
 echo fresh >new.txt
 check "a landing succeeds" "0" "$(land ann -F "$tmp/message" --check "pwd >'$tmp/checkdir'" --to cat -- a.txt new.txt)"
 hash=$(git rev-parse --short HEAD)
+(crew_unread ann >/dev/null)
+(crew_unread bob >/dev/null)
 check "the check ran in the working tree" "$proj" "$(cat "$tmp/checkdir")"
 check "origin has the commit" "Add the things" "$(origin_head)"
 check "the commit is the given paths" "a.txt
@@ -107,6 +109,8 @@ printf 'Agent: ann\nPushed: none\nFiles: a.txt\nNext: more\n' | crew_write statu
 edit a.txt
 check "a second landing succeeds" "0" "$(land ann -F "$tmp/message" --to cat -- a.txt)"
 hash=$(git rev-parse --short HEAD)
+(crew_unread ann >/dev/null)
+(crew_unread bob >/dev/null)
 check "the Pushed: line is rewritten where it was" "Agent: ann
 Pushed: $hash Add the things, CI pending
 Files: a.txt
@@ -123,6 +127,8 @@ EOF2
 edit a.txt
 check "the Crewfile's reviewer" "0" "$(land ann -F "$tmp/message" -- a.txt)"
 hash=$(git rev-parse --short HEAD)
+(crew_unread ann >/dev/null)
+(crew_unread bob >/dev/null)
 check "its reviewer is told" "1" "$(sent ann bob "pushed-$hash")"
 check "the board names the reviewer" "== ann (no pane, reviewed by bob, 0 min ago)" "$(crew_board 1 | grep '^== ann')"
 check "and another's" "== bob (no pane, reviewed by ann, 0 min ago)" "$(crew_board 1 | grep '^== bob')"
@@ -269,6 +275,8 @@ git -C "$tmp/other" push -q origin HEAD:main
 edit a.txt
 check "a rejected push stops it" "1" "$(land ann -F "$tmp/message" --to bob -- a.txt)"
 hash=$(git rev-parse --short HEAD)
+(crew_unread ann >/dev/null)
+(crew_unread bob >/dev/null)
 check "owner is asked" "1" "$(sent ann owner "question-push-of-$hash-rejected")"
 check "the question says what git said" "yes" "$(grep -q rejected "$dir"/messages/*-ann-to-owner-* && echo yes)"
 check "the lock is free" "free" "$(lock)"

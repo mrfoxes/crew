@@ -85,7 +85,8 @@ crew status <you> "Files: none" "Pushed: 1234567 ..." "Next: ..."
 ```
 
 `crew board` shows every status with its age, the paths two statuses claim
-(`conflicts`) and the changed files nobody claims (`unclaimed`), the lock, the
+(`conflicts`), the changed files nobody claims (`unclaimed`, a clone's too), the
+messages waiting for each member (`N unread`), the lock, the
 latest messages, and CI.
 
 ## One working tree, many hands

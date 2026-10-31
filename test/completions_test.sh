@@ -93,6 +93,9 @@ crew send claude |agy all claude codex owner
 crew send claude o|owner
 crew send claude codex |
 crew unread c|claude codex
+crew unread claude --|--peek --wait
+crew log --|--from --grep --oneline --to
+crew log --from c|claude codex
 crew gate claude co|codex
 crew gate --|--all --dry
 crew watch |agy claude codex
