@@ -209,6 +209,36 @@ crew_key() {
     done
 }
 
+# Brings <name>'s pane to the front, its tab and its window, and with
+# --zoom shows it alone in its tab, until the next focus. "crew focus -"
+# goes back to the pane the last focus was run from, which it keeps in
+# tmp/focus.from.
+crew_focus() {
+    case "${1:-}:${2:-}:${3:-}" in
+    -::) ;;
+    ?*::) ;;
+    ?*:--zoom:) ;;
+    *)
+        echo "usage: crew focus <name> [--zoom] | crew focus -" >&2
+        return 2
+        ;;
+    esac
+    dir=$(crew_dir) || return 1
+    if [ "$1" = - ]; then
+        pane=$(cat "$dir/tmp/focus.from" 2>/dev/null) || pane=""
+        if [ -z "$pane" ]; then
+            echo "crew: no focus to go back from" >&2
+            return 1
+        fi
+    else
+        pane=$(crew_pane "$1") || return 1
+    fi
+    from=$(term_self 2>/dev/null) || from=""
+    term_focus "$pane" || return 1
+    [ -z "$from" ] || [ "$from" = "$pane" ] || echo "$from" >"$dir/tmp/focus.from"
+    [ "${2:-}" != --zoom ] || term_zoom "$pane"
+}
+
 # Opens a pane beside this one, in a new tab with --tab, or right of, under,
 # or over <member>'s pane with --beside, --below, or --above, running
 # <command> in the project's root, joined as <name>, of the kind --kind

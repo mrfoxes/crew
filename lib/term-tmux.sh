@@ -115,3 +115,17 @@ tmux_tab() {
         tmux set-option -w -t "$1" automatic-rename off &&
         tmux set-option -w -t "$1" allow-rename off
 }
+
+# Brings pane <id> to the front: its session, when it is another one, its
+# window, and itself. A window zoomed is let go: a zoom lasts until the
+# next focus.
+tmux_focus() {
+    tmux switch-client -t "$1" 2>/dev/null || :
+    tmux select-window -t "$1" && tmux select-pane -t "$1" || return
+    [ "$(tmux display-message -p -t "$1" '#{window_zoomed_flag}')" != 1 ] || tmux resize-pane -Z -t "$1"
+}
+
+# Shows pane <id> alone in its window, until the next focus.
+tmux_zoom() {
+    [ "$(tmux display-message -p -t "$1" '#{window_zoomed_flag}')" = 1 ] || tmux resize-pane -Z -t "$1"
+}

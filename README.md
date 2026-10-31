@@ -105,6 +105,9 @@ While they work:
 crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
+crew focus codex            # codex's pane to the front, its tab and its window
+crew focus codex --zoom     # alone in its tab, until the next focus (tmux)
+crew focus -                # back to the pane the last focus was run from
 crew peek codex 20          # the last 20 lines of codex's pane
 crew poke codex "<line>"    # type a line and press Return
 crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
@@ -284,7 +287,11 @@ titles would not overwrite, so there the tab's name is in each member's
 badge, after the member's: `claude2 · proof`. `crew panes` lists a tab's
 members together, in their order, and `crew board` names each member's
 tab. Peek, poke, keys, the gate, and the relay reach a pane by its id,
-whatever tab it is in.
+whatever tab it is in, and `crew focus <name>` takes you there: tmux
+switches to its session, window, and pane, and iTerm2 selects its window,
+tab, and session. `--zoom` shows it alone in its tab until the next focus
+in tmux (`resize-pane -Z`); iTerm2's AppleScript cannot, and says to use
+View > Maximize Active Pane.
 
 ## Laying out a table
 

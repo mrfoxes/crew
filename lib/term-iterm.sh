@@ -125,6 +125,22 @@ iterm_even() {
     :
 }
 
+# Brings session <id> to the front: its window, its tab, and itself
+# selected, and iTerm2 made the active application.
+iterm_focus() {
+    iterm_with "$1" 'tell w to select
+                        tell t to select
+                        tell s to select
+                        activate
+                        return' >/dev/null
+}
+
+# iTerm2's AppleScript has no zoom: Maximize Active Pane is a menu item.
+iterm_zoom() {
+    echo "crew: iTerm2 zooms a pane only by hand: View > Maximize Active Pane (shift-cmd-return)" >&2
+    return 1
+}
+
 # Opens a session beside the current one (split), in a new tab (tab), or
 # right of, under, or over the iTerm2 pane <anchor> (beside, below,
 # above), and types <line> into it.

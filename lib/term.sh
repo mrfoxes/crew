@@ -35,6 +35,10 @@
 #                       keeps such a name; does nothing where it does not
 #   <t>_even <id>       shares the pane's row out evenly among its panes,
 #                       where the terminal does not on its own
+#   <t>_focus <id>      brings the pane to the front: its window, its tab,
+#                       and itself; a zoom lasts until the next focus
+#   <t>_zoom <id>       shows the pane alone in its tab, where the terminal
+#                       lets a script; fails saying so where it does not
 #
 # <t>_move exits 3 when the terminal leaves the pane where it was, which a
 # layout takes for a pane in its place already.
@@ -162,6 +166,18 @@ term_tab() {
 term_even() {
     backend=$(term_of "$1") || return
     "${backend}_even" "${1#*:}"
+}
+
+# Brings <pane> to the front: its window, its tab, and itself.
+term_focus() {
+    backend=$(term_of "$1") || return
+    "${backend}_focus" "${1#*:}"
+}
+
+# Shows <pane> alone in its tab, until the next focus.
+term_zoom() {
+    backend=$(term_of "$1") || return
+    "${backend}_zoom" "${1#*:}"
 }
 
 # Presses one key in the pane: enter, esc, tab, shift-tab, up, down, left,
