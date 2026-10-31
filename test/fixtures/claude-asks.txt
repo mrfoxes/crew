@@ -1,0 +1,22 @@
+Last login: Fri Oct 30 22:43:37 on ttys005 
+cd '/Users/mrfoxes/Documents/repos/github.com/mrfoxes/crew' && claude --model sonnet --permission-mode default 'Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.' 
+⋊> ~ cd '/Users/mrfoxes/Documents/repos/github.com/mrfoxes/crew' && claude --model sonnet --permission-mode default 'Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.' 
+ ▐▛███▛█   Claude Code v2.1.314 
+▝▜██████▀  Sonnet 5.5 · Claude Ultra 
+ ▝▝   ▝▝   ~/Documents/repos/github.com/mrfoxes/crew 
+❯ Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.                     
+  Read 1 file  
+⏺ Update(fixture-edit.txt) 
+  ⎿  User rejected update to fixture-edit.txt 
+      1 -foo                                                                              
+      1 +bar                                                                              
+✻ Rainbowed for 4s · done 1:59 AM 
+❯ Do not use any tool. Ask me one short question about the file, as plain text, whose last      
+  words are exactly: Do you want me to proceed? Then wait for my answer.                        
+⏺ fixture-edit.txt hold only foo on line 1. Replace with bar. Do you want me to proceed? 
+✻ Rainbowed for 1s · done 1:59 AM 
+────────────────────────────────────────────────────────────────────────────────────────────────
+❯ yes, proceed 
+────────────────────────────────────────────────────────────────────────────────────────────────
+  [CAVEMAN] 
+  ⏸ manual mode on 

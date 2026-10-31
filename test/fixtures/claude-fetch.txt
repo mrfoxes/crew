@@ -1,0 +1,25 @@
+▝▜██████▀  Sonnet 5.5 · Claude Ultra 
+ ▝▝   ▝▝   ~/Documents/repos/github.com/mrfoxes/crew 
+❯ Use the Bash tool to run exactly this command and nothing else, then stop: printf             
+  crew-fixture-1                                                                                
+  Ran 1 shell command  
+⏺ Done. Output: crew-fixture-1 
+✻ Rainbowed for 4s · done 10:43 PM 
+❯ Use the Bash tool to run exactly this command and nothing else, then stop: touch              
+  /private/tmp/crew-fixture-touch                                                               
+  Ran 1 shell command  
+  ⎿  Interrupted · What should Claude do instead? 
+✻ Rainbowed for 2s · done 10:46 PM 
+❯ Use the WebFetch tool on https://example.com/ and nothing else, then stop.                    
+⏺ Fetch(https://example.com/) 
+────────────────────────────────────────────────────────────────────────────────────────────────
+ Fetch 
+ Claude wants to fetch content from example.com 
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ url: https://example.com/ 
+ prompt: Return the page content.                                    
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to allow Claude to fetch this content? 
+ ❯ 1. Yes 
+   2. Yes, and don't ask again for example.com 
+   3. No, and tell Claude what to do differently (esc) 

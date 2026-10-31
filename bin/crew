@@ -29,17 +29,19 @@ For everyone
   send <from> <to> <subject>    post a message, body on stdin; wakes <to>
   unread <name>                 the messages to <name> or all not read yet
   board [count]                 statuses, lock, latest messages, git, CI
+  dir                           the crew's directory
   lock <name>                   take the push lock
   unlock <name> | --force       release it
 
 For the coordinator
-  init                          make .crew/ at the project's root
+  init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   panes                         every pane, and who joined it
   spawn <name> [--tab] <cmd>... open a pane running <cmd> for <name>
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
   key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, ...
-  gate <name> [--dry]           answer <name>'s approval prompts, hold the forbidden
+  gate <name>... [--dry]        approve their prompts, hold the forbidden ones
+  relay                         wake recipients for every sender, from this pane
 
 <name> is lower-case letters, digits, and dashes; peek, poke, and key also
 take a pane (iterm:<id>, tmux:<id>) from 'crew panes'.
@@ -51,6 +53,7 @@ cmd=${1:-help}
 case "$cmd" in
 help) cat "$CREW_HOME/share/protocol.md" ;;
 init) crew_init "$@" ;;
+dir) crew_dir "$@" ;;
 join) crew_join "$@" ;;
 send) crew_send "$@" ;;
 unread) crew_unread "$@" ;;
@@ -63,6 +66,7 @@ peek) crew_peek "$@" ;;
 poke) crew_poke "$@" ;;
 key) crew_key "$@" ;;
 gate) crew_gate "$@" ;;
+relay) crew_relay "$@" ;;
 -h | --help | usage) usage ;;
 *)
     usage >&2

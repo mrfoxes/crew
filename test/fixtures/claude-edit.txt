@@ -1,0 +1,22 @@
+Last login: Fri Oct 30 22:43:37 on ttys005 
+cd '/Users/mrfoxes/Documents/repos/github.com/mrfoxes/crew' && claude --model sonnet --permission-mode default 'Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.' 
+⋊> ~ cd '/Users/mrfoxes/Documents/repos/github.com/mrfoxes/crew' && claude --model sonnet --permission-mode default 'Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.' 
+ ▐▛███▛█   Claude Code v2.1.314 
+▝▜██████▀  Sonnet 5.5 · Claude Ultra 
+ ▝▝   ▝▝   ~/Documents/repos/github.com/mrfoxes/crew 
+❯ Use the Edit tool to change foo to bar in fixture-edit.txt. Nothing else.                     
+  Read 1 file  
+⏺ Update(fixture-edit.txt) 
+────────────────────────────────────────────────────────────────────────────────────────────────
+ Edit file 
+ fixture-edit.txt 
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ 1 -foo                                                                                         
+ 1 +bar                                                                                         
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to make this edit to fixture-edit.txt? 
+ ❯ 1. Yes 
+   2. Yes, and switch to accept edits (auto-approve file edits and common file commands) for 
+      this session (shift+tab) 
+   3. No 
+ Esc to cancel · Tab to amend 

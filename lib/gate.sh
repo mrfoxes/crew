@@ -6,11 +6,15 @@
 #
 #   codex   "Would you like to run the following command?", "$ <command>",
 #           "1. Yes, proceed", answered with y
-#   claude  "Bash command", <command>, "Do you want to proceed?", the cursor
-#           on "1. Yes", answered with Return
-#   other   any other question near the bottom (Allow ...?, Run this
-#           command?, Do you want ...?): never answered, always held
+#   claude  "Bash command", the command between two rules (╌╌╌), "Do you
+#           want to proceed?", the cursor on "1. Yes", answered with Return
+#   other   any other menu near the bottom: a cursor (❯, ›, >) on a choice
+#           and a choice below it, with the question above: never answered,
+#           always held. A question with no choices under it is not a prompt.
 #
+# A Claude Code prompt is read only when it is the last question on the
+# screen and "Bash command" is its own header: a prompt of another tool that
+# asks the same question, with a Bash prompt still drawn above it, is "other".
 # A command wrapped across lines comes twice, joined with spaces and without,
 # so a wrap inside a word cannot hide it from the rules.
 gate_prompt() {
@@ -40,16 +44,32 @@ gate_prompt() {
                     if (c < e && e <= n) { out("codex", c, e - 1); exit }
                 }
             }
-            # Claude Code: "Do you want to proceed?" with its options below.
-            for (q = n; q > 0 && q > n - 10 && line[q] !~ /^Do you want to proceed\?$/; q--) ;
-            if (q > 0 && q > n - 10 && line[q + 1] ~ /^❯ *1\. Yes$/) {
-                for (h = q; h > 0 && line[h] !~ /^Bash command/; h--) ;
-                if (h > 0 && h + 1 < q) { out("claude", h + 1, q - 1); exit }
+            # Claude Code: "Do you want to proceed?" with the cursor on "1. Yes".
+            for (q = n; q > 0 && q > n - 16 && line[q] !~ /^Do you want to proceed\?$/; q--) ;
+            if (q > 0 && q > n - 16 && line[q + 1] ~ /^❯ *1\. Yes$/) {
+                # A question below it belongs to a newer prompt.
+                for (t = q + 2; t <= n && line[t] !~ /\?$/; t++) ;
+                # The header is its own only when no other prompt, with its
+                # question or its options, stands between the two.
+                for (h = q - 1; h > 0 && line[h] !~ /^Bash command/ && line[h] !~ /\?$/ && line[h] !~ /^(❯ *)?[0-9]+\. /; h--) ;
+                if (t > n && h > 0 && line[h] ~ /^Bash command/ && h + 1 < q) {
+                    # The command stands between two rules, below the description.
+                    for (c = h + 1; c < q && line[c] !~ /^╌/; c++) ;
+                    for (e = c + 1; e < q && line[e] !~ /^╌/; e++) ;
+                    if (c < q && e < q && c + 1 < e) out("claude", c + 1, e - 1)
+                    else out("claude", h + 1, q - 1)
+                    exit
+                }
             }
-            # Any other question waiting near the bottom.
-            for (q = n; q > 0 && q > n - 12; q--)
-                if (line[q] ~ /\?$/ && line[q] ~ /(Allow|Approve|Do you want|Would you like|Run this command|Proceed)/) {
-                    e = q + 3 > n ? n : q + 3
+            # Any other menu waiting at the bottom, under at most a few lines
+            # of hints: a cursor on a choice with another choice below it. A
+            # question the agent asks, with no choices under it, is not a
+            # prompt. The text starts at the nearest question above the cursor.
+            for (c = n; c > 0 && c > n - 8; c--)
+                if (line[c] ~ /^(❯|›|>) +[^ ]/ && c < n && line[c + 1] ~ /^([0-9]+\. |Yes|No|Allow|Deny)/) {
+                    for (q = c - 1; q > 0 && q > c - 6 && line[q] !~ /\?( |$)/; q--) ;
+                    if (q <= 0 || q <= c - 6) q = c
+                    e = c + 2 > n ? n : c + 2
                     out("other", q, e)
                     exit
                 }
@@ -75,61 +95,94 @@ gate_forbidden() {
         }' "$1"
 }
 
-# Watches <name>'s pane every two seconds and prints one line a prompt:
+# One look at <name>'s pane <pane>: answers the prompt waiting there, holds
+# it, or does nothing. What a look remembers for the next one lives in
+# $gate_state: held/<name> is the last prompt reported, answered/<name> the
+# screen a prompt was answered on, so a screen not redrawn yet is not
+# answered twice.
+gate_look() {
+    name=$1
+    pane=$2
+    held=$gate_state/held/$name
+    answered=$gate_state/answered/$name
+    screen=$(term_read "$pane" 2>/dev/null) || {
+        gate_say "$held" "gate: cannot read $name's pane $pane"
+        return
+    }
+    prompt=$(printf '%s\n' "$screen" | gate_prompt)
+    if [ -z "$prompt" ]; then
+        rm -f "$held" "$answered"
+        return
+    fi
+    [ "$screen" != "$(cat "$answered" 2>/dev/null)" ] || return 0
+    kind=$(printf '%s' "$prompt" | cut -f1)
+    command=$(printf '%s' "$prompt" | cut -f2)
+    tight=$(printf '%s' "$prompt" | cut -f3)
+    case "$kind" in
+    other) why="not a command" ;;
+    *) why=$(gate_forbidden "$gate_rules" "$command") || why=$(gate_forbidden "$gate_rules" "$tight") || why="" ;;
+    esac
+    if [ -n "$why" ]; then
+        gate_say "$held" "HOLD $name ($why): $command"
+        return
+    fi
+    if [ "$gate_dry" = --dry ]; then
+        gate_say "$held" "would approve $name: $command"
+        return
+    fi
+    # The prompt read a moment ago may be gone: answered by the owner,
+    # withdrawn, scrolled away. A key then lands in the agent's composer, so
+    # read again and press only for the same prompt.
+    [ "$(term_read "$pane" 2>/dev/null | gate_prompt)" = "$prompt" ] || return 0
+    case "$kind" in
+    codex) term_key "$pane" y ;;
+    claude) term_key "$pane" enter ;;
+    esac
+    echo "approved $name: $command"
+    printf '%s' "$screen" >"$answered"
+    rm -f "$held"
+}
+
+# Prints <line> unless it is the one already in <file>, and keeps it there.
+gate_say() {
+    [ "$2" != "$(cat "$1" 2>/dev/null)" ] || return 0
+    echo "$2"
+    printf '%s' "$2" >"$1"
+}
+
+# Watches the panes of <name>... every two seconds and prints one line a
+# prompt:
 #
 #   approved codex: cargo test --test editors
 #   HOLD codex (git +reset): git reset --hard
 #
 # With --dry it answers nothing and says what it would do.
 crew_gate() {
-    if [ $# -lt 1 ]; then
-        echo "usage: crew gate <name> [--dry]" >&2
+    gate_dry=""
+    names=""
+    for arg in "$@"; do
+        case "$arg" in
+        --dry) gate_dry=--dry ;;
+        *) names="$names $arg" ;;
+        esac
+    done
+    if [ -z "$names" ]; then
+        echo "usage: crew gate <name>... [--dry]" >&2
         return 2
     fi
-    name=$1
-    dry=${2:-}
-    pane=$(crew_pane "$name") || return 1
     dir=$(crew_dir) || return 1
-    rules=$dir/forbid
-    [ -f "$rules" ] || rules=$CREW_HOME/share/forbid
-    seen=""
+    gate_rules=$dir/forbid
+    [ -f "$gate_rules" ] || gate_rules=$CREW_HOME/share/forbid
+    gate_state=$(mktemp -d "$dir/tmp/gate.XXXXXX") || return 1
+    trap 'rm -rf "$gate_state"' EXIT INT TERM
+    mkdir -p "$gate_state/held" "$gate_state/answered" "$gate_state/pane"
+    for name in $names; do
+        crew_pane "$name" >"$gate_state/pane/$name" || return 1
+    done
     while :; do
-        screen=$(term_read "$pane" 2>/dev/null) || {
-            echo "gate: cannot read $name's pane $pane"
-            sleep 30
-            continue
-        }
-        prompt=$(printf '%s\n' "$screen" | gate_prompt)
-        if [ -z "$prompt" ]; then
-            seen=""
-            sleep 2
-            continue
-        fi
-        kind=$(printf '%s' "$prompt" | cut -f1)
-        command=$(printf '%s' "$prompt" | cut -f2)
-        tight=$(printf '%s' "$prompt" | cut -f3)
-        case "$kind" in
-        other) why="not a command" ;;
-        *) why=$(gate_forbidden "$rules" "$command") || why=$(gate_forbidden "$rules" "$tight") || why="" ;;
-        esac
-        if [ -n "$why" ] || [ "$dry" = --dry ]; then
-            if [ "$prompt" != "$seen" ]; then
-                if [ -n "$why" ]; then
-                    echo "HOLD $name ($why): $command"
-                else
-                    echo "would approve $name: $command"
-                fi
-                seen=$prompt
-            fi
-            sleep 2
-            continue
-        fi
-        case "$kind" in
-        codex) term_key "$pane" y ;;
-        claude) term_key "$pane" enter ;;
-        esac
-        echo "approved $name: $command"
-        seen=""
-        sleep 3
+        for name in $names; do
+            gate_look "$name" "$(cat "$gate_state/pane/$name")"
+        done
+        sleep 2
     done
 }

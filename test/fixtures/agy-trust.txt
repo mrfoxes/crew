@@ -1,0 +1,9 @@
+Accessing workspace: 
+/private/tmp/claude-501/-Users-mrfoxes-Documents-repos-github-com-mrfoxes-crew/4efb239a-0c58- 
+42ea-b154-c5b1d2c3fba8/scratchpad/agy 
+Do you trust the contents of this project? 
+Antigravity CLI requires permission to read, edit, and execute files here. 
+> Yes, I trust this folder 
+  No, exit 
+  ↑/↓ Navigate · enter Confirm 
+                                                                           Gemini 4 Argon · high

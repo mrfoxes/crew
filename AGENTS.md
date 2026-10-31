@@ -22,5 +22,6 @@ each piece lives.
 
 ```
 sh test/run.sh                      # all tests
-for f in bin/crew lib/*.sh; do sh -n "$f"; done
+for f in bin/crew lib/*.sh test/run.sh; do sh -n "$f"; done
+shellcheck -s sh -S warning bin/crew lib/*.sh test/run.sh
 ```

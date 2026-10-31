@@ -83,7 +83,9 @@ term_self() {
 # What the pane shows now.
 term_read() {
     case "$1" in
-    iterm:*) iterm_with "${1#iterm:}" 'return contents of s' ;;
+    # iTerm2 fails a read now and then while a tab closes ("Invalid index"):
+    # once more before giving up.
+    iterm:*) iterm_with "${1#iterm:}" 'return contents of s' 2>/dev/null || { sleep 0.3; iterm_with "${1#iterm:}" 'return contents of s'; } ;;
     tmux:*) tmux capture-pane -p -t "${1#tmux:}" ;;
     *)
         echo "crew: '$1' is not a pane" >&2
@@ -175,7 +177,13 @@ term_spawn() {
     if [ "$where" = tab ]; then
         open='tell w to set n to current session of (create tab with default profile)'
     else
-        open='tell s to set n to (split vertically with default profile)'
+        # Beside this pane while the tab holds an odd number, below it while
+        # even: three or four panes make a grid, not a row of slivers.
+        open='if (count of sessions of t) mod 2 = 1 then
+                            tell s to set n to (split vertically with default profile)
+                        else
+                            tell s to set n to (split horizontally with default profile)
+                        end if'
     fi
     id=$(iterm_with "${me#iterm:}" "$open
                         tell n to write text (item 2 of argv)

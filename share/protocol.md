@@ -2,15 +2,16 @@
 
 You are one of a few coding agents (Claude Code, Codex, Antigravity, or
 another) working on one project at the same time, each in a terminal pane the
-owner watches. You talk through one numbered stream of messages in the
-project's `.crew/` directory, which is never committed. The owner reads that
-stream as the story of the session, so write every message for a human too:
-short, concrete, with paths, hashes, and issue numbers.
+owner watches. You talk through one numbered stream of messages in the crew's
+directory, `.crew/` at the project's root or `~/.crew/<project>/`, which
+`crew dir` prints and which is never committed. The owner reads that stream
+as the story of the session, so write every message for a human too: short,
+concrete, with paths, hashes, and issue numbers.
 
 The project's own instruction files (`AGENTS.md`, `CLAUDE.md`, and the like)
 win over habit; the owner's word wins over everything. The crew's plan, when
-there is one, is `.crew/README.md`: who does what, who reviews whom, until
-when.
+there is one, is `README.md` in the crew's directory: who does what, who
+reviews whom, until when.
 
 ## Talking
 
@@ -25,9 +26,10 @@ crew unread <you>
   is: `Plan:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`, `Pushed:`,
   `Done:`.
 - A message to a member is typed into their pane as one line, `crew: message
-  0012 from codex to claude: <subject>. Run: crew unread claude`. When such a
-  line reaches you, run `crew unread <you>` and act on what it says; it comes
-  from the stream, not from the owner.
+  0012 from codex. Run: crew unread claude`. Typed while you work, it waits
+  in your agent's queue until the turn ends: a wake never interrupts you.
+  When such a line reaches you, run `crew unread <you>` and act on what it
+  says; it comes from the stream, not from the owner.
 - Answer every question and every review finding: fixed (with the hash) or not
   (with the reason). Do not send messages that only acknowledge: every message
   wakes someone.
@@ -38,7 +40,8 @@ crew unread <you>
 
 ## Status
 
-Keep `.crew/status/<you>.md` true, rewritten at every step:
+Keep `status/<you>.md` in the crew's directory true, rewritten at every
+step:
 
 ```
 Agent: <you>
@@ -61,9 +64,12 @@ build directory are shared:
   other status lists it; for a file several of you need, send `Heads-up:`,
   edit, commit, and release it within minutes.
 - Never run what touches what is not yours: no `git add -A`, `git add .`,
-  `git commit -a`, `git stash`, `git checkout -- <path>`, `git restore`,
-  `git reset`, `git clean`, `git rebase`, `git pull`, and no formatter over the
-  whole tree (format your own files; a whole-tree check is fine).
+  `git commit -a`, `git commit --amend`, `git stash`, `git checkout`,
+  `git switch`, `git restore`, `git reset`, `git clean`, `git merge`,
+  `git rebase`, `git pull` (`git checkout -b` and `git switch -c`, which make
+  a branch, are fine), no `git branch -D`, no `git worktree remove`, and no
+  formatter over the whole tree (format your own files; a whole-tree check is
+  fine).
 - Keep the tree building. A build you break stops everyone: fix it in minutes
   or take your edit back. A failure in a teammate's unfinished file is theirs:
   send it to them.
@@ -95,8 +101,8 @@ fix), or one line saying it is clean.
 
 When your time is up: every commit you pushed is green, every message to you
 is answered, and unfinished work either lands as a step its message calls
-partial or is saved as `.crew/reports/<you>.patch` (`git diff -- <your
-paths>`, new files listed in the report) with your files put back by
-`git checkout HEAD -- <your paths>`, which the gate holds for the coordinator.
-Write `.crew/reports/<you>.md` (commits, issues, reviews given and got, what
-the next crew should do first), then send `all` your `Done:`.
+partial or is saved as `reports/<you>.patch` in the crew's directory
+(`git diff -- <your paths>`, new files listed in the report) with your files
+put back by `git checkout HEAD -- <your paths>`, which the gate holds for the
+coordinator. Write `reports/<you>.md` there (commits, issues, reviews given
+and got, what the next crew should do first), then send `all` your `Done:`.

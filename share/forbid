@@ -4,25 +4,40 @@
 # out of the command before the rules are tried. A project replaces this file
 # with its own .crew/forbid.
 
-# Releasing the push lock, and checking the format, are fine.
+# Releasing the push lock, checking the format, and making a branch are fine.
 !rm +-r[f]? +[^ ;&|]*\.crew/lock
 !cargo +fmt( +[^ ;&|]+)* +--check
+!black +[^;&|]*--(check|diff)
+!ruff +format +[^;&|]*--(check|diff)
+!git +(checkout +-[bB]|switch +(-c|--create)) +[^ ;&|]+
 
 # Commands that touch what is not yours in a shared working tree.
 git +add +(-A|--all|\.)( |$)
 git +commit +(.* )?-[a-zA-Z]*a[a-zA-Z]*( |$)
-git +commit +(.* )?--all( |$)
-git +(stash|restore|clean|rebase|pull)( |$)
-git +checkout +(.* )?--( |$)
+git +commit +(.* )?--(all|amend)( |$)
+git +(stash|restore|clean|rebase|pull|merge|checkout|switch)( |$)
 git +reset
+git +branch +(.* )?(-[a-zA-Z]*[Df][a-zA-Z]*|--force)( |$)
+git +worktree +remove( |$)
+
+# A formatter over the tree (., a directory, a glob, ./...) rewrites files
+# that are not yours; over your own files it is fine.
 cargo +fmt
+(^|[ ;&|(])go +fmt( |$)
+gofmt +(.* )?-[a-zA-Z]*w[a-zA-Z]*( +[^ ;&|]+)* +(\.|[^ ;&|]*\*[^ ;&|]*|[^ ;&|]*(/|\.\.\.))( |$)
+prettier +(.* )?(-w|--write)( +[^ ;&|]+)* +(\.|[^ ;&|]*\*[^ ;&|]*|[^ ;&|]*(/|\.\.\.))( |$)
+(^|[ ;&|(])black( +[^ ;&|]+)* +(\.|[^ ;&|]*\*[^ ;&|]*|[^ ;&|]*(/|\.\.\.))( |$)
+ruff +format( +[^ ;&|]+)* +(\.|[^ ;&|]*\*[^ ;&|]*|[^ ;&|]*(/|\.\.\.))( |$)
+ruff +format *([;&|]|$)
 
 # History that cannot be taken back.
-git +push +(.* )?(-f|--force|--force-with-lease)( |$)
-git +push +(.* )?--delete +(main|master)( |$)
+git +push +(.* )?(-[a-zA-Z]*f[a-zA-Z]*|--force[^ ]*|--mirror)( |$)
+git +push +(.* )?\+[^ ]+
+git +push +(.* )?(-d|--delete) +(main|master)( |$)
 git +push +(.* )?:(main|master)( |$)
 
 # Another agent's processes, the machine, and deletions.
 (^|[ ;&|(])(kill|pkill|killall)
 (^|[ ;&|(])sudo
-rm +-[a-zA-Z]*[rR]
+rm +(.* )?(-[a-zA-Z]*[rR][a-zA-Z]*|--recursive)( |$)
+find +(.* )?-delete( |$)
