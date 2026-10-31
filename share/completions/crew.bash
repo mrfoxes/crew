@@ -107,6 +107,24 @@ _crew_kinds() {
     printf '%s\n' "${kinds:-claude codex agy}" other
 }
 
+# The presets: the owner's in ${XDG_CONFIG_HOME:-~/.config}/crew/presets, and
+# the ones crew ships in share/presets of the checkout it runs from.
+_crew_presets() {
+    local self link
+    self=$(command -v crew) || self=
+    while [ -n "$self" ] && [ -L "$self" ]; do
+        link=$(readlink "$self")
+        case "$link" in
+        /*) self=$link ;;
+        *) self=$(dirname "$self")/$link ;;
+        esac
+    done
+    {
+        ls "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets" 2>/dev/null
+        [ -z "$self" ] || ls "$(dirname "$self")/../share/presets" 2>/dev/null
+    } | awk 'NF && !seen[$0]++'
+}
+
 # Sets COMPREPLY to the words of $1 (blanks or lines apart) that start with
 # the word being completed.
 _crew_reply() {
@@ -179,6 +197,7 @@ all
 owner" ;;
     number) _crew_reply "$(_crew_numbers)" ;;
     kind) _crew_reply "$(_crew_kinds)" ;;
+    preset) _crew_reply "$(_crew_presets)" ;;
     key)
         case "$cur" in
         ctrl-* | alt-*)

@@ -310,8 +310,18 @@ member tess                              # started and joined by hand
 ```
 crew up                     # the crew of the Crewfile, up or back
 crew up --dry               # what it would do, touching nothing
-crew up lean                # start the Crewfile from the preset lean
+crew up pair                # start the Crewfile from the preset pair
 ```
+
+Three presets ship in `share/presets/`, to start from on a new machine:
+
+- `solo`: one member, with the watch and the board beside you.
+- `pair`: two members of two kinds, `claude` and `codex`, reviewing each other.
+- `ring`: three members, `claude`, `codex`, and `agy`, each in a clone of
+  its own, each reviewing the next.
+
+A preset whose agent is not installed says which and stops before any pane
+opens. Edit the Crewfile it wrote to change the crew.
 
 `crew up` makes the crew's directory when there is none, then, tab by
 tab, spawns each member without a live pane in its tab, names and colors
@@ -320,8 +330,10 @@ invites every member spawned, all at once. Run again, it brings back only
 what is missing: a closed pane returns in its place, a live agent is never
 restarted, and a member with a pane the Crewfile does not list is named
 and left alone. A preset is a Crewfile in `~/.config/crew/presets/<name>`
-(under `$XDG_CONFIG_HOME`): `crew up <preset>` copies it to a crew that
-has no Crewfile, and refuses one that has its own, which is the truth.
+(under `$XDG_CONFIG_HOME`), or one of crew's own; the owner's preset of
+the same name wins. `crew up <preset>` copies it to a crew that has no
+Crewfile, and refuses one that has its own, which is the truth. Tab
+completes the preset names.
 
 ## Ending a crew
 
@@ -625,6 +637,7 @@ lib/cost.sh         crew cost: what the members spent, from the agents' logs and
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
+share/presets/      the Crewfiles crew up starts from: solo, pair, ring
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from

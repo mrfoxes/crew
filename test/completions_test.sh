@@ -100,6 +100,8 @@ crew show 0003 |0003 0012
 crew spawn |
 crew spawn x --beside |agy claude codex
 crew spawn x --kind |agy claude codex other
+crew up |pair ring solo
+crew up r|ring
 crew spawn x --kind c|claude codex
 crew spawn x --|--above --below --beside --cache --clone --join --kind --tab
 crew spawn x --kind agy --b|--below --beside

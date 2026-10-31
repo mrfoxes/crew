@@ -1,0 +1,6 @@
+# ring: three agents of three kinds, each in a clone of its own, each
+# reviewing the next: claude, then codex, then agy, then claude again.
+tab main layout=main watch board
+member claude reviewer=codex  clone -- claude
+member codex  reviewer=agy    clone -- codex
+member agy    reviewer=claude clone -- agy

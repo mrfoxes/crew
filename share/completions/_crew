@@ -108,6 +108,24 @@ _crew_kinds() {
     printf '%s\n' "${kinds:-claude codex agy}" other
 }
 
+# The presets: the owner's in ${XDG_CONFIG_HOME:-~/.config}/crew/presets, and
+# the ones crew ships in share/presets of the checkout it runs from.
+_crew_presets() {
+    local self link
+    self=$(command -v crew) || self=
+    while [ -n "$self" ] && [ -L "$self" ]; do
+        link=$(readlink "$self")
+        case "$link" in
+        /*) self=$link ;;
+        *) self=$(dirname "$self")/$link ;;
+        esac
+    done
+    {
+        ls "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets" 2>/dev/null
+        [ -z "$self" ] || ls "$(dirname "$self")/../share/presets" 2>/dev/null
+    } | awk 'NF && !seen[$0]++'
+}
+
 _crew() {
     local cmd line type w i skip=0 pos=0
     local -a cands uw positionals letters valued
@@ -161,6 +179,7 @@ _crew() {
     to) cands=(${(f)"$(_crew_members)"} all owner) ;;
     number) cands=(${(f)"$(_crew_numbers)"}) ;;
     kind) cands=(${(f)"$(_crew_kinds)"}) ;;
+    preset) cands=(${(f)"$(_crew_presets)"}) ;;
     key)
         case "$words[CURRENT]" in
         ctrl-* | alt-*)

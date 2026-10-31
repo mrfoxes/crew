@@ -1,6 +1,7 @@
 # The Crewfile: a crew described once, its tabs and members in the order
 # crew up places them. It lives in the crew's directory; a preset is one
-# kept in ${XDG_CONFIG_HOME:-~/.config}/crew/presets/<name>. Sourced by
+# kept in ${XDG_CONFIG_HOME:-~/.config}/crew/presets/<name>, or one crew
+# ships in share/presets. Sourced by
 # bin/crew.
 #
 #   # tabs and members, in the order crew up places them
@@ -21,12 +22,26 @@ crewfile_path() {
     echo "$1/Crewfile"
 }
 
-# Where the preset <name> lives; a name with a / is a path.
+# Where the preset <name> lives; a name with a / is a path. The owner's
+# preset of the name wins over the one crew ships in share/presets.
 crewfile_preset() {
     case "$1" in
     */*) echo "$1" ;;
-    *) echo "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets/$1" ;;
+    *)
+        if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets/$1" ] ||
+            [ ! -f "$CREW_HOME/share/presets/$1" ]; then
+            echo "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets/$1"
+        else
+            echo "$CREW_HOME/share/presets/$1"
+        fi
+        ;;
     esac
+}
+
+# The names of the presets there are, the owner's and crew's, one a line.
+crewfile_preset_names() {
+    ls "${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets" "$CREW_HOME/share/presets" 2>/dev/null |
+        awk 'NF && $0 !~ /:$/ && !seen[$0]++' | sort
 }
 
 # Reads the Crewfile <file> and prints it as records, tab-separated, - for

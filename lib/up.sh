@@ -59,12 +59,29 @@ up_crewfile() {
     cp "$u_preset" "$u_file" && echo "$u_file"
 }
 
-# The presets the owner keeps, if any.
+# The presets there are: the owner's and the ones crew ships.
 up_presets() {
-    u_dir=${XDG_CONFIG_HOME:-$HOME/.config}/crew/presets
-    [ -d "$u_dir" ] || return 0
-    u_list=$(ls "$u_dir" 2>/dev/null | tr '\n' ' ')
-    [ -z "$u_list" ] || echo "crew: presets in $u_dir: $u_list"
+    u_list=$(crewfile_preset_names | tr '\n' ' ')
+    [ -z "$u_list" ] || echo "crew: presets: $u_list"
+}
+
+# Stops, before anything opens, when a member of the records <records> runs
+# an agent that is not installed: its first word is no command. Says which.
+up_agents() {
+    u_missing=""
+    while IFS='	' read -r u_what _ u_name _ _ _ _ _ _ _ u_line; do
+        [ "$u_what" = member ] && [ "$u_line" != - ] || continue
+        # shellcheck disable=SC2086 # the first word of the line
+        set -- $u_line
+        command -v "$1" >/dev/null 2>&1 || u_missing="$u_missing
+crew: $u_name runs $1, which is not installed"
+    done <<EOR
+$1
+EOR
+    [ -z "$u_missing" ] && return 0
+    printf '%s\n' "${u_missing#
+}" >&2
+    return 1
 }
 
 # Whether <member> of the crew <dir> has a pane still there.
@@ -162,6 +179,7 @@ crew_up() {
     fi
     u_file=$(up_crewfile "$dir" "$u_preset") || return 1
     u_records=$(crewfile_read "$u_file") || return 1
+    [ -z "$u_preset" ] || up_agents "$u_records" || return 1
     u_me=$(term_self) || {
         echo "crew: crew up runs in a pane of iTerm2 or tmux: the coordinator's" >&2
         return 1

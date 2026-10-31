@@ -146,8 +146,19 @@ check "a preset starts the Crewfile" "$dir/Crewfile" "$(up_crewfile "$dir" small
 check "with its lines" "tab main" "$(cat "$dir/Crewfile")"
 rm "$dir/Crewfile"
 check "no Crewfile and no preset" "crew: no Crewfile in $dir: write one, or start from a preset with 'crew up <preset>'
-crew: presets in $XDG_CONFIG_HOME/crew/presets: lean small " "$(up_crewfile "$dir" "" 2>&1)"
+crew: presets: lean pair ring small solo " "$(up_crewfile "$dir" "" 2>&1)"
 check "a preset not there" "1" "$(up_crewfile "$dir" nowhere >/dev/null 2>&1; echo $?)"
+for p in solo pair ring; do
+    check "the preset $p is read" "0" "$(crewfile_read "$CREW_HOME/share/presets/$p" >/dev/null 2>&1; echo $?)"
+done
+check "a preset crew ships" "$CREW_HOME/share/presets/ring" "$(crewfile_preset ring)"
+printf 'tab mine\n' >"$XDG_CONFIG_HOME/crew/presets/ring"
+check "the owner's preset wins" "$XDG_CONFIG_HOME/crew/presets/ring" "$(crewfile_preset ring)"
+rm "$XDG_CONFIG_HOME/crew/presets/ring"
+rec() { printf 'member\tmain\t%s\t-\t0\t1\t0\t-\t-\t-\t%s' "$1" "$2"; }
+check "a preset's agents are installed" "0" "$(up_agents "$(rec a 'sh -c true')" >/dev/null 2>&1; echo $?)"
+check "an agent not installed is named" "crew: b runs no-such-agent, which is not installed" "$(up_agents "$(rec b 'no-such-agent --x')" 2>&1)"
+check "a member joined by hand needs no agent" "0" "$(up_agents "$(rec c -)" >/dev/null 2>&1; echo $?)"
 check "up wants one preset" "2" "$(crew_up a b >/dev/null 2>&1; echo $?)"
 check "up knows only --dry" "2" "$(crew_up --fast >/dev/null 2>&1; echo $?)"
 

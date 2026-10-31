@@ -1,0 +1,3 @@
+# solo: one agent, with the watch and the board beside you.
+tab main layout=main watch board
+member claude -- claude

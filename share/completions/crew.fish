@@ -111,6 +111,27 @@ function __crew_kinds
     printf '%s\n' $kinds other
 end
 
+# The presets: the owner's in $XDG_CONFIG_HOME/crew/presets, and the ones
+# crew ships in share/presets of the checkout it runs from.
+function __crew_presets
+    set -l self (command -s crew)
+    while test -n "$self" -a -L "$self"
+        set -l link (readlink $self)
+        switch $link
+            case '/*'
+                set self $link
+            case '*'
+                set self (dirname $self)/$link
+        end
+    end
+    set -l config $XDG_CONFIG_HOME
+    test -n "$config"; or set config $HOME/.config
+    begin
+        ls $config/crew/presets 2>/dev/null
+        test -z "$self"; or ls (dirname $self)/../share/presets 2>/dev/null
+    end | awk 'NF && !seen[$0]++'
+end
+
 # The candidates for the word being completed.
 function __crew_complete
     set -l tokens (commandline -opc)
@@ -174,6 +195,8 @@ function __crew_complete
             __crew_numbers
         case kind
             __crew_kinds
+        case preset
+            __crew_presets
         case key
             if string match -q -r -- '^(ctrl|alt)-' $cur
                 set -l prefix (string replace -r -- '-.*' '' $cur)

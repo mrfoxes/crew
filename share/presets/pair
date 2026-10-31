@@ -1,0 +1,4 @@
+# pair: two agents of two kinds, each reviewing the other's work.
+tab main layout=main watch board
+member claude reviewer=codex -- claude
+member codex  reviewer=claude -- codex
