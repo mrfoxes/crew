@@ -12,13 +12,13 @@
     <div class="wrap nav-bar">
       <a class="brand" href="#top"><svg class="mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><rect x="1" y="3" width="6.4" height="18" rx="1.6" fill="#d97757"/><rect x="8.8" y="3" width="6.4" height="18" rx="1.6" fill="#10a37f"/><rect x="16.6" y="3" width="6.4" height="18" rx="1.6" fill="#4285f4"/></svg><span>crew</span></a>
       <nav class="nav-links" aria-label="Sections">
-        <a href="#promises">Promises</a>
+        <a class="nav-more" href="#promises">Promises</a>
         <a href="#quickstart">Quickstart</a>
-        <a href="#session">A real session</a>
-        <a href="#comparison">What it is not</a>
-        <a href="#cost">Cost</a>
+        <a class="nav-more" href="#session">A real session</a>
+        <a class="nav-more" href="#comparison">What it is not</a>
+        <a class="nav-more" href="#cost">Cost</a>
         <a href="#reference">Reference</a>
-        <a href="#requirements">Requirements</a>
+        <a class="nav-more" href="#requirements">Requirements</a>
         <a href="https://github.com/mrfoxes/crew">GitHub</a>
       </nav>
     </div>
@@ -76,7 +76,7 @@ gate: 112 passed, 0 failed</div>
             <div class="pane-prompt">› 1. Yes, proceed (y)</div>
           </div>
 
-          <div class="pane pane-agy">
+          <div class="pane pane-agy pane-extra">
             <div>
               <div class="pane-header">
                 <span class="pane-badge">agy · main</span>
@@ -99,7 +99,7 @@ codex    <span class="col-wide">codex   main  </span>prompt   #33 test harness i
 agy      <span class="col-wide">agy     main  </span>working  #54 doctor checks Crewfile    <span class="col-wide"> 1m  0.92</span>
 lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</span></pre>
           </div>
-          <div class="watch-pane">
+          <div class="watch-pane pane-extra">
             <div class="pane-title">crew watch --all</div>
             <pre><span class="txt-ok">21:45:03 approved codex:</span> cargo test --test editors
 <span class="txt-ok">21:46:18 approved claude:</span> sh test/run.sh doctor
@@ -344,27 +344,27 @@ nothing is left</code></pre>
           <tbody>
             <tr>
               <td><strong>Tabs or tmux by hand</strong></td>
-              <td>Real terminal panes, local <code>git</code>, your own agents and keys.</td>
-              <td>No shared stream, no gate, no file claims, no push lock, no reviewer for each member.</td>
-              <td>Keeps your panes and local <code>git</code>; adds the numbered stream, live board, gate, claims, lock, and <code>crew land</code>.</td>
+              <td data-label="What it gives you">Real terminal panes, local <code>git</code>, your own agents and keys.</td>
+              <td data-label="What is missing">No shared stream, no gate, no file claims, no push lock, no reviewer for each member.</td>
+              <td data-label="What crew keeps and adds">Keeps your panes and local <code>git</code>; adds the numbered stream, live board, gate, claims, lock, and <code>crew land</code>.</td>
             </tr>
             <tr>
               <td><strong>Cloud or background agents</strong></td>
-              <td>Parallel branches running on remote machines.</td>
-              <td>Hidden screens, nothing you can type into mid-turn, separate from your local tools and checkout.</td>
-              <td>Keeps every member visible in a local pane you can watch, focus, and type into at any moment.</td>
+              <td data-label="What it gives you">Parallel branches running on remote machines.</td>
+              <td data-label="What is missing">Hidden screens, nothing you can type into mid-turn, separate from your local tools and checkout.</td>
+              <td data-label="What crew keeps and adds">Keeps every member visible in a local pane you can watch, focus, and type into at any moment.</td>
             </tr>
             <tr>
               <td><strong>In-process frameworks</strong></td>
-              <td>One program holding multiple transcripts.</td>
-              <td>No terminals, no agent's own screen, transcripts kept in one process's context, extra dependencies.</td>
-              <td>Runs each agent's own command in its own terminal pane and writes every message and status as plain Markdown in <code>.crew/</code>.</td>
+              <td data-label="What it gives you">One program holding multiple transcripts.</td>
+              <td data-label="What is missing">No terminals, no agent's own screen, transcripts kept in one process's context, extra dependencies.</td>
+              <td data-label="What crew keeps and adds">Runs each agent's own command in its own terminal pane and writes every message and status as plain Markdown in <code>.crew/</code>.</td>
             </tr>
             <tr>
               <td><strong>Worktree spawners</strong></td>
-              <td>Separate working trees so builds do not collide.</td>
-              <td>No message stream between members, no gate holding dangerous commands, no reviewer for each member.</td>
-              <td>Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and a reviewer for each member.</td>
+              <td data-label="What it gives you">Separate working trees so builds do not collide.</td>
+              <td data-label="What is missing">No message stream between members, no gate holding dangerous commands, no reviewer for each member.</td>
+              <td data-label="What crew keeps and adds">Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and a reviewer for each member.</td>
             </tr>
           </tbody>
         </table>
