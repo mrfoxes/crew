@@ -81,3 +81,29 @@ tmux_move() {
     above) tmux join-pane -d -v -b -s "$1" -t "$3" ;;
     esac
 }
+
+# The label of every pane in a window crew names one in: its member's name,
+# in its kind's color when it has one, then the title its agent sets. Both
+# live in the pane's own options, which no agent's escape sequence reaches.
+tmux_border=' #{?@crew_name,#{?@crew_color,#[fg=#{@crew_color}#,bold],#[bold]}#{@crew_name}#[default] · ,}#{pane_title} '
+
+# Shows <label> on pane <id>, in the status line of its border, which crew
+# turns on for the pane's window; an empty label takes it off.
+tmux_name() {
+    if [ -z "$2" ]; then
+        tmux set-option -p -u -t "$1" @crew_name
+        return
+    fi
+    tmux set-option -p -t "$1" @crew_name "$2" &&
+        tmux set-option -w -t "$1" pane-border-status top &&
+        tmux set-option -w -t "$1" pane-border-format "$tmux_border"
+}
+
+# Colors pane <id>'s label <color> (#rrggbb); no color takes it off.
+tmux_color() {
+    if [ -z "$2" ]; then
+        tmux set-option -p -u -t "$1" @crew_color
+    else
+        tmux set-option -p -t "$1" @crew_color "$2"
+    fi
+}

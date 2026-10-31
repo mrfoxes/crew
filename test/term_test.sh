@@ -50,4 +50,28 @@ check "move fails when tmux does" "1" "$(term_move tmux:%4 beside tmux:%3 2>/dev
 check "move in tmux asks no iTerm2" "" "$(cat "$tmp/osascript.args" 2>/dev/null)"
 unset -f osascript
 
+# Naming and coloring a pane. tmux keeps both in the pane's options and
+# shows them in its border, which it turns on for the pane's window.
+tmux() { echo "$*" >>"$tmp/tmux.args"; }
+named() { : >"$tmp/tmux.args"; "$@"; cat "$tmp/tmux.args"; }
+check "name in tmux" "set-option -p -t %4 @crew_name claude2
+set-option -w -t %4 pane-border-status top
+set-option -w -t %4 pane-border-format $tmux_border" "$(named term_name tmux:%4 claude2)"
+check "name off in tmux" "set-option -p -u -t %4 @crew_name" "$(named term_name tmux:%4 "")"
+check "color in tmux" "set-option -p -t %4 @crew_color #d97757" "$(named term_color tmux:%4 '#d97757')"
+check "color off in tmux" "set-option -p -u -t %4 @crew_color" "$(named term_color tmux:%4)"
+# iTerm2 shows the name as the session's badge, set by the escape sequence
+# written to its tty, and tints its background through osascript.
+term_tty() { echo "$tmp/tty"; }
+term_name iterm:X claude2
+check "name in iTerm2" "$(printf '\033]1337;SetBadgeFormat=%s\007' "$(printf claude2 | base64)")" "$(cat "$tmp/tty")"
+term_name iterm:X ""
+check "name off in iTerm2" "$(printf '\033]1337;SetBadgeFormat=\007')" "$(cat "$tmp/tty")"
+osascript() { shift; echo "$*" >"$tmp/osascript.args"; }
+term_color iterm:X '#d97757'
+check "color in iTerm2" "X 217 119 87" "$(cat "$tmp/osascript.args")"
+term_color iterm:X
+check "color off in iTerm2" "X" "$(cat "$tmp/osascript.args" | sed 's/ *$//')"
+check "name of no pane" "1" "$(term_name nowhere x 2>/dev/null; echo $?)"
+
 finish

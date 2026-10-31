@@ -52,6 +52,7 @@ crew_join() {
     fi
     if [ -n "$pane" ]; then
         echo "$pane" >"$dir/panes/$name"
+        crew_label "$pane" "$name" "${kind:-other}" 2>/dev/null || :
         where="in the pane $pane: a message to you is typed into it"
     elif [ -s "$dir/threads/$name" ]; then
         rm -f "$dir/panes/$name"
@@ -74,8 +75,9 @@ crew_join() {
     crew_unread "$name"
 }
 
-# Forgets <name>'s pane, thread, and kind: messages to <name> wait in the
-# stream from now on.
+# Forgets <name>'s pane, thread, and kind, and takes its name and color off
+# the pane when it is still there: messages to <name> wait in the stream
+# from now on.
 crew_leave() {
     if [ $# -ne 1 ]; then
         echo "usage: crew leave <name>" >&2
@@ -83,6 +85,8 @@ crew_leave() {
     fi
     crew_name "$1" || return 2
     dir=$(crew_dir) || return 1
+    pane=$(cat "$dir/panes/$1" 2>/dev/null) || pane=""
+    [ -z "$pane" ] || term_gone "$pane" || crew_unlabel "$pane"
     rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/kind/$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
@@ -120,6 +124,22 @@ crew_member() {
         return 1
         ;;
     esac
+}
+
+# Shows <name> on <pane>, out of its agent's reach, marked with <kind>'s
+# color unless CREW_COLOR=0. A label that fails says so and leaves the
+# pane as it is: naming is no reason to fail a spawn.
+crew_label() {
+    term_name "$1" "$2" || echo "crew: could not name the pane $1 $2" >&2
+    color=""
+    [ "${CREW_COLOR:-1}" = 0 ] || color=$(kind_field "$3" color)
+    term_color "$1" "$color" || echo "crew: could not color the pane $1" >&2
+}
+
+# Takes the name and the color off <pane>.
+crew_unlabel() {
+    term_name "$1" "" 2>/dev/null || :
+    term_color "$1" "" 2>/dev/null || :
 }
 
 # Every pane crew can see, with the member joined to it and its kind.
@@ -233,6 +253,7 @@ crew_spawn() {
     echo "$pane" >"$dir/panes/$name"
     [ -n "$kind" ] || kind=$(kind_of_line "$line")
     kind_record "$dir" "$name" "${kind:-other}"
+    crew_label "$pane" "$name" "${kind:-other}"
     echo "$name: $pane"
     [ -z "$join" ] || crew_invite "$name"
 }

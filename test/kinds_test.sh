@@ -79,12 +79,23 @@ git init -q "$tmp/repo"
 cd "$tmp/repo" || exit 1
 dir=$(crew_init)
 term_spawn() { echo tmux:%9; }
+term_name() { echo "name $1 $2" >>"$tmp/labels"; }
+term_color() { echo "color $1 ${2:-}" >>"$tmp/labels"; }
+labels() { cat "$tmp/labels"; rm -f "$tmp/labels"; }
 crew_spawn agy 'cd sub && codex' >/dev/null
 check "spawn records the kind of its command" "codex" "$(kind_member "$dir" agy)"
+check "spawn names the pane and colors it for its kind" "name tmux:%9 agy
+color tmux:%9 #10a37f" "$(labels)"
+(CREW_COLOR=0 crew_spawn agy 'cd sub && codex' >/dev/null)
+check "spawn with CREW_COLOR=0 names the pane only" "name tmux:%9 agy
+color tmux:%9 " "$(labels)"
 crew_spawn agy --kind agy codex >/dev/null
 check "spawn records the kind given" "agy" "$(kind_member "$dir" agy)"
+rm -f "$tmp/labels"
 crew_spawn agy vim >/dev/null
 check "spawn of no kind records other" "other" "$(kind_member "$dir" agy)"
+check "a pane of no kind gets no color" "name tmux:%9 agy
+color tmux:%9 " "$(labels)"
 check "spawn refuses a kind crew does not know" "2" "$(crew_spawn agy --kind vim vim >/dev/null 2>&1; echo $?)"
 check "spawn names the kinds it knows" "crew: 'vim' is not a kind crew knows: claude codex agy other" "$(crew_spawn agy --kind vim vim 2>&1 >/dev/null)"
 crew_spawn agy claude >/dev/null
@@ -93,15 +104,21 @@ term_self() { echo tmux:%9; }
 kind_of_self() { :; }
 check "join keeps the spawned kind" "claude" "$(crew_join agy >/dev/null; kind_member "$dir" agy)"
 kind_of_self() { echo agy; }
+rm -f "$tmp/labels"
 check "join records the kind it runs under" "agy" "$(crew_join agy >/dev/null; kind_member "$dir" agy)"
+check "join names its pane and colors it" "name tmux:%9 agy
+color tmux:%9 #4285f4" "$(labels)"
 check "join says the kind" "You are agy, of kind agy, in the crew at $dir, in the pane tmux:%9: a message to you is typed into it." "$(crew_join agy | sed -n 1p)"
 kind_of_self() { :; }
 check "join of no kind records other" "other" "$(crew_join codex --pane tmux:%9 >/dev/null; kind_member "$dir" codex)"
 check "panes show the kind" "agy      agy     tmux:%9" "$(rm "$dir/panes/codex"; crew_panes | cut -c1-24)"
 printf 'Agent: agy\n' >"$dir/status/agy.md"
 check "board shows the kind" "1" "$(crew_board 1 | grep -c '^== agy (agy, tmux:%9, 0 min ago)$')"
+rm -f "$tmp/labels"
 crew_leave agy >/dev/null
 check "leave forgets the kind" "" "$(kind_member "$dir" agy)"
+check "leave takes the name and color off a pane still there" "name tmux:%9 
+color tmux:%9 " "$(labels)"
 check "board without a kind" "1" "$(crew_board 1 | grep -c '^== agy (no pane, 0 min ago)$')"
 
 finish

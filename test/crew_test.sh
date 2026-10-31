@@ -13,6 +13,9 @@ term_read() { fixture_read; }
 # The agent a join runs under: none, unless a check says otherwise; the
 # tests run under whatever agent runs them.
 kind_of_self() { :; }
+# The names and colors a pane gets, one a line, instead of the terminal's.
+term_name() { echo "name $1 $2" >>"$tmp/labels"; }
+term_color() { echo "color $1 ${2:-}" >>"$tmp/labels"; }
 
 # The stream: init, numbering under contention, routing, and the lock.
 git init -q "$tmp/repo"

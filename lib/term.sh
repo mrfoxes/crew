@@ -25,6 +25,12 @@
 #                       moves the pane right of, under, or over the other
 #                       (beside, below, above), its agent running on; the
 #                       pane keeps its id, and is never closed
+#   <t>_name <id> <label>
+#                       shows <label> on the pane where no agent's title
+#                       reaches it; an empty label takes it off
+#   <t>_color <id> [<color>]
+#                       marks the pane with <color> (#rrggbb); none takes
+#                       the mark off
 #
 # Each fails with a reason on stderr. Nothing outside lib/term*.sh drives
 # iTerm2 or tmux.
@@ -125,6 +131,18 @@ term_read() {
 term_type() {
     backend=$(term_of "$1") || return
     "${backend}_type" "${1#*:}" "$2"
+}
+
+# Shows <label> on the pane, out of its agent's reach; empty takes it off.
+term_name() {
+    backend=$(term_of "$1") || return
+    "${backend}_name" "${1#*:}" "$2"
+}
+
+# Marks the pane with <color> (#rrggbb); no color takes the mark off.
+term_color() {
+    backend=$(term_of "$1") || return
+    "${backend}_color" "${1#*:}" "${2:-}"
 }
 
 # Presses one key in the pane: enter, esc, tab, shift-tab, up, down, left,

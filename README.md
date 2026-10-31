@@ -155,6 +155,26 @@ then a crew's own `kinds`, add kinds or replace these, a line for a kind
 replacing the one before it: a wrapper script that runs Claude Code is one
 line, `mycc mycc - ❯ enter #d97757`.
 
+## Names and colors
+
+Every pane `crew spawn` opens, or a member joins, shows the member's name
+where its agent's titles cannot reach it, marked with its kind's color:
+
+- tmux keeps both in the pane's own options (`@crew_name`, `@crew_color`)
+  and shows them in the status line of its border, which crew turns on for
+  the pane's window: `claude2 · ✳ Claude Code`, the name in the kind's
+  color, then the title the agent sets. `tmux set -w pane-border-status
+  off` hides it again.
+- iTerm2 shows the name as the session's badge, set by the escape sequence
+  iTerm2 reads from its output, written to the session's tty (iTerm2's
+  AppleScript can set neither a tab's title nor a name an agent keeps),
+  and tints the session's background an eighth of the way toward the
+  kind's color, from the background it had, which the session keeps in
+  `user.crew_background`.
+
+`CREW_COLOR=0` names the pane without a color. `crew leave` takes both off
+a pane still open.
+
 ## Laying out a table
 
 One row for each kind of agent, its panes side by side. `--beside` and

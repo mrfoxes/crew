@@ -66,6 +66,53 @@ iterm_key() {
     iterm_type "$1" "$3"
 }
 
+# Shows <label> on session <id> as its badge, which no agent's title
+# reaches: the escape sequence that sets it, written to the session's tty
+# as output, never as a line typed in. An empty label clears it.
+iterm_name() {
+    tty=$(term_tty "iterm:$1") || return
+    printf '\033]1337;SetBadgeFormat=%s\007' "$(printf '%s' "$2" | base64 | tr -d '\n')" >"$tty"
+}
+
+# Tints session <id>'s background an eighth of the way toward <color>
+# (#rrggbb), from the background it had before crew first tinted it, which
+# the session keeps in its variable user.crew_background; no color puts
+# that one back.
+iterm_color() {
+    if [ -n "$2" ]; then
+        set -- "$1" "$(printf '%d' "0x$(printf '%s' "$2" | cut -c2-3)")" \
+            "$(printf '%d' "0x$(printf '%s' "$2" | cut -c4-5)")" \
+            "$(printf '%d' "0x$(printf '%s' "$2" | cut -c6-7)")"
+    fi
+    iterm_with "$1" 'set saved to ""
+                        try
+                            set saved to (variable named "user.crew_background") of s
+                        end try
+                        if saved is "" then
+                            if (count of argv) < 4 then return
+                            set bg to background color of s
+                            tell s to set variable named "user.crew_background" to ((item 1 of bg) as text) & "," & ((item 2 of bg) as text) & "," & ((item 3 of bg) as text)
+                        else
+                            set AppleScript'"'"'s text item delimiters to ","
+                            set parts to text items of saved
+                            set AppleScript'"'"'s text item delimiters to ""
+                            set bg to {(item 1 of parts) as integer, (item 2 of parts) as integer, (item 3 of parts) as integer}
+                        end if
+                        if (count of argv) < 4 then
+                            set background color of s to bg
+                            tell s to set variable named "user.crew_background" to ""
+                            return
+                        end if
+                        set tint to {}
+                        repeat with i from 1 to 3
+                            set b to item i of bg
+                            set k to ((item (i + 1) of argv) as integer) * 257
+                            set end of tint to (b + ((k - b) / 8)) as integer
+                        end repeat
+                        set background color of s to tint
+                        return' "${2:-}" "${3:-}" "${4:-}" >/dev/null
+}
+
 # Opens a session beside the current one (split), in a new tab (tab), or
 # right of, under, or over the iTerm2 pane <anchor> (beside, below,
 # above), and types <line> into it.
