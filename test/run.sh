@@ -1,7 +1,8 @@
 #!/bin/sh
 # crew's tests: the gate's reading of screens, its rules, and its looks at a
-# pane; the stream, the lock, the board, and joining. No pane is touched:
-# nothing here types into a terminal.
+# pane; the stream, the lock, the board, joining, spawning, and moving. No
+# pane is touched: nothing here opens, moves, closes, or types into a pane
+# of a terminal.
 #
 #   sh test/run.sh
 set -u
@@ -10,6 +11,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/store.sh"
 . "$CREW_HOME/lib/term.sh"
+. "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 export CREW_WAKE=0
@@ -286,6 +288,33 @@ check "spawn above in tmux" "tmux:%5" "$(TMUX=1 term_spawn above true tmux:%3)"
 check "spawn above in tmux splits over the pane" "split-window -v -b -t %3 -P -F #{pane_id}" "$(sed -n 1p "$tmp/tmux.args")"
 check "spawn above in tmux refuses an iTerm2 pane" "1" "$(TMUX=1 term_spawn above true iterm:X 2>/dev/null; echo $?)"
 check "spawn above in iTerm2 refuses a tmux pane" "1" "$(TMUX='' term_spawn above true tmux:%3 2>/dev/null; echo $?)"
+# Beside a pane: tmux splits it side by side, then spreads the row out.
+: >"$tmp/tmux.args"
+check "spawn beside in tmux" "tmux:%5" "$(TMUX=1 term_spawn beside true tmux:%3)"
+check "spawn beside in tmux splits the pane side by side, then evens the row" "split-window -h -t %3 -P -F #{pane_id}
+select-layout -E -t %5" "$(sed -n 1,2p "$tmp/tmux.args")"
+check "spawn beside in tmux refuses an iTerm2 pane" "1" "$(TMUX=1 term_spawn beside true iterm:X 2>/dev/null; echo $?)"
+check "spawn beside in iTerm2 refuses a tmux pane" "1" "$(TMUX='' term_spawn beside true tmux:%3 2>/dev/null; echo $?)"
+
+# Moving a pane: tmux joins it to the other, the focus left where it is,
+# beside it (the row evened out), under it, or over it; panes of two
+# terminals, or a pane and itself, are refused before either is asked.
+# iTerm2 is faked too, so that a slip moves no live pane.
+osascript() { echo "$*" >>"$tmp/osascript.args"; return 1; }
+moved() { : >"$tmp/tmux.args"; term_move "$@"; cat "$tmp/tmux.args"; }
+check "move beside in tmux" "join-pane -d -h -s %4 -t %3
+select-layout -E -t %4" "$(moved tmux:%4 beside tmux:%3)"
+check "move below in tmux" "join-pane -d -v -s %4 -t %3" "$(moved tmux:%4 below tmux:%3)"
+check "move above in tmux" "join-pane -d -v -b -s %4 -t %3" "$(moved tmux:%4 above tmux:%3)"
+check "move refuses panes of two terminals" "" "$(moved tmux:%4 beside iterm:X 2>/dev/null)"
+check "move refuses panes of two terminals, failing" "1" "$(term_move iterm:X below tmux:%3 2>/dev/null; echo $?)"
+check "move refuses a pane next to itself" "" "$(moved tmux:%4 above tmux:%4 2>/dev/null)"
+check "move refuses a pane next to itself, failing" "1" "$(term_move tmux:%4 above tmux:%4 2>/dev/null; echo $?)"
+check "move wants a place it knows" "2" "$(term_move tmux:%4 left tmux:%3 2>/dev/null; echo $?)"
+tmux() { return 1; }
+check "move fails when tmux does" "1" "$(term_move tmux:%4 beside tmux:%3 2>/dev/null; echo $?)"
+check "move in tmux asks no iTerm2" "" "$(cat "$tmp/osascript.args" 2>/dev/null)"
+unset -f osascript
 tmux() { echo "tmux $*"; }
 
 # Spawning: the line the owner's shell gets, with the pane faked.
@@ -307,6 +336,30 @@ crew_spawn codex --above iterm:X codex >/dev/null
 check "spawn above a pane" "above iterm:X" "$(cat "$tmp/spawn.where")"
 check "spawn above one with no pane" "1" "$(crew_spawn codex --above nobody codex >/dev/null 2>&1; echo $?)"
 check "spawn above wants a member" "2" "$(crew_spawn codex --above >/dev/null 2>&1; echo $?)"
+crew_spawn codex --beside agy codex >/dev/null
+check "spawn beside a member" "beside tmux:%9" "$(cat "$tmp/spawn.where")"
+crew_spawn codex --beside iterm:X codex >/dev/null
+check "spawn beside a pane" "beside iterm:X" "$(cat "$tmp/spawn.where")"
+check "spawn beside one with no pane" "1" "$(crew_spawn codex --beside nobody codex >/dev/null 2>&1; echo $?)"
+check "spawn beside wants a member" "2" "$(crew_spawn codex --beside >/dev/null 2>&1; echo $?)"
+
+# Moving: the panes of the two go to the terminal, and the pane recorded
+# stays: a moved pane keeps its id.
+term_move() { printf '%s %s %s\n' "$1" "$2" "$3" >"$tmp/move.args"; }
+echo tmux:%8 >"$dir/panes/codex"
+check "move beside a member" "agy: tmux:%9, now beside codex" "$(crew_move agy --beside codex)"
+check "move passes both panes" "tmux:%9 beside tmux:%8" "$(cat "$tmp/move.args")"
+check "move keeps the panes recorded" "tmux:%9 tmux:%8" "$(cat "$dir/panes/agy" "$dir/panes/codex" | tr '\n' ' ' | sed 's/ $//')"
+crew_move agy --above iterm:X >/dev/null
+check "move over a pane" "tmux:%9 above iterm:X" "$(cat "$tmp/move.args")"
+crew_move tmux:%7 --below agy >/dev/null
+check "move a pane under a member" "tmux:%7 below tmux:%9" "$(cat "$tmp/move.args")"
+check "move one with no pane" "1" "$(crew_move nobody --beside agy >/dev/null 2>&1; echo $?)"
+check "move beside one with no pane" "1" "$(crew_move agy --beside nobody >/dev/null 2>&1; echo $?)"
+check "move wants a place" "2" "$(crew_move agy codex >/dev/null 2>&1; echo $?)"
+check "move wants a place it knows" "2" "$(crew_move agy --left codex >/dev/null 2>&1; echo $?)"
+term_move() { return 1; }
+check "move that fails prints no place" "1" "$(crew_move agy --beside codex 2>/dev/null; echo $?)"
 rm -f "$dir/panes/agy" "$dir/panes/codex"
 # The terminal, as every machine sees it: one tmux pane, %7.
 term_list() { printf 'tmux:%%7\t/dev/ttys001\tsh\n'; }

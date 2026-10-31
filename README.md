@@ -32,6 +32,7 @@ crew spawn codex codex
 crew spawn agy --tab agy                    # a new tab instead of a split
 crew spawn agy --below codex agy            # under codex's pane: a column beside yours
 crew spawn agy --above codex agy            # over it
+crew spawn agy --beside codex agy           # right of it, in its row
 crew spawn codex --above iterm:<id> codex   # over a pane from crew panes: yours, say
 crew spawn claude claude --model 'x y'      # several words: each kept whole
 crew spawn codex 'cd sub && codex'          # one word: a line for your shell
@@ -124,6 +125,47 @@ message from outside; while it runs (`relay.pid`, rewritten every second),
 the sender and the relay claim it with `tmp/wake.NNNN`, and whoever claims
 first wakes.
 
+## Laying out a table
+
+One row for each kind of agent, its panes side by side. `--beside` and
+`--below` split one pane, not a whole row, so open the first pane of every
+row down the left, then fill each row rightward:
+
+```
+crew spawn claude --tab claude              # the table, in a tab of its own
+crew spawn agy --below claude agy           # the first of the row under it
+crew spawn claude2 --beside claude claude
+crew spawn claude3 --beside claude2 claude
+crew spawn agy2 --beside agy agy
+```
+
+```
++---------+---------+---------+
+| claude  | claude2 | claude3 |
++---------+----+----+---------+
+| agy          | agy2         |
++--------------+--------------+
+```
+
+iTerm2 shares a row out evenly, and so does tmux 3.1 or later, through
+`select-layout -E`. A pane already open takes its place with `crew move`,
+`--beside`, `--below`, or `--above` another, its agent running on:
+
+```
+crew move codex --beside agy2               # codex's pane, right of agy2's
+```
+
+The pane keeps its id, so `panes/<name>` stays true. tmux moves it with
+`join-pane`. iTerm2 moves it with its own `move_session` (3.5 or later),
+whose `before:` means one side in its docs and, over or under, the other in
+its code: crew tries the code's value, then the other if the pane landed on
+the wrong side. AppleScript shows no pane's position, only the order in
+which a tab lists its panes, from the top left, and their sizes, so a move
+counts once the tab has changed and the pane comes right after the other
+(beside, under) or right before it (over). A pane iTerm2 does not place
+there stays where iTerm2 left it, never closed, and the move fails saying
+so; the focus stays where it was.
+
 ## The gate
 
 `crew gate <name>...` reads their panes every two seconds and answers the
@@ -153,8 +195,9 @@ approved command runs with the agent's rights.
 ```
 bin/crew            the command
 lib/store.sh        .crew/, the numbered stream, unread cursors, the push lock, the board
-lib/term.sh         panes in iTerm2 and tmux: list, find our own, read, type, keys, spawn
-lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, waking
+lib/term.sh         panes in iTerm2 and tmux: list, find our own, read, type, keys
+lib/layout.sh       placing panes in iTerm2 and tmux: spawn beside, under, over; move
+lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules

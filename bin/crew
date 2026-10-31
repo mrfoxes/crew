@@ -16,6 +16,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 
 . "$CREW_HOME/lib/store.sh"
 . "$CREW_HOME/lib/term.sh"
+. "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 
@@ -40,10 +41,13 @@ For everyone
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   panes                         every pane, and who joined it
-  spawn <name> [--tab | --below <member> | --above <member>] [--join] <cmd>...
+  spawn <name> [--tab | --beside|--below|--above <member>] [--join] <cmd>...
                                 open a pane running <cmd> for <name>: beside
-                                this one, in a new tab, or under or over
-                                <member>'s
+                                this one, in a new tab, or right of, under,
+                                or over <member>'s
+  move <name> --beside|--below|--above <member>
+                                move <name>'s pane right of, under, or over
+                                <member>'s, its agent still running
   invite <name> [seconds]       once its agent is up, tell it to join, in caveman mode
   leave <name>                  forget <name>'s pane
   mute <name>                   wake <name> only for messages to its name
@@ -57,9 +61,9 @@ For the coordinator
   archive                       put the session's stream and files aside, start over
   version                       which crew this is
 
-<name> is lower-case letters, digits, and dashes; peek, poke, key, and
-spawn's --below and --above also take a pane (iterm:<id>, tmux:<id>) from
-'crew panes'.
+<name> is lower-case letters, digits, and dashes; peek, poke, key, move,
+and spawn's --beside, --below, and --above also take a pane (iterm:<id>,
+tmux:<id>) from 'crew panes'.
 EOF
 }
 
@@ -85,6 +89,7 @@ lock) crew_lock "$@" ;;
 unlock) crew_unlock "$@" ;;
 panes) crew_panes "$@" ;;
 spawn) crew_spawn "$@" ;;
+move) crew_move "$@" ;;
 invite) crew_invite "$@" ;;
 leave) crew_leave "$@" ;;
 mute) crew_mute "$@" ;;

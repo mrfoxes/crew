@@ -165,14 +165,14 @@ crew_key() {
     done
 }
 
-# Opens a pane beside this one, in a new tab with --tab, or under or over
-# <member>'s pane with --below or --above, running <command> in the project's
-# root, joined as <name>. The agent still runs 'crew join <name>' to learn the
-# protocol; its pane is known from the start, and with --join it is told to as
-# soon as it is up.
+# Opens a pane beside this one, in a new tab with --tab, or right of, under,
+# or over <member>'s pane with --beside, --below, or --above, running
+# <command> in the project's root, joined as <name>. The agent still runs
+# 'crew join <name>' to learn the protocol; its pane is known from the start,
+# and with --join it is told to as soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab | --below <member> | --above <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] <command>..." >&2
         return 2
     fi
     name=$1
@@ -185,7 +185,7 @@ crew_spawn() {
     while [ $# -gt 0 ]; do
         case "$1" in
         --tab) where=tab ;;
-        --below | --above)
+        --beside | --below | --above)
             where=${1#--}
             shift
             [ $# -gt 0 ] || break
@@ -197,7 +197,7 @@ crew_spawn() {
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab | --below <member> | --above <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -216,6 +216,26 @@ crew_spawn() {
     echo "$pane" >"$dir/panes/$name"
     echo "$name: $pane"
     [ -z "$join" ] || crew_invite "$name"
+}
+
+# Moves <name>'s pane right of, under, or over <member>'s, its agent still
+# running there. The pane keeps its id, so panes/<name> stays as it is.
+crew_move() {
+    if [ $# -ne 3 ]; then
+        echo "usage: crew move <name> --beside|--below|--above <member>" >&2
+        return 2
+    fi
+    case "$2" in
+    --beside | --below | --above) where=${2#--} ;;
+    *)
+        echo "usage: crew move <name> --beside|--below|--above <member>" >&2
+        return 2
+        ;;
+    esac
+    pane=$(crew_pane "$1") || return 1
+    anchor=$(crew_pane "$3") || return 1
+    term_move "$pane" "$where" "$anchor" || return 1
+    echo "$1: $pane, now $where $3"
 }
 
 # Waits until the agent in <name>'s pane is up and its screen has settled,
