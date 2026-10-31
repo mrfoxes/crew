@@ -14,10 +14,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Syntax
-        run: for f in bin/crew lib/*.sh test/run.sh; do sh -n "$f"; done
+        run: for f in bin/crew lib/*.sh test/*.sh; do sh -n "$f"; done
       - name: ShellCheck
         run: |
           command -v shellcheck >/dev/null || brew install shellcheck
-          shellcheck -s sh -S warning bin/crew lib/*.sh test/run.sh
+          shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh
       - name: Tests
         run: sh test/run.sh

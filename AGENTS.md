@@ -14,14 +14,14 @@ each piece lives.
 - Nothing may type into a pane without being asked to: tests read captured
   screens from `test/fixtures/`, never live panes.
 - A change to what agents must do updates `share/protocol.md` in the same
-  commit; a change to the gate's rules updates `test/run.sh`'s table too.
+  commit; a change to the gate's rules updates `test/gate_test.sh`'s table too.
 - A new prompt format for the gate comes with a fixture captured from the real
   agent (`crew peek <name> 40`), not written from memory.
 
 ## Commands
 
 ```
-sh test/run.sh                      # all tests
-for f in bin/crew lib/*.sh test/run.sh; do sh -n "$f"; done
-shellcheck -s sh -S warning bin/crew lib/*.sh test/run.sh
+sh test/run.sh                      # all tests; sh test/run.sh gate: one area
+for f in bin/crew lib/*.sh test/*.sh; do sh -n "$f"; done
+shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh
 ```

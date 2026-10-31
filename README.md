@@ -195,13 +195,15 @@ approved command runs with the agent's rights.
 ```
 bin/crew            the command
 lib/store.sh        .crew/, the numbered stream, unread cursors, the push lock, the board
-lib/term.sh         panes in iTerm2 and tmux: list, find our own, read, type, keys
-lib/layout.sh       placing panes in iTerm2 and tmux: spawn beside, under, over; move
+lib/term.sh         the terminal contract, and what both keep alike: find our own, keys
+lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
+lib/term-tmux.sh    tmux's half of it
+lib/layout.sh       placing panes: spawn beside, under, over; move
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
-test/               sh test/run.sh, with screens captured from real prompts
+test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 .github/workflows/  the tests on Ubuntu and macOS, at every push
 ```
 
