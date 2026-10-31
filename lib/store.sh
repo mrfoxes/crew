@@ -86,6 +86,7 @@ crew_init() {
         mkdir -p "$dir/$d"
     done
     echo "$root" >"$dir/project"
+    [ -e "$dir/README.md" ] || cp "$CREW_HOME/share/plan.md" "$dir/README.md"
     echo "$dir"
 }
 
@@ -527,6 +528,10 @@ crew_board() {
     fi
     crew_count "${1:-10}" "crew board [count] | --live [seconds]" || return 2
     dir=$(crew_dir) || return 1
+    # A crew with no member and no status looks broken: say what to do.
+    if [ -z "$(ls "$dir/status" 2>/dev/null)$(ls "$dir/panes" 2>/dev/null)" ]; then
+        echo "no members yet: run 'crew up <preset>' or 'crew spawn <name> --join <command>'"
+    fi
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue
         who=$(basename "$f" .md)

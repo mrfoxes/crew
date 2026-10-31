@@ -110,9 +110,9 @@ crew](#one-command-the-whole-crew). By hand, in the project, from the
 coordinator's pane:
 
 ```
-crew init                                   # .crew/ at the root, kept out of git
+crew init                                   # .crew/ at the root, kept out of git, with a plan to fill in
 crew init --home                            # or under ~/.crew, tree untouched
-$EDITOR "$(crew dir)/README.md"             # the plan, lanes, reviewers, end time
+$EDITOR "$(crew dir)/README.md"             # the plan: goal, lanes, reviewers, end time
 crew spawn claude claude                    # a pane beside this one, running claude
 crew spawn codex codex
 crew spawn agy --tab runtime agy            # in the tab runtime, opened for its first member
@@ -157,7 +157,7 @@ wake line stays the number and the sender.
 While they work:
 
 ```
-crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
+crew board                  # (on an empty crew, what to run first) statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
 crew board --live           # a line a member, redrawn every 5 seconds, in a pane of its own
 crew status codex           # codex's status; with "Field: value"..., update those lines in place
 crew log 3                  # the last 3 messages, whole
@@ -703,6 +703,7 @@ share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
 share/presets/      the Crewfiles crew up starts from: solo, pair, ring
+share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
@@ -719,7 +720,7 @@ Claude Code names its project directories); `crew dir` prints it, and
 `CREW_DIR` names another one for one command:
 
 ```
-README.md                  the plan for this session (optional)
+README.md                  the plan for this session, written by crew init
 Crewfile                   the crew's tabs and members, for crew up (optional)
 up/watch, up/board         the panes crew up opened for the watch and the board
 messages/NNNN-a-to-b-*.md  the stream
