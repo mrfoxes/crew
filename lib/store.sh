@@ -312,7 +312,8 @@ crew_unlock() {
 }
 
 # The crew at a glance: statuses, files claimed twice or by nobody, the
-# lock, the latest messages, and the latest commits with their CI.
+# lock, the latest messages, the latest commits with their CI, and what the
+# members spent.
 crew_board() {
     crew_count "${1:-10}" "crew board [count]" || return 2
     dir=$(crew_dir) || return 1
@@ -345,7 +346,9 @@ crew_board() {
     if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
         echo
         echo "== git"
-        git -C "$root" log --oneline -5 2>/dev/null
+        # A repository with no commit yet has no log: nothing to show.
+        git -C "$root" log --oneline -5 2>/dev/null || :
         (cd "$root" && gh run list --limit 5 2>/dev/null) || true
     fi
+    cost_board "$dir"
 }

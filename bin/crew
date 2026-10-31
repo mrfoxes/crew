@@ -22,6 +22,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"
+. "$CREW_HOME/lib/cost.sh"
 
 usage() {
     cat <<'EOF'
@@ -45,6 +46,7 @@ For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   doctor                        check what a crew needs: terminal, agents, skills, gh
   panes                         every pane, who joined it, and its kind
+  cost [name...]                what the members spent: tokens, and dollars by the rates
   spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join]
         [--kind <kind>] <cmd>...
                                 open a pane running <cmd> for <name>: beside
@@ -100,6 +102,7 @@ board) crew_board "$@" ;;
 lock) crew_lock "$@" ;;
 unlock) crew_unlock "$@" ;;
 panes) crew_panes "$@" ;;
+cost) crew_cost "$@" ;;
 spawn) crew_spawn "$@" ;;
 move) crew_move "$@" ;;
 layout) crew_layout "$@" ;;

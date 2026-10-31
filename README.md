@@ -102,7 +102,7 @@ wake line stays the number and the sender.
 While they work:
 
 ```
-crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI
+crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
 crew peek codex 20          # the last 20 lines of codex's pane
@@ -167,6 +167,54 @@ message from outside; while it runs (`relay.pid`, rewritten every second),
 `crew send` posts and leaves the waking to it. Each message is woken once:
 the sender and the relay claim it with `tmp/wake.NNNN`, and whoever claims
 first wakes.
+
+## What it costs
+
+`crew cost` counts what the members spent, from the logs their agents keep on
+this machine (nothing goes over the network, and no pane is touched): a line
+a member, then a total, with the tokens in five columns and the dollars where
+the rates price the model:
+
+```
+crew cost                   # every member with a pane, thread, session, or kind
+crew cost codex agy         # those members only
+```
+
+```
+codex    input 36031  cached 118315581  write 1647717  output 261595  reasoning 181012  $72.62
+agy      input 2730598  cached 28680398  write 0  output 300718  reasoning 159598  no rate for gemini-4-argon
+total    input 2766629  cached 146995979  write 1647717  output 562313  reasoning 340610  $72.62
+```
+
+Each kind keeps its usage in its own place: Codex in
+`~/.codex/sessions/YYYY/MM/DD/rollout-*-<thread>.jsonl`, the thread `crew
+join` recorded in `threads/<name>` (the last cumulative total of its
+`token_count` events; its input counts the cached and written tokens and its
+output the reasoning, so each is taken out of the number it sits in);
+Antigravity in `~/.gemini/antigravity-cli/conversations/<id>.db`, the newest
+conversation that began with `crew join <name>` (it needs `sqlite3`; without
+it the line says so, and the others go on); Claude Code in
+`~/.claude/projects/*/<session>.jsonl`, the session `crew join` recorded in
+`sessions/<name>` (`CLAUDE_CODE_SESSION_ID`), each message once, its
+thinking counted as reasoning. A Claude Code member has tokens only: it runs
+on a subscription. A member who joined before crew recorded a session shows
+that, not a number. `CREW_CODEX_HOME`, `CREW_AGY_HOME`, and
+`CREW_CLAUDE_HOME` move the three roots.
+
+crew ships no prices. `rates` in the crew's directory, then
+`${XDG_CONFIG_HOME:-~/.config}/crew/rates` (the owner's, for every project),
+list the models, a line each, in dollars per million tokens; a line in the
+crew's replaces the owner's for that model, and `-` is no price:
+
+```
+# model            input  cached  write  output  reasoning
+gpt-6-astra          5.00    0.50      -   30.00      30.00
+claude-opus-5-5     15.00    1.50  18.75   75.00      75.00
+```
+
+A model with no line shows its tokens and `no rate for <model>`. The last
+section of `crew board`, `== cost`, shows each member's total and, where the
+log has times (Codex and Claude Code), the last hour's.
 
 ## Kinds of agent
 
@@ -337,6 +385,7 @@ lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layout
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
+lib/cost.sh         crew cost: what the members spent, from the agents' logs and the rates
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
@@ -357,6 +406,8 @@ messages/NNNN-a-to-b-*.md  the stream
 status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
 threads/<name>             a Codex member's thread, for codex queue
+sessions/<name>            a Claude Code member's session, for crew cost
+rates                      the project's prices per model, over the owner's (optional)
 muted/<name>               a member woken only by messages to its name (crew mute)
 kind/<name>                each member's kind (claude, codex, agy, other)
 tabs/<tab>                 a tab's members, in the order they were placed

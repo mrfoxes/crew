@@ -15,9 +15,10 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"
+. "$CREW_HOME/lib/cost.sh"
 export CREW_WAKE=0
 # What an agent running the tests sets would change what join reads.
-unset CLAUDECODE CODEX_THREAD_ID
+unset CLAUDECODE CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
 # Every line of a log carries the time: one time here.
 crew_stamp() { echo 12:00:00; }
 
@@ -37,6 +38,9 @@ trap 'rm -rf "$tmp"' EXIT
 # The owner's own files, and a crew of the checkout the tests run from,
 # stay out of it.
 export XDG_CONFIG_HOME="$tmp/config"
+# So do the agents' own logs: the readers of crew cost find nothing there
+# unless a test points them at fixtures.
+export CREW_CODEX_HOME="$tmp/none" CREW_AGY_HOME="$tmp/none" CREW_CLAUDE_HOME="$tmp/none"
 cd "$tmp" || exit 1
 
 # A pane that shows the fixtures named with show, one a read, the last for

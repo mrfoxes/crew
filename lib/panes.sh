@@ -50,6 +50,11 @@ crew_join() {
         mkdir -p "$dir/threads"
         echo "$CODEX_THREAD_ID" >"$dir/threads/$name"
     fi
+    # Claude Code names its session: crew cost reads its usage from it.
+    if [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+        mkdir -p "$dir/sessions"
+        echo "$CLAUDE_CODE_SESSION_ID" >"$dir/sessions/$name"
+    fi
     if [ -n "$pane" ]; then
         echo "$pane" >"$dir/panes/$name"
         crew_label "$pane" "$name" "${kind:-other}" 2>/dev/null || :
@@ -87,7 +92,7 @@ crew_leave() {
     dir=$(crew_dir) || return 1
     pane=$(cat "$dir/panes/$1" 2>/dev/null) || pane=""
     [ -z "$pane" ] || term_gone "$pane" || crew_unlabel "$pane"
-    rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/kind/$1"
+    rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1"
     tab_drop "$dir" "$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
