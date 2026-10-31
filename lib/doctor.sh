@@ -293,6 +293,8 @@ doctor_crew() {
         d_pane=$(cat "$d_f")
         if term_gone "$d_pane"; then
             doctor_say warn "member $d_name: pane $d_pane is gone" "crew leave $d_name"
+        elif d_tty=$(term_tty "$d_pane" 2>/dev/null) && ! term_running "$d_tty"; then
+            doctor_say warn "member $d_name: pane $d_pane is back at a shell" "crew up, or crew leave $d_name"
         else
             doctor_say ok "member $d_name: pane $d_pane"
         fi

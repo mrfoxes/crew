@@ -9,13 +9,14 @@
 #             screen, once it is up and waits for a line
 #   approve   the key that answers yes to its command prompt in the gate
 #   color     its panes' color, #rrggbb
+#   resume    the arguments that resume conversation %s, to the end of the line
 #
 # The owner's ${XDG_CONFIG_HOME:-~/.config}/crew/kinds, then a crew's own
 # kinds, add kinds or replace these, a line for a kind replacing the one
 # before it. The versions each kind was seen with are in
 # test/fixtures/VERSIONS.
 #
-# kind    process  env              idle  approve  color
-claude    claude   CLAUDECODE       ❯     enter    #d97757
-codex     codex    CODEX_THREAD_ID  ›     y        #10a37f
-agy       agy      -                >     -        #4285f4
+# kind    process  env              idle  approve  color    resume
+claude    claude   CLAUDECODE       ❯     enter    #d97757  --resume %s
+codex     codex    CODEX_THREAD_ID  ›     y        #10a37f  resume %s
+agy       agy      -                >     -        #4285f4  --conversation %s

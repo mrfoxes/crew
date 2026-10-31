@@ -6,7 +6,7 @@
 # commands whose own it must not touch. Sourced by bin/crew.
 
 # Every kind's line, the last one read for each, in the order the kinds
-# first appear: kind process env idle approve color.
+# first appear: kind process env idle approve color resume.
 kinds_table() {
     k_dir=$(crew_dir 2>/dev/null) || k_dir=""
     for k_file in "$CREW_HOME/share/kinds" "${XDG_CONFIG_HOME:-$HOME/.config}/crew/kinds" ${k_dir:+"$k_dir/kinds"}; do
@@ -14,7 +14,9 @@ kinds_table() {
     done | awk '
         !/^[[:space:]]*(#|$)/ && NF >= 6 {
             if (!($1 in line)) order[++n] = $1
-            line[$1] = $1 " " $2 " " $3 " " $4 " " $5 " " $6
+            r = (NF >= 7) ? $7 : "-"
+            for (i = 8; i <= NF; i++) r = r " " $i
+            line[$1] = $1 " " $2 " " $3 " " $4 " " $5 " " $6 " " r
         }
         END { for (i = 1; i <= n; i++) print line[order[i]] }'
 }
@@ -24,12 +26,20 @@ kinds_names() {
     kinds_table | cut -d' ' -f1
 }
 
-# The <field> of <kind>: process, env, idle, approve, or color. Nothing
-# for a field that is - or a kind crew does not know.
+# The <field> of <kind>: process, env, idle, approve, color, or resume.
+# Nothing for a field that is - or a kind crew does not know.
 kind_field() {
     kinds_table | awk -v k="$1" -v f="$2" '
-        BEGIN { n = split("kind process env idle approve color", name, " "); for (i = 1; i <= n; i++) col[name[i]] = i }
-        $1 == k && (f in col) { if ($(col[f]) != "-") print $(col[f]); exit }'
+        BEGIN { n = split("kind process env idle approve color resume", name, " "); for (i = 1; i <= n; i++) col[name[i]] = i }
+        $1 == k && (f in col) {
+            c = col[f]
+            if ($c != "-") {
+                v = $c
+                if (f == "resume") for (i = c + 1; i <= NF; i++) v = v " " $i
+                print v
+            }
+            exit
+        }'
 }
 
 # The kind whose process a shell line runs: the first word of <line> that

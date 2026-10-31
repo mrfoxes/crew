@@ -90,6 +90,53 @@ up_alive() {
     [ -n "$u_pane" ] && ! term_gone "$u_pane"
 }
 
+# Whether <member> of the crew <dir> has an agent running in its pane, not
+# only a shell. A terminal that cannot be asked, from a sandbox, is taken
+# as running so that nothing is typed into it.
+up_running() {
+    u_pane=$(cat "$1/panes/$2" 2>/dev/null) || return 1
+    u_tty=$(term_tty "$u_pane" 2>/dev/null) || return 0
+    term_running "$u_tty"
+}
+
+# The conversation recorded for <member> of <kind> in the crew <dir>: a
+# Claude Code session, a Codex thread, or the Antigravity conversation that
+# began with 'crew join <member>'.
+up_conversation() {
+    case "$3" in
+    claude) cat "$1/sessions/$2" 2>/dev/null || : ;;
+    codex) cat "$1/threads/$2" 2>/dev/null || : ;;
+    agy)
+        u_db=$(cost_agy_db "$2" 2>/dev/null) || u_db=""
+        [ -z "$u_db" ] || basename "$u_db" .db
+        ;;
+    *) cat "$1/sessions/$2" "$1/threads/$2" 2>/dev/null | head -n 1 || : ;;
+    esac
+}
+
+# <line> for <member> in the crew <dir>, with its kind's resume argument
+# when the kind has one, crew knows the conversation, and --fresh was not
+# given. <kind> is the Crewfile's kind= or -.
+up_resume() {
+    if [ -n "$u_fresh" ]; then
+        printf '%s\n' "$4"
+        return
+    fi
+    u_kind=$3
+    [ "$u_kind" != - ] || u_kind=$(kind_member "$1" "$2")
+    [ -n "$u_kind" ] || u_kind=$(kind_of_line "$4")
+    u_fmt=$(kind_field "$u_kind" resume)
+    u_conv=""
+    [ -z "$u_fmt" ] || u_conv=$(up_conversation "$1" "$2" "$u_kind")
+    if [ -z "$u_fmt" ] || [ -z "$u_conv" ]; then
+        printf '%s\n' "$4"
+        return
+    fi
+    # shellcheck disable=SC2059 # the kind's resume template holds %s
+    u_flag=$(printf -- "$u_fmt" "$(shell_word "$u_conv")")
+    printf '%s %s\n' "$4" "$u_flag"
+}
+
 # The pane crew up keeps for <what> (watch, board) in the crew <dir>, when
 # it is still there.
 up_helper() {
@@ -144,25 +191,29 @@ up_order() {
     fi
 }
 
-# crew up [<preset>] [--dry]: brings the crew its Crewfile describes up, or
-# back: every member without a live pane is spawned in its tab, named,
-# colored, given its clone, invited, and muted as its line says, and each
-# tab is laid out. A live agent is never restarted; a member with a pane
-# the Crewfile does not list is named and left alone. --dry checks the
-# Crewfile and prints what it would do, touching nothing.
+# crew up [<preset>] [--fresh] [--dry]: brings the crew its Crewfile describes
+# up, or back: every member without a live pane is spawned in its tab, named,
+# colored, given its clone, invited, and muted as its line says, an exited
+# member with a pane still there is restarted in place, resuming its recorded
+# conversation unless --fresh is given, and each tab is laid out. A live agent
+# is never restarted; a member with a pane the Crewfile does not list is named
+# and left alone. --dry checks the Crewfile and prints what it would do,
+# touching nothing.
 crew_up() {
     u_dry=""
+    u_fresh=""
     u_preset=""
     for u_arg in "$@"; do
         case "$u_arg" in
         --dry) u_dry=1 ;;
+        --fresh) u_fresh=1 ;;
         -*)
-            echo "usage: crew up [<preset>] [--dry]" >&2
+            echo "usage: crew up [<preset>] [--fresh] [--dry]" >&2
             return 2
             ;;
         *)
             if [ -n "$u_preset" ]; then
-                echo "usage: crew up [<preset>] [--dry]" >&2
+                echo "usage: crew up [<preset>] [--fresh] [--dry]" >&2
                 return 2
             fi
             u_preset=$u_arg
@@ -230,12 +281,22 @@ crew_up() {
             if up_alive "$dir" "$u_name"; then
                 u_entries="$u_entries $u_name"
                 [ -n "$u_dry" ] || [ "$(tab_of "$dir" "$u_name")" = "$u_tab" ] || tab_add "$dir" "$u_tab" "$u_name"
+                if up_running "$dir" "$u_name" || [ "$u_line" = - ]; then
+                    continue
+                fi
+                u_rline=$(up_resume "$dir" "$u_name" "$u_c" "$u_line")
+                up_do crew_poke "$u_name" "$u_rline" </dev/null || {
+                    echo "crew: could not restart $u_name; the others go on" >&2
+                    continue
+                }
+                [ "$u_e" != 1 ] || u_invites="$u_invites $u_name"
                 continue
             fi
             if [ "$u_line" = - ]; then
                 echo "crew: $u_name is started and joined by hand: 'crew join $u_name' in its pane" >&2
                 continue
             fi
+            u_rline=$(up_resume "$dir" "$u_name" "$u_c" "$u_line")
             set -- "$u_name" --tab "$u_tab"
             [ "$u_c" = - ] || set -- "$@" --kind "$u_c"
             if [ "$u_f" = 1 ]; then
@@ -244,7 +305,7 @@ crew_up() {
                     [ "$u_cache" = - ] || set -- "$@" --cache "$u_cache"
                 done
             fi
-            up_do crew_spawn "$@" "$u_line" </dev/null || {
+            up_do crew_spawn "$@" "$u_rline" </dev/null || {
                 echo "crew: could not spawn $u_name; the others go on" >&2
                 continue
             }

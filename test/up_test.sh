@@ -69,11 +69,14 @@ term_spawn() {
 term_list() {
     i=1
     while [ "$i" -le "$(cat "$tmp/n")" ]; do
-        grep -qx "tmux:%$i" "$tmp/closed" 2>/dev/null || printf 'tmux:%%%d\t/dev/ttys00%d\tsh\n' "$i" "$i"
+        grep -qx "tmux:%$i" "$tmp/closed" 2>/dev/null || printf 'tmux:%%%d\t/dev/ttys00%d\tsh\n' "$i" "$i" 2>/dev/null || break
         i=$((i + 1))
     done
 }
 : >"$tmp/closed"
+: >"$tmp/exited"
+term_running() { ! grep -qx "$1" "$tmp/exited" 2>/dev/null; }
+term_poke() { echo "poke $1 $2" >>"$tmp/calls"; }
 term_name() { :; }
 term_color() { :; }
 term_tab() { echo "tab $1 $2" >>"$tmp/calls"; }
@@ -134,6 +137,42 @@ echo tmux:%40 >"$dir/panes/stray"
 echo 40 >"$tmp/n"
 check "a member up but not in the Crewfile is said and left alone" "crew: stray is up but not in the Crewfile: left alone" "$(crew_up 2>/dev/null | grep stray)"
 rm "$dir/panes/stray"
+echo 8 >"$tmp/n"
+
+# An exited member whose pane is still there is restarted in place, resuming
+# its recorded conversation; --fresh starts a new one; a kind with no resume
+# field starts its plain line.
+mkdir -p "$dir/sessions" "$dir/threads"
+echo sess-11 >"$dir/sessions/claude"
+echo thr-22 >"$dir/threads/codex"
+cost_agy_db() { [ "$1" = agy ] && echo "$tmp/conv-33.db"; }
+term_tty "$(cat "$dir/panes/claude")" >"$tmp/exited"
+term_tty "$(cat "$dir/panes/codex")" >>"$tmp/exited"
+term_tty "$(cat "$dir/panes/agy")" >>"$tmp/exited"
+check "a dry run pokes an exited member in its pane with its resume argument" "crew poke claude 'claude --model claude-opus-5-5 --effort high --resume sess-11'
+crew poke agy 'agy --conversation conv-33'
+crew poke codex 'codex resume thr-22'" "$(crew_up --dry 2>/dev/null | grep '^crew poke ')"
+rm -f "$tmp/invites" "$tmp/calls"
+crew_up >/dev/null 2>&1
+check "an exited member is not spawned again" "0" "$(grep -c '^spawn ' "$tmp/calls")"
+check "an exited claude member is restarted in place with --resume" "1" "$(grep -c "^poke $(cat "$dir/panes/claude") claude --model claude-opus-5-5 --effort high --resume sess-11\$" "$tmp/calls")"
+check "an exited codex member is restarted in place with resume" "1" "$(grep -c "^poke $(cat "$dir/panes/codex") codex resume thr-22\$" "$tmp/calls")"
+check "an exited agy member is restarted in place with --conversation" "1" "$(grep -c "^poke $(cat "$dir/panes/agy") agy --conversation conv-33\$" "$tmp/calls")"
+check "restarted members are invited, except noinvite" "invite agy
+invite claude" "$(sort "$tmp/invites")"
+rm -f "$tmp/invites" "$tmp/calls"
+crew_up --fresh >/dev/null 2>&1
+check "--fresh restarts without the resume argument" "poke $(cat "$dir/panes/claude") claude --model claude-opus-5-5 --effort high
+poke $(cat "$dir/panes/agy") agy
+poke $(cat "$dir/panes/codex") codex" "$(grep '^poke ' "$tmp/calls")"
+printf 'mycc claude CLAUDECODE ❯ enter #d97757 -\n' >"$dir/kinds"
+echo mycc >"$dir/kind/claude"
+rm -f "$tmp/invites" "$tmp/calls"
+crew_up >/dev/null 2>&1
+check "a kind with no resume field restarts with its plain line" "1" "$(grep -c "^poke $(cat "$dir/panes/claude") claude --model claude-opus-5-5 --effort high\$" "$tmp/calls")"
+rm -f "$dir/kinds" "$dir/sessions/claude" "$dir/threads/codex"
+echo claude >"$dir/kind/claude"
+: >"$tmp/exited"
 
 # Presets: one starts a Crewfile, never replaces it.
 mkdir -p "$XDG_CONFIG_HOME/crew/presets"

@@ -27,6 +27,7 @@ doctor_agent_version() {
 }
 doctor_gh_authed() { return 0; }
 term_list() { :; }
+term_running() { return 0; }
 
 # The doctor's report and its status, kept in files: a pipe would hide the
 # status.
@@ -202,6 +203,11 @@ check "a pane that is there is ok" "1" "$(has '^ok    member claude: pane tmux:%
 check "a gone pane warns" "1" "$(has '^warn  member codex: pane tmux:%2 is gone$')"
 check "a gone pane says crew leave" "1" "$(has '      crew leave codex$')"
 check "a gone pane is no fail" "0" "$(status)"
+term_running() { return 1; }
+report
+check "a pane back at a shell warns" "1" "$(has '^warn  member claude: pane tmux:%1 is back at a shell$')"
+check "a pane back at a shell says crew up or crew leave" "1" "$(has '      crew up, or crew leave claude$')"
+term_running() { return 0; }
 
 # Inside a crew: the Crewfile and its budgets against the rates.
 cat >"$dir/Crewfile" <<'EOF'
