@@ -16,7 +16,9 @@ crew_root() {
 
 # The project's .crew: $CREW_DIR, else the nearest .crew at or above the
 # working directory, else the one at the main checkout's root, else the one
-# kept at home for this project (crew init --home).
+# kept at home for this project (crew init --home). A crew's directory holds
+# the stream's numbers in seq/: ~/.crew itself, which holds the crews kept at
+# home, is not one.
 crew_dir() {
     if [ -n "${CREW_DIR:-}" ]; then
         echo "$CREW_DIR"
@@ -24,7 +26,7 @@ crew_dir() {
     fi
     d=$(pwd -P)
     while :; do
-        if [ -d "$d/.crew" ]; then
+        if [ -d "$d/.crew/seq" ]; then
             echo "$d/.crew"
             return
         fi
@@ -33,7 +35,7 @@ crew_dir() {
     done
     root=$(crew_root)
     for d in "$root/.crew" "$(crew_home_dir "$root")"; do
-        if [ -d "$d" ]; then
+        if [ -d "$d/seq" ]; then
             echo "$d"
             return
         fi
@@ -78,6 +80,16 @@ crew_init() {
     echo "$dir"
 }
 
+# A count of lines or messages is digits, or the command prints <usage>.
+crew_count() {
+    case "$1" in
+    "" | *[!0-9]*)
+        echo "usage: $2" >&2
+        return 2
+        ;;
+    esac
+}
+
 # A name is lower-case letters, digits, and dashes: it goes into file names.
 crew_name() {
     case "$1" in
@@ -97,9 +109,12 @@ crew_send() {
     from=$1
     to=$2
     shift 2
-    subject=$*
+    # The subject is the first line of the message: a newline in it would
+    # break the header the stream is read by.
+    subject=$(printf '%s' "$*" | tr '\n' ' ')
     crew_name "$from" && crew_name "$to" || return 2
     dir=$(crew_dir) || return 1
+    [ ! -t 0 ] || echo "crew: type the body, then press ctrl-d" >&2
     body=$(cat)
     slug=$(printf '%s' "$subject" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | sed 's/^-//; s/-$//' | cut -c1-48)
     tmp=$(mktemp "$dir/tmp/message.XXXXXX")
@@ -121,8 +136,14 @@ crew_send() {
     ln "$tmp" "$file"
     rm "$tmp"
     echo "$file"
-    # The relay, when one runs, wakes the recipients from outside the sandbox.
-    [ "${CREW_WAKE:-1}" = 0 ] || crew_relay_alive "$dir" || crew_wake "$dir" "$n" "$from" "$to" "$subject"
+    # One wake a message: by the relay, when one runs, from outside the
+    # sender's sandbox, else by the sender. Whoever makes tmp/wake.<n> first
+    # wakes; with CREW_WAKE=0 the sender makes it and wakes nobody.
+    if [ "${CREW_WAKE:-1}" = 0 ]; then
+        mkdir "$dir/tmp/wake.$n" 2>/dev/null || true
+    elif ! crew_relay_alive "$dir" && mkdir "$dir/tmp/wake.$n" 2>/dev/null; then
+        crew_wake "$dir" "$n" "$from" "$to" "$subject"
+    fi
 }
 
 # The <field> (From, To, Time) of the message <file>, read from its header:
@@ -207,6 +228,7 @@ crew_unlock() {
 # The crew at a glance: statuses, the lock, the latest messages, and the
 # latest commits with their CI.
 crew_board() {
+    crew_count "${1:-10}" "crew board [count]" || return 2
     dir=$(crew_dir) || return 1
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue

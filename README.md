@@ -30,6 +30,8 @@ $EDITOR "$(crew dir)/README.md"             # the plan, lanes, reviewers, end ti
 crew spawn claude claude                    # a pane beside this one, running claude
 crew spawn codex codex
 crew spawn agy --tab agy                    # a new tab instead of a split
+crew spawn claude claude --model 'x y'      # several words: each kept whole
+crew spawn codex 'cd sub && codex'          # one word: a line for your shell
 ```
 
 Then tell each agent to join, by typing in its pane or with `crew poke`:
@@ -50,7 +52,7 @@ While they work:
 crew board                  # statuses, push lock, latest messages, git, CI
 crew peek codex 20          # the last 20 lines of codex's pane
 crew poke codex "<line>"    # type a line and press Return
-crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, ...
+crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
 crew gate codex claude      # answer their approval prompts, hold the forbidden
 crew relay                  # wake recipients for every sender, from this pane
 ```
@@ -74,7 +76,8 @@ Inside Codex's sandbox crew can reach neither iTerm2 nor `ps`, so a message
 Codex sends wakes nobody by itself. `crew relay`, run by the coordinator in a
 pane of their own, wakes the recipients of every new message from outside;
 while it runs (`relay.pid`, rewritten every second), `crew send` posts and
-leaves the waking to it.
+leaves the waking to it. Each message is woken once: the sender and the
+relay claim it with `tmp/wake.NNNN`, and whoever claims first wakes.
 
 ## The gate
 
@@ -116,7 +119,8 @@ test/               sh test/run.sh, with screens captured from real prompts
 
 In a project, `.crew/` at its root, or `~/.crew/<project>/` after `crew init
 --home` (the path with every character but a letter or digit as `-`, the way
-Claude Code names its project directories); `crew dir` prints it:
+Claude Code names its project directories); `crew dir` prints it, and
+`CREW_DIR` names another one for one command:
 
 ```
 README.md                  the plan for this session (optional)

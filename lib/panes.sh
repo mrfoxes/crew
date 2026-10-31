@@ -37,7 +37,9 @@ crew_join() {
     if [ "${2:-}" = --pane ] && [ -n "${3:-}" ]; then
         pane=$3
     else
-        pane=$(term_self) || pane=""
+        # A sandbox that hides the pane from here does not lose the one crew
+        # spawn recorded.
+        pane=$(term_self) || pane=$(cat "$dir/panes/$name" 2>/dev/null) || pane=""
     fi
     if [ -n "$pane" ]; then
         echo "$pane" >"$dir/panes/$name"
@@ -81,6 +83,7 @@ crew_peek() {
         return 2
     fi
     pane=$(crew_pane "$1") || return 1
+    crew_count "${2:-30}" "crew peek <name> [lines]" || return 2
     term_read "$pane" | grep -v '^[[:space:]]*$' | tail -n "${2:-30}"
 }
 
@@ -124,10 +127,35 @@ crew_spawn() {
         where=tab
         shift
     fi
+    if [ $# -eq 0 ]; then
+        echo "usage: crew spawn <name> [--tab] <command>..." >&2
+        return 2
+    fi
     root=$(crew_project "$dir")
-    pane=$(term_spawn "$where" "cd '$root' && $*") || return 1
+    # One argument is a line for the owner's shell; several are a command
+    # and its arguments, each kept whole.
+    if [ $# -eq 1 ]; then
+        line=$1
+    else
+        line=""
+        for word in "$@"; do
+            line="$line $(shell_word "$word")"
+        done
+        line=${line# }
+    fi
+    pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line") || return 1
     echo "$pane" >"$dir/panes/$name"
     echo "$name: $pane"
+}
+
+# <word> as the owner's shell reads it back whole: bare when it holds nothing
+# the shell would read, else in single quotes, its own single quotes escaped
+# the way sh, bash, zsh, and fish all read them.
+shell_word() {
+    case "$1" in
+    "" | *[!A-Za-z0-9_./:,@+-]*) printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")" ;;
+    *) printf '%s' "$1" ;;
+    esac
 }
 
 # Tells the recipients of message <n> that it is there: typed into each
@@ -187,7 +215,9 @@ crew_relay() {
     # Messages sent before now were woken by their senders.
     last=$dir/relay.last
     ls "$dir/seq" | sort -n | tail -n 1 >"$last"
-    trap 'rm -f "$dir/relay.pid"' EXIT INT TERM
+    # A signal ends the loop, not just the sleep it interrupts.
+    trap 'rm -f "$dir/relay.pid"' EXIT
+    trap exit INT TERM
     echo "relay: waking for $dir"
     while :; do
         # Rewritten every second: its age tells crew send whether a relay runs.
@@ -198,7 +228,9 @@ crew_relay() {
 }
 
 # One step of the relay: wakes the recipients of every message past the
-# number in <last>, one line each, and writes the last number woken there.
+# number in <last> that its sender did not wake (tmp/wake.<n> is the claim,
+# made by whoever wakes first), one line each, and writes the last number
+# seen there.
 crew_relay_step() {
     dir=$1
     lastfile=$2
@@ -206,12 +238,13 @@ crew_relay_step() {
     last=${last:-0}
     for n in $(ls "$dir/seq" | sort -n); do
         [ "$n" -gt "$last" ] || continue
+        echo "$n" >"$lastfile"
+        mkdir "$dir/tmp/wake.$n" 2>/dev/null || continue
         f=$dir/seq/$n
         from=$(crew_field "$f" From)
         to=$(crew_field "$f" To)
         crew_wake "$dir" "$n" "$from" "$to" "$(sed -n "1s/^# [0-9]*\. $from to $to: //p" "$f")"
         printf 'relay: %04d from %s to %s\n' "$n" "$from" "$to"
-        echo "$n" >"$lastfile"
     done
 }
 

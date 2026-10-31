@@ -56,6 +56,9 @@ check "a question with no choices under it" "" "$(prompt claude-asks)"
 check "a question below a Bash prompt is the one waiting" "other" "$(stacked claude-run other 1)"
 check "a Bash prompt above a fetch does not approve it" "other" "$(stacked claude-run claude-fetch 1)"
 check "the lower of two Bash prompts" "touch /private/tmp/crew-fixture-touch" "$(stacked claude-run claude-run 2)"
+# The description above the rules is the agent's own text: one that ends in
+# a question mark is not a question of another prompt.
+check "a description ending in ?" "touch /private/tmp/crew-fixture-touch" "$(sed '16s/.*/ Does the file exist?/' "$here/fixtures/claude-run.txt" | gate_prompt | cut -f2)"
 
 # The rules hold what they forbid, and nothing else.
 rule() { gate_forbidden "$CREW_HOME/share/forbid" "$1" >/dev/null && echo hold || echo approve; }
@@ -68,6 +71,10 @@ approve|cargo fmt -p tess --all -- --check
 approve|git commit -s -F /tmp/message -- compiler/src/a.rs
 approve|git commit --author=x -F m -- a.rs
 approve|git add compiler/src/a.rs compiler/tests/b.rs
+approve|git add -v compiler/src/a.rs
+approve|git commit --author x -F m -- a.rs
+approve|git branch --format %(refname) --list
+approve|git push --follow-tags origin topic
 approve|git push origin main && rm -r /p/.crew/lock
 approve|git push -u origin topic
 approve|git push origin --delete tmp-codex
@@ -100,7 +107,14 @@ hold|black --check . && black src/
 hold|ruff format
 hold|ruff format .
 hold|git add -A
+hold|git add -Av
+hold|git add -u
+hold|git add --update
 hold|git add .
+hold|git cherry-pick abc123
+hold|git am 0001-fix.patch
+hold|git filter-branch -f --tree-filter 'rm x' HEAD
+hold|git filter-repo --path src
 hold|git commit -am wip
 hold|git commit -s --all
 hold|git commit --amend --no-edit
@@ -136,6 +150,14 @@ hold|find . -name '*.o' -delete
 EOF2
 check "rule named" "git +reset" "$(gate_forbidden "$CREW_HOME/share/forbid" "git reset --hard")"
 
+# Keys, as tmux gets them.
+tmux() { echo "tmux $*"; }
+check "key alt-m" "tmux send-keys -t %1 M-m" "$(term_key tmux:%1 alt-m)"
+check "key ctrl-c" "tmux send-keys -t %1 C-c" "$(term_key tmux:%1 ctrl-c)"
+check "key y" "tmux send-keys -t %1 -l -- y" "$(term_key tmux:%1 y)"
+check "key delete" "tmux send-keys -t %1 DC" "$(term_key tmux:%1 delete)"
+check "key unknown" "2" "$(term_key tmux:%1 f13 2>/dev/null; echo $?)"
+
 # One look of the gate at a pane, with the screen read from a fixture and
 # the keys it would press printed instead.
 gate_rules=$CREW_HOME/share/forbid
@@ -163,7 +185,7 @@ show codex-run
 check "gate approves again after a redraw" "pressed y
 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
 show codex-wrapped
-check "gate holds the wrapped stash" "HOLD codex (git +(stash|restore|clean|rebase|pull|merge|checkout|switch)( |\$)): cd /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess && git sta sh push -m wip" "$(gate_look codex tmux:%1)"
+check "gate holds the wrapped stash" "HOLD codex (git +(stash|restore|clean|rebase|pull|merge|checkout|switch|cherry-pick|am)( |\$)): cd /Users/mrfoxes/Documents/repos/github.com/mrfoxes/tess && git sta sh push -m wip" "$(gate_look codex tmux:%1)"
 check "gate says a hold once" "" "$(gate_look codex tmux:%1)"
 show claude-fetch
 check "gate holds a fetch" "HOLD claude (not a command): Do you want to allow Claude to fetch this content? ❯ 1. Yes 2. Yes, and don't ask again for example.com 3. No, and tell Claude what to do differently (esc)" "$(gate_look claude tmux:%2)"
@@ -210,6 +232,10 @@ check "board at home finds git" "1" "$(HOME=$home; cd "$tmp/repo2" && crew_board
 (HOME=$home; crew_init --home >/dev/null)
 check "the crew in the tree comes first" "$dir" "$(HOME=$home; cd "$tmp/repo" && crew_dir)"
 check "no crew" "1" "$(HOME=$home; cd "$tmp" && crew_dir >/dev/null 2>&1; echo $?)"
+# ~/.crew holds the crews kept at home; from below it, it is not one.
+mkdir -p "$home/work/other"
+check "no crew under home" "1" "$(HOME=$home; cd "$home/work/other" && crew_dir >/dev/null 2>&1; echo $?)"
+check "unread needs a crew" "1" "$(HOME=$home; cd "$home/work/other" && crew_unread codex >/dev/null 2>&1; echo $?)"
 
 i=1
 while [ "$i" -le 8 ]; do
@@ -248,31 +274,57 @@ board=$(crew_board 3)
 check "board status" "== codex (no pane)" "$(printf '%s\n' "$board" | grep -x '== codex (no pane)')"
 check "board lock" "== lock: free" "$(printf '%s\n' "$board" | grep -x '== lock: free')"
 check "board messages" "3" "$(printf '%s\n' "$board" | grep -c '^00[0-9][0-9]-')"
+check "board wants a count" "2" "$(crew_board three >/dev/null 2>&1; echo $?)"
+check "peek wants a count" "2" "$(crew_peek tmux:%1 many >/dev/null 2>&1; echo $?)"
+
+# Spawning: the line the owner's shell gets, with the pane faked.
+term_spawn() { printf '%s\n' "$2" >"$tmp/spawn.line"; echo tmux:%9; }
+check "spawn" "agy: tmux:%9" "$(crew_spawn agy claude --model 'x y' "it's")"
+check "spawn keeps each word whole" "cd $(cd "$tmp/repo" && pwd -P) && claude --model 'x y' 'it'\\''s'" "$(cat "$tmp/spawn.line")"
+check "spawn records the pane" "tmux:%9" "$(cat "$dir/panes/agy")"
+crew_spawn agy --tab 'cd sub && codex' >/dev/null
+check "spawn passes one word to the shell" "cd $(cd "$tmp/repo" && pwd -P) && cd sub && codex" "$(cat "$tmp/spawn.line")"
+check "spawn wants a command" "2" "$(crew_spawn agy --tab >/dev/null 2>&1; echo $?)"
+rm -f "$dir/panes/agy"
 check "join with a pane" "You are claude, in the crew at $dir, in the pane tmux:%7: a message to you is typed into it." "$(crew_join claude --pane 'tmux:%7' | sed -n 1p)"
 check "join keeps the pane" "tmux:%7" "$(cat "$dir/panes/claude")"
 check "join refuses a recipient" "2" "$(crew_join all >/dev/null 2>&1; echo $?)"
+# A sandbox that hides the pane does not lose the one spawn recorded.
+term_self() { return 1; }
+check "join from a hidden pane keeps the spawned one" "tmux:%7" "$(crew_join claude >/dev/null; cat "$dir/panes/claude")"
+check "join from nowhere says so" "You are agy, in the crew at $dir, in no pane crew can find: run 'crew unread agy' often." "$(crew_join agy | sed -n 1p)"
+# A subject is one line.
+f=$(echo x | crew_send codex agy "Heads-up: one
+two")
+check "subject on one line" "codex to agy: Heads-up: one two" "$(sed -n '1s/^# [0-9]*\. //p' "$f")"
 
 # The wake line: number, sender, command; never the subject.
 term_poke() { echo "$1 <- $2"; }
 check "wake line" "tmux:%7 <- crew: message 0012 from codex. Run: crew unread claude" "$(crew_wake "$dir" 12 codex claude "Review: @nogc")"
 
-# The relay: a step wakes what came after its last number; while it runs
-# (its pid file fresh), crew send leaves the waking to it.
-n=$(basename "$(echo body | crew_send codex claude "Heads-up: relayed")" | cut -c1-4 | sed 's/^0*//')
+# The relay: while it runs (its pid file fresh), crew send leaves the waking
+# to it, and a step wakes what came after its last number; a message its
+# sender woke, or posted with CREW_WAKE=0, it leaves alone.
+number() { basename "$1" | cut -c1-4 | sed 's/^0*//'; }
+check "no relay" "1" "$(crew_relay_alive "$dir"; echo $?)"
+echo 1 >"$dir/relay.pid"
+check "relay alive" "0" "$(crew_relay_alive "$dir"; echo $?)"
+f=$(CREW_WAKE=1; echo x | crew_send codex claude "Heads-up: relayed" 2>&1)
+check "send leaves waking to the relay" "$dir/messages/$(basename "$f")" "$f"
+n=$(number "$f")
 echo "$((n - 1))" >"$tmp/relay.last"
 nn=$(printf '%04d' "$n")
 check "relay step wakes the new message" "tmux:%7 <- crew: message $nn from codex. Run: crew unread claude
 relay: $nn from codex to claude" "$(crew_relay_step "$dir" "$tmp/relay.last")"
 check "relay step moves on" "$n" "$(cat "$tmp/relay.last")"
 check "relay step wakes nothing twice" "" "$(crew_relay_step "$dir" "$tmp/relay.last")"
-check "no relay" "1" "$(crew_relay_alive "$dir"; echo $?)"
-echo 1 >"$dir/relay.pid"
-check "relay alive" "0" "$(crew_relay_alive "$dir"; echo $?)"
-check "send leaves waking to the relay" "" "$(CREW_WAKE=1; echo x | crew_send codex claude "Heads-up: quiet" 2>&1 >/dev/null)"
 touch -t 202001010000 "$dir/relay.pid"
 check "relay stale" "1" "$(crew_relay_alive "$dir"; echo $?)"
-m=$(printf '%04d' $((n + 2)))
+m=$(printf '%04d' $((n + 1)))
 check "send wakes when the relay is gone" "tmux:%7 <- crew: message $m from codex. Run: crew unread claude" "$(CREW_WAKE=1; echo x | crew_send codex claude "Heads-up: loud" | tail -n 1)"
+echo body | crew_send codex claude "Heads-up: silent" >/dev/null
+check "relay step leaves woken and silent messages alone" "" "$(crew_relay_step "$dir" "$tmp/relay.last")"
+check "relay step still moves on" "$((n + 2))" "$(cat "$tmp/relay.last")"
 rm -f "$dir/relay.pid"
 
 printf '%d passed, %d failed\n' "$passed" "$failed"

@@ -63,13 +63,13 @@ build directory are shared:
 - Edit only the files on your `Files:` line. Before taking one, check that no
   other status lists it; for a file several of you need, send `Heads-up:`,
   edit, commit, and release it within minutes.
-- Never run what touches what is not yours: no `git add -A`, `git add .`,
-  `git commit -a`, `git commit --amend`, `git stash`, `git checkout`,
-  `git switch`, `git restore`, `git reset`, `git clean`, `git merge`,
-  `git rebase`, `git pull` (`git checkout -b` and `git switch -c`, which make
-  a branch, are fine), no `git branch -D`, no `git worktree remove`, and no
-  formatter over the whole tree (format your own files; a whole-tree check is
-  fine).
+- Never run what touches what is not yours: no `git add -A`, `git add -u`,
+  `git add .`, `git commit -a`, `git commit --amend`, `git stash`,
+  `git checkout`, `git switch`, `git restore`, `git reset`, `git clean`,
+  `git merge`, `git rebase`, `git pull`, `git cherry-pick`, `git am`
+  (`git checkout -b` and `git switch -c`, which make a branch, are fine), no
+  `git branch -D`, no `git worktree remove`, and no formatter over the whole
+  tree (format your own files; a whole-tree check is fine).
 - Keep the tree building. A build you break stops everyone: fix it in minutes
   or take your edit back. A failure in a teammate's unfinished file is theirs:
   send it to them.

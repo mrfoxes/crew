@@ -108,7 +108,8 @@ term_type() {
 }
 
 # Presses one key in the pane: enter, esc, tab, shift-tab, up, down, left,
-# right, space, backspace, ctrl-<letter>, or a single character.
+# right, home, end, space, backspace, delete, ctrl-<letter>, alt-<letter>,
+# or a single character.
 term_key() {
     pane=$1
     case "$2" in
@@ -120,12 +121,20 @@ term_key() {
     down) bytes=$(printf '\033[B') tkey=Down ;;
     right) bytes=$(printf '\033[C') tkey=Right ;;
     left) bytes=$(printf '\033[D') tkey=Left ;;
+    home) bytes=$(printf '\033[H') tkey=Home ;;
+    end) bytes=$(printf '\033[F') tkey=End ;;
     space) bytes=' ' tkey=Space ;;
     backspace) bytes=$(printf '\177') tkey=BSpace ;;
+    delete) bytes=$(printf '\033[3~') tkey=DC ;;
     ctrl-[a-z])
         letter=${2#ctrl-}
         bytes=$(printf "\\$(printf '%03o' $(($(printf '%d' "'$letter") - 96)))")
         tkey=C-$letter
+        ;;
+    alt-[a-z])
+        letter=${2#alt-}
+        bytes=$(printf '\033%s' "$letter")
+        tkey=M-$letter
         ;;
     ?) bytes=$2 tkey="" ;;
     *)

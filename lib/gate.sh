@@ -50,8 +50,16 @@ gate_prompt() {
                 # A question below it belongs to a newer prompt.
                 for (t = q + 2; t <= n && line[t] !~ /\?$/; t++) ;
                 # The header is its own only when no other prompt, with its
-                # question or its options, stands between the two.
-                for (h = q - 1; h > 0 && line[h] !~ /^Bash command/ && line[h] !~ /\?$/ && line[h] !~ /^(❯ *)?[0-9]+\. /; h--) ;
+                # question or its options, stands between the two. The
+                # command between the rules is skipped whole, and above the
+                # rules a line ending in ? is the description, not a question.
+                crossed = 0
+                for (h = q - 1; h > 0 && line[h] !~ /^Bash command/ && line[h] !~ /^(❯ *)?[0-9]+\. /; h--) {
+                    if (line[h] ~ /^╌/) {
+                        for (h--; h > 0 && line[h] !~ /^╌/; h--) ;
+                        crossed = 1
+                    } else if (!crossed && line[h] ~ /\?$/) break
+                }
                 if (t > n && h > 0 && line[h] ~ /^Bash command/ && h + 1 < q) {
                     # The command stands between two rules, below the description.
                     for (c = h + 1; c < q && line[c] !~ /^╌/; c++) ;
@@ -135,9 +143,15 @@ gate_look() {
     # read again and press only for the same prompt.
     [ "$(term_read "$pane" 2>/dev/null | gate_prompt)" = "$prompt" ] || return 0
     case "$kind" in
-    codex) term_key "$pane" y ;;
-    claude) term_key "$pane" enter ;;
+    codex) key=y ;;
+    claude) key=enter ;;
     esac
+    # A press that fails (the terminal busy, the pane just closed) is said
+    # once and tried again at the next look: the gate itself goes on.
+    term_key "$pane" "$key" 2>/dev/null || {
+        gate_say "$held" "gate: cannot press $key in $name's pane $pane"
+        return 0
+    }
     echo "approved $name: $command"
     printf '%s' "$screen" >"$answered"
     rm -f "$held"
@@ -174,7 +188,9 @@ crew_gate() {
     gate_rules=$dir/forbid
     [ -f "$gate_rules" ] || gate_rules=$CREW_HOME/share/forbid
     gate_state=$(mktemp -d "$dir/tmp/gate.XXXXXX") || return 1
-    trap 'rm -rf "$gate_state"' EXIT INT TERM
+    # A signal ends the loop, not just the sleep it interrupts.
+    trap 'rm -rf "$gate_state"' EXIT
+    trap exit INT TERM
     mkdir -p "$gate_state/held" "$gate_state/answered" "$gate_state/pane"
     for name in $names; do
         crew_pane "$name" >"$gate_state/pane/$name" || return 1

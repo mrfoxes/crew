@@ -12,10 +12,10 @@
 !git +(checkout +-[bB]|switch +(-c|--create)) +[^ ;&|]+
 
 # Commands that touch what is not yours in a shared working tree.
-git +add +(-A|--all|\.)( |$)
+git +add +(.* )?(-[a-zA-Z]*[Au][a-zA-Z]*|--all|--update|\.)( |$)
 git +commit +(.* )?-[a-zA-Z]*a[a-zA-Z]*( |$)
 git +commit +(.* )?--(all|amend)( |$)
-git +(stash|restore|clean|rebase|pull|merge|checkout|switch)( |$)
+git +(stash|restore|clean|rebase|pull|merge|checkout|switch|cherry-pick|am)( |$)
 git +reset
 git +branch +(.* )?(-[a-zA-Z]*[Df][a-zA-Z]*|--force)( |$)
 git +worktree +remove( |$)
@@ -35,6 +35,7 @@ git +push +(.* )?(-[a-zA-Z]*f[a-zA-Z]*|--force[^ ]*|--mirror)( |$)
 git +push +(.* )?\+[^ ]+
 git +push +(.* )?(-d|--delete) +(main|master)( |$)
 git +push +(.* )?:(main|master)( |$)
+git +(filter-branch|filter-repo)( |$)
 
 # Another agent's processes, the machine, and deletions.
 (^|[ ;&|(])(kill|pkill|killall)

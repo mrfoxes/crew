@@ -25,7 +25,7 @@ usage: crew <command> [arguments]
 
 For everyone
   help                          the protocol agents follow
-  join <name>                   join the crew as <name> from this pane
+  join <name> [--pane <pane>]   join the crew as <name> from this pane
   send <from> <to> <subject>    post a message, body on stdin; wakes <to>
   unread <name>                 the messages to <name> or all not read yet
   board [count]                 statuses, lock, latest messages, git, CI
@@ -39,7 +39,7 @@ For the coordinator
   spawn <name> [--tab] <cmd>... open a pane running <cmd> for <name>
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
-  key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, ...
+  key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
   gate <name>... [--dry]        approve their prompts, hold the forbidden ones
   relay                         wake recipients for every sender, from this pane
 
