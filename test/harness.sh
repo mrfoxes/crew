@@ -64,6 +64,19 @@ check() {
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+# Child commands cannot inherit shell-function fakes. Put refusing terminal
+# commands first on their PATH too, and record any attempted terminal call.
+export CREW_TEST_TERMINAL_LOG="$tmp/terminal.calls"
+mkdir -p "$tmp/bin"
+for terminal in osascript tmux; do
+    cat >"$tmp/bin/$terminal" <<'EOF'
+#!/bin/sh
+printf '%s\n' "${0##*/} $*" >>"$CREW_TEST_TERMINAL_LOG"
+exit 1
+EOF
+    chmod +x "$tmp/bin/$terminal"
+done
+export PATH="$tmp/bin:$PATH"
 # The owner's own files, and a crew of the checkout the tests run from,
 # stay out of it.
 export XDG_CONFIG_HOME="$tmp/config"
