@@ -100,5 +100,17 @@ for n in 0 00 000; do
 done
 check "peek 08 gets as far as the pane" "1" "$(crew peek tess 08 >/dev/null 2>&1; echo $?)"
 check "invite 08 gets as far as the pane" "1" "$(crew invite tess 08 >/dev/null 2>&1; echo $?)"
+check "no owner machine path in README.md" "0" \
+    "$(grep -cE 'Documents/repos|/Users/' "$CREW_HOME/README.md" || :)"
+help_cmds=$(crew --help | awk '/^  [a-z][a-z-]*([ |]|$)/ { print $1 }')
+qs_cmds=$(
+    awk '/^## Quickstart$/ { on=1; next } /^## / { on=0 } on && /^crew [a-z]/ { print $2 }' "$CREW_HOME/README.md" |
+        sort -u
+)
+check "Quickstart shows crew commands" "1" "$([ -n "$qs_cmds" ] && echo 1 || echo 0)"
+for qc in $qs_cmds; do
+    check "Quickstart command 'crew $qc' in --help" "1" \
+        "$(printf '%s\n' "$help_cmds" | grep -qx "$qc" && echo 1 || echo 0)"
+done
 
 finish

@@ -13,24 +13,74 @@ pick) can read each pane, type into it, and answer its approval prompts.
 It is a few POSIX shell scripts, `osascript` for iTerm2, and `tmux`: no
 daemon, no service, no extension.
 
+- [Install](#install)
+- [Quickstart](#quickstart)
+- [A session](#a-session)
+- [What it costs](#what-it-costs)
+- [One command, the whole crew](#one-command-the-whole-crew)
+- [Ending a crew](#ending-a-crew)
+- [Kinds of agent](#kinds-of-agent)
+- [Names and colors](#names-and-colors)
+- [A clone for a member](#a-clone-for-a-member)
+- [Tabs](#tabs)
+- [Laying out a table](#laying-out-a-table)
+- [The live board](#the-live-board)
+- [The gate](#the-gate)
+- [Where things live](#where-things-live)
+
 ## Install
 
 ```
-ln -s ~/Documents/repos/github.com/mrfoxes/crew/bin/crew ~/.local/bin/crew
+curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh
+```
+
+Or from a checkout anywhere on disk:
+
+```
+git clone https://github.com/mrfoxes/crew.git && cd crew
+ln -s "$PWD/bin/crew" ~/.local/bin/crew
 ```
 
 Tab completes the commands, their flags, the members, the keys, the message
-numbers, and the kinds, in the shell you use:
+numbers, the presets, and the kinds, in the shell you use:
 
 ```
-ln -s ~/Documents/repos/github.com/mrfoxes/crew/share/completions/crew.fish ~/.config/fish/completions/crew.fish   # fish
-fpath=(~/Documents/repos/github.com/mrfoxes/crew/share/completions $fpath); autoload -Uz compinit; compinit      # zsh, in ~/.zshrc
-source ~/Documents/repos/github.com/mrfoxes/crew/share/completions/crew.bash                                       # bash, in ~/.bashrc
+ln -s "$PWD/share/completions/crew.fish" ~/.config/fish/completions/crew.fish                        # fish
+printf 'fpath=(%s/share/completions $fpath); autoload -Uz compinit; compinit\n' "$PWD" >> ~/.zshrc   # zsh
+printf 'source %s/share/completions/crew.bash\n' "$PWD" >> ~/.bashrc                                 # bash
 ```
 
 They read the commands and flags from `crew --help` when Tab is pressed, so a
 new command completes with no edit to them, and the members from the crew
 that `crew dir` finds.
+
+## Quickstart
+
+In a project you want a crew on, from an iTerm2 or tmux pane:
+
+```
+crew doctor                                 # check terminal, agents, and git/gh
+crew up pair                                # claude and codex side by side, watch and board open
+$EDITOR .crew/README.md                     # write the goal, lanes, and reviewers
+crew send coord all "Plan: read .crew/README.md and send Plan: before editing"
+```
+
+`crew up pair` writes `.crew/Crewfile` from `share/presets/pair`, opens
+`crew watch --all` (relaying unread messages and running the gate) and
+`crew board --live` (status, file claims, lock, and CI) beside you, spawns
+`claude` and `codex`, and invites both. When a member finishes a slice, it
+lands only its claimed paths and wakes its reviewer:
+
+```
+crew land claude -m "Fix parser edge case" --check 'sh test/run.sh' -- src/parse.sh
+crew send codex claude "Review: a1b2c3d clean"
+```
+
+When the goal is met:
+
+```
+crew down                                   # ask for Done: and Reports, then close panes
+```
 
 ## A session
 
@@ -49,8 +99,10 @@ agent on `PATH` with its `--version` against the one its fixtures were
 captured from (`test/fixtures/VERSIONS`; a newer agent may draw prompts the
 gate no longer reads), the caveman skill of each installed agent, a
 notifier for `owner`, `gh auth status` for the board's CI, and, inside a
-crew, a lock held for 10 minutes or more, whether a relay runs, and members
-whose pane is gone. A fail makes the exit status 1; a warn does not.
+crew, its `Crewfile` (and whether a member's `budget=` has no matching rate
+in `share/rates` or `.crew/rates`), a lock held for 10 minutes or more,
+whether a relay runs, and members whose pane is gone. A fail makes the exit
+status 1; a warn does not.
 
 With a `Crewfile`, `crew up` does what follows in one command, tabs, members,
 invites, and layouts, and `crew down` ends it: see [One command, the whole
