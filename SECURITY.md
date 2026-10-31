@@ -38,9 +38,12 @@ crew keeps its state in the crew's directory, `.crew/` at the project's
 root or `~/.crew/<project>/`, which `crew init` keeps out of commits
 through `.git/info/exclude`. The stream, the statuses, and the reports
 in it are what the agents wrote: read them as such. `crew cost` reads
-the agents' own logs on this machine and sends nothing; `crew board`
-asks GitHub for CI through `gh` when it is installed, and nothing else
-goes over the network.
+the agents' own logs on this machine and sends nothing. What goes over
+the network is git and `gh`: a member's clone is made from the local
+checkout, then fetched from and landed through the project's own
+`origin`, as is the shared tree by `crew land`; and `crew board` asks
+GitHub for CI through `gh` when it is installed, which `crew doctor`
+checks with `gh auth status`. Nothing else leaves this machine.
 
 ## Reporting a vulnerability
 
