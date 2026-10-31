@@ -1,0 +1,28 @@
+# The agent and version each fixture was captured from, one line a fixture.
+# Fields are split by spaces, and - is none:
+#
+#   fixture   the file's name in this directory, without .txt
+#   kind      the kind in share/kinds whose screen it is
+#   version   what the agent's --version printed when it was captured
+#
+# crew doctor reads it to tell an agent newer than every screen of its kind
+# that its prompts may have changed: capture the screens again with
+# 'crew peek <name> 40' and record the new version here. other.txt is a menu
+# of no listed agent, written with the first gate, so it has no version.
+#
+# fixture                  kind    version
+claude-asks                claude  2.1.314
+claude-edit                claude  2.1.314
+claude-fetch               claude  2.1.314
+claude-requires-approval   claude  2.1.314
+claude-run                 claude  2.1.314
+claude-idle                claude  2.1.316
+claude-idle-notice         claude  2.1.316
+codex-idle                 codex   0.166.0
+codex-queued               codex   0.166.0
+codex-run                  codex   0.166.0
+codex-trust                codex   0.166.0
+codex-wrapped              codex   0.166.0
+agy-trust                  agy     1.4.11
+agy-idle                   agy     1.4.12
+other                      -       -

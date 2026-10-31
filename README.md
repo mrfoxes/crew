@@ -21,6 +21,24 @@ ln -s ~/Documents/repos/github.com/mrfoxes/crew/bin/crew ~/.local/bin/crew
 
 ## A session
 
+Before the first spawn, `crew doctor` checks what a crew needs under it and
+changes nothing:
+
+```
+crew doctor                                 # ok, warn, or fail a line, and what to do
+```
+
+It reads iTerm2's version from its app bundle (3.5 or later for `--above`
+and `crew move`; it does not launch it) and whether it runs, tmux's (3.1 or
+later to even a row); either terminal alone is enough, neither is a fail.
+It checks `crew` on `PATH` and the checkout it resolves to, each kind's
+agent on `PATH` with its `--version` against the one its fixtures were
+captured from (`test/fixtures/VERSIONS`; a newer agent may draw prompts the
+gate no longer reads), the caveman skill of each installed agent, a
+notifier for `owner`, `gh auth status` for the board's CI, and, inside a
+crew, a lock held for 10 minutes or more, whether a relay runs, and members
+whose pane is gone. A fail makes the exit status 1; a warn does not.
+
 In the project, from the coordinator's pane:
 
 ```
@@ -253,10 +271,12 @@ lib/term-tmux.sh    tmux's half of it
 lib/layout.sh       placing panes: spawn beside, under, over; move
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
+lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
+test/fixtures/VERSIONS  the agent and version each screen was captured from
 .github/workflows/  the tests on Ubuntu and macOS, at every push
 ```
 

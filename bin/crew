@@ -20,6 +20,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
+. "$CREW_HOME/lib/doctor.sh"
 
 usage() {
     cat <<'EOF'
@@ -41,6 +42,7 @@ For everyone
 
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
+  doctor                        check what a crew needs: terminal, agents, skills, gh
   panes                         every pane, who joined it, and its kind
   spawn <name> [--tab | --beside|--below|--above <member>] [--join]
         [--kind <kind>] <cmd>...
@@ -79,6 +81,7 @@ cmd=${1:-help}
 case "$cmd" in
 help) cat "$CREW_HOME/share/protocol.md" ;;
 init) crew_init "$@" ;;
+doctor) crew_doctor "$@" ;;
 dir) crew_dir "$@" ;;
 join) crew_join "$@" ;;
 send) crew_send "$@" ;;

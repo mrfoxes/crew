@@ -13,6 +13,7 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
+. "$CREW_HOME/lib/doctor.sh"
 export CREW_WAKE=0
 # What an agent running the tests sets would change what join reads.
 unset CLAUDECODE CODEX_THREAD_ID
