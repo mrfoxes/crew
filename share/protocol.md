@@ -40,7 +40,10 @@ crew unread <you>
 - `owner` is for what only the owner can decide; it reaches them as a desktop
   notification. Never wait for the answer: take other work meanwhile.
 - Run `crew unread <you>` at every step boundary, and before and after every
-  push. To read a message again, `crew show 0012`; the last few, `crew log`.
+  push. To read a message again, `crew show 0012`; the last few, `crew log`;
+  to find one, `crew log 20 --from codex --grep "#33" --oneline` (`--to` too)
+  prints a header a message. `crew unread <you> --peek` shows what waits and
+  keeps it unread.
 
 ## Voice
 

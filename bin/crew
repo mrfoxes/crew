@@ -38,8 +38,9 @@ For everyone
   help                          the protocol agents follow
   join <name> [--pane <pane>]   join the crew as <name> from this pane
   send <from> <to> <subject>    post a message, body on stdin; wakes <to>
-  unread <name>                 the messages to <name> or all not read yet
-  log [count]                   the last messages, whole (5)
+  unread <name> [--peek]        the messages to <name> or all not read yet (--peek: keep them unread)
+  log [count] [--from <name>] [--to <name>] [--grep <text>] [--oneline]
+                                the last messages, whole (5), filtered
   show <number>...              those messages, whole
   status <name> [<field>...]    write or update <name>'s status, or print it
   report <name>                 write <name>'s report, text on stdin

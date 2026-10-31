@@ -109,6 +109,8 @@ crew board                  # statuses with their age and pane (gone, if closed)
 crew board --live           # a line a member, redrawn every 5 seconds, in a pane of its own
 crew status codex           # codex's status; with "Field: value"..., update those lines in place
 crew log 3                  # the last 3 messages, whole
+crew log 20 --from codex --oneline   # the last 20 from codex, a line each; --to, --grep <text> too, and they combine
+crew unread claude --peek   # what is waiting for claude, the cursor left where it was
 crew show 12                # message 0012
 crew focus codex            # codex's pane to the front, its tab and its window
 crew focus codex --zoom     # alone in its tab, until the next focus (tmux)

@@ -169,10 +169,15 @@ crew_field() {
 }
 
 # Prints the messages to <name> or to all, from someone else, that <name> has
-# not read yet, in order, and marks them read.
+# not read yet, in order, and marks them read; with --peek, marks nothing.
 crew_unread() {
+    peek=0
+    if [ $# -eq 2 ] && [ "$2" = --peek ]; then
+        peek=1
+        set -- "$1"
+    fi
     if [ $# -ne 1 ]; then
-        echo "usage: crew unread <name>" >&2
+        echo "usage: crew unread <name> [--peek]" >&2
         return 2
     fi
     me=$1
@@ -192,18 +197,58 @@ crew_unread() {
         fi
         last=$n
     done
-    cu_tmp=$(mktemp "$dir/tmp/cursor.XXXXXX")
-    echo "$last" >"$cu_tmp" && mv "$cu_tmp" "$cursor"
+    if [ "$peek" = 0 ]; then
+        cu_tmp=$(mktemp "$dir/tmp/cursor.XXXXXX")
+        echo "$last" >"$cu_tmp" && mv "$cu_tmp" "$cursor"
+    fi
     [ "$count" -gt 0 ] || echo "No new messages for $me."
 }
 
-# Prints the last <count> messages (5 when not given), whole, in order.
+# Prints the last <count> messages (5 when not given), whole, in order. The
+# filters keep the messages --from or --to a name, or whose text matches
+# --grep <pattern>; they combine, and the count applies after them.
+# --oneline prints a header a message.
 crew_log() {
-    crew_count "${1:-5}" "crew log [count]" || return 2
+    usage="crew log [count] [--from <name>] [--to <name>] [--grep <pattern>] [--oneline]"
+    count=5 from='' to='' pattern='' oneline=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+        --from | --to | --grep)
+            if [ $# -lt 2 ]; then
+                echo "usage: $usage" >&2
+                return 2
+            fi
+            case "$1" in
+            --from) from=$2 ;;
+            --to) to=$2 ;;
+            *) pattern=$2 ;;
+            esac
+            shift 2
+            ;;
+        --oneline)
+            oneline=1
+            shift
+            ;;
+        *)
+            crew_count "$1" "$usage" || return 2
+            count=$count_n
+            shift
+            ;;
+        esac
+    done
     dir=$(crew_dir) || return 1
-    for n in $(ls "$dir/seq" | sort -n | tail -n "$count_n"); do
-        printf '\n'
-        cat "$dir/seq/$n"
+    for n in $(ls "$dir/seq" | sort -n); do
+        [ -z "$from" ] || [ "$(crew_field "$dir/seq/$n" From)" = "$from" ] || continue
+        [ -z "$to" ] || [ "$(crew_field "$dir/seq/$n" To)" = "$to" ] || continue
+        [ -z "$pattern" ] || grep -q -e "$pattern" "$dir/seq/$n" || continue
+        echo "$n"
+    done | tail -n "$count" | while read -r n; do
+        if [ "$oneline" = 1 ]; then
+            sed -n '1s/^# \([0-9]*\)\. /\1 /p' "$dir/seq/$n"
+        else
+            printf '\n'
+            cat "$dir/seq/$n"
+        fi
     done
 }
 
@@ -458,7 +503,7 @@ crew_board() {
     fi
     echo
     echo "== messages"
-    ls "$dir/messages" | tail -n "$count_n"
+    crew_log "$count_n" --oneline
     root=$(crew_project "$dir")
     if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
         echo
