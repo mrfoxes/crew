@@ -52,7 +52,10 @@ notifier for `owner`, `gh auth status` for the board's CI, and, inside a
 crew, a lock held for 10 minutes or more, whether a relay runs, and members
 whose pane is gone. A fail makes the exit status 1; a warn does not.
 
-In the project, from the coordinator's pane:
+With a `Crewfile`, `crew up` does what follows in one command, tabs, members,
+invites, and layouts, and `crew down` ends it: see [One command, the whole
+crew](#one-command-the-whole-crew). By hand, in the project, from the
+coordinator's pane:
 
 ```
 crew init                                   # .crew/ at the root, kept out of git
@@ -114,6 +117,7 @@ crew poke codex "<line>"    # type a line and press Return
 crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
 crew watch codex claude     # answer their prompts and wake recipients, from this pane
 crew gate codex claude      # the first half of watch: answer prompts, hold the forbidden
+crew watch --all            # every member with a pane, those spawned later too
 crew relay                  # the other half: wake recipients for every sender
 ```
 
