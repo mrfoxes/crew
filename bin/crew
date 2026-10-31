@@ -40,8 +40,9 @@ For everyone
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   panes                         every pane, and who joined it
-  spawn <name> [--tab] [--join] <cmd>...
-                                open a pane running <cmd> for <name>
+  spawn <name> [--tab | --below <member>] [--join] <cmd>...
+                                open a pane running <cmd> for <name>: beside
+                                this one, in a new tab, or under <member>'s
   invite <name> [seconds]       once its agent is up, tell it to join
   leave <name>                  forget <name>'s pane
   peek <name> [lines]           what <name>'s pane shows

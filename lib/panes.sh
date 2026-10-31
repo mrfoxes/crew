@@ -135,13 +135,14 @@ crew_key() {
     done
 }
 
-# Opens a pane beside this one running <command> in the project's root,
-# joined as <name>. The agent still runs 'crew join <name>' to learn the
-# protocol; its pane is known from the start, and with --join it is told to
-# as soon as it is up.
+# Opens a pane beside this one, in a new tab with --tab, or under <member>'s
+# pane with --below, running <command> in the project's root, joined as
+# <name>. The agent still runs 'crew join <name>' to learn the protocol; its
+# pane is known from the start, and with --join it is told to as soon as it
+# is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --below <member>] [--join] <command>..." >&2
         return 2
     fi
     name=$1
@@ -149,17 +150,24 @@ crew_spawn() {
     crew_name "$name" || return 2
     dir=$(crew_dir) || return 1
     where='split'
+    anchor=""
     join=""
     while [ $# -gt 0 ]; do
         case "$1" in
         --tab) where=tab ;;
+        --below)
+            shift
+            [ $# -gt 0 ] || break
+            anchor=$(crew_pane "$1") || return 1
+            where=below
+            ;;
         --join) join=1 ;;
         *) break ;;
         esac
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --below <member>] [--join] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -174,7 +182,7 @@ crew_spawn() {
         done
         line=${line# }
     fi
-    pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line") || return 1
+    pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line" "$anchor") || return 1
     echo "$pane" >"$dir/panes/$name"
     echo "$name: $pane"
     [ -z "$join" ] || crew_invite "$name"

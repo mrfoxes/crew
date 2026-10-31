@@ -30,6 +30,7 @@ $EDITOR "$(crew dir)/README.md"             # the plan, lanes, reviewers, end ti
 crew spawn claude claude                    # a pane beside this one, running claude
 crew spawn codex codex
 crew spawn agy --tab agy                    # a new tab instead of a split
+crew spawn agy --below codex agy            # under codex's pane: a column beside yours
 crew spawn claude claude --model 'x y'      # several words: each kept whole
 crew spawn codex 'cd sub && codex'          # one word: a line for your shell
 ```

@@ -287,7 +287,12 @@ check "spawn records the pane" "tmux:%9" "$(cat "$dir/panes/agy")"
 crew_spawn agy --tab 'cd sub && codex' >/dev/null
 check "spawn passes one word to the shell" "cd $(cd "$tmp/repo" && pwd -P) && cd sub && codex" "$(cat "$tmp/spawn.line")"
 check "spawn wants a command" "2" "$(crew_spawn agy --tab >/dev/null 2>&1; echo $?)"
-rm -f "$dir/panes/agy"
+term_spawn() { printf '%s %s\n' "$1" "${3:-}" >"$tmp/spawn.where"; echo tmux:%9; }
+crew_spawn codex --below agy codex >/dev/null
+check "spawn below a member" "below tmux:%9" "$(cat "$tmp/spawn.where")"
+check "spawn below one with no pane" "1" "$(crew_spawn codex --below nobody codex >/dev/null 2>&1; echo $?)"
+check "spawn below wants a member" "2" "$(crew_spawn codex --below >/dev/null 2>&1; echo $?)"
+rm -f "$dir/panes/agy" "$dir/panes/codex"
 # The terminal, as every machine sees it: one tmux pane, %7.
 term_list() { printf 'tmux:%%7\t/dev/ttys001\tsh\n'; }
 check "a pane the terminal lists" "1" "$(term_gone tmux:%7; echo $?)"

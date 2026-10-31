@@ -198,28 +198,44 @@ term_poke() {
     term_key "$1" enter
 }
 
-# Opens a pane beside this one (a new tab or window with --tab), runs
-# <command> in <dir> there through the owner's shell, so the pane outlives
+# Opens a pane beside this one (split), in a new tab (tab), or under <pane>
+# (below), runs <line> there through the owner's shell, so the pane outlives
 # it, and prints the new pane.
 term_spawn() {
     where=$1
     line=$2
+    anchor=${3:-}
     if [ -n "${TMUX:-}" ]; then
-        if [ "$where" = tab ]; then
-            id=$(tmux new-window -P -F '#{pane_id}')
-        else
-            id=$(tmux split-window -P -F '#{pane_id}') && tmux select-layout tiled >/dev/null
-        fi || return
+        case "$where:$anchor" in
+        tab:*) id=$(tmux new-window -P -F '#{pane_id}') ;;
+        below:tmux:*) id=$(tmux split-window -v -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
+        below:*)
+            echo "crew: $anchor is not a tmux pane" >&2
+            return 1
+            ;;
+        *) id=$(tmux split-window -P -F '#{pane_id}') && tmux select-layout tiled >/dev/null ;;
+        esac || return
         tmux send-keys -t "$id" -l -- "$line" && tmux send-keys -t "$id" Enter
         echo "tmux:$id"
         return
     fi
-    me=$(term_self) || {
-        echo "crew: spawn needs iTerm2 or tmux" >&2
+    case "$where:$anchor" in
+    below:iterm:*) me=$anchor ;;
+    below:*)
+        echo "crew: $anchor is not an iTerm2 pane" >&2
         return 1
-    }
+        ;;
+    *)
+        me=$(term_self) || {
+            echo "crew: spawn needs iTerm2 or tmux" >&2
+            return 1
+        }
+        ;;
+    esac
     if [ "$where" = tab ]; then
         open='tell w to set n to current session of (create tab with default profile)'
+    elif [ "$where" = below ]; then
+        open='tell s to set n to (split horizontally with default profile)'
     else
         # Beside this pane while the tab holds an odd number, below it while
         # even: three or four panes make a grid, not a row of slivers.
