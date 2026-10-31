@@ -120,6 +120,11 @@ iterm_tab() {
     :
 }
 
+# iTerm2 shares a row out evenly on its own.
+iterm_even() {
+    :
+}
+
 # Opens a session beside the current one (split), in a new tab (tab), or
 # right of, under, or over the iTerm2 pane <anchor> (beside, below,
 # above), and types <line> into it.
@@ -221,7 +226,7 @@ iterm_move() {
     placed) ;;
     unchanged)
         echo "crew: iTerm2 left $pane where it was: a locked layout, no room to split, or $where $anchor already" >&2
-        return 1
+        return 3
         ;;
     *)
         echo "crew: iTerm2 moved $pane, but not $where $anchor; it stays where iTerm2 put it" >&2

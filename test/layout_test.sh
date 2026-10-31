@@ -84,4 +84,72 @@ claude6  claude  proof    tmux:%10" "$(crew_panes | awk '$1 != "-"' | cut -c1-37
 printf 'Agent: claude5\n' >"$dir/status/claude5.md"
 check "the board names the tab" "1" "$(crew_board 1 | grep -c '^== claude5 (claude, tab proof, tmux:%8, 0 min ago)$')"
 
+# Layouts: the rows each makes of a tab's entries, and the moves that lay
+# the rows out.
+rows() { layout_rows "$dir" "$@" | tr '\n' '/' | sed 's/\/$//'; }
+check "a grid of five is three over two" "a b c/d e" "$(rows grid a b c d e)"
+check "a grid of four" "a b/c d" "$(rows grid a b c d)"
+check "a grid of one" "a" "$(rows grid a)"
+check "a grid of none" "" "$(rows grid)"
+check "a fixed grid" "a b c/d e f/g" "$(rows 3x2 a b c d e f g)"
+check "main and a grid beside it" "main a/b c/d" "$(rows main a b c d)"
+check "rows of names" "a b c/d e" "$(rows 'a,b,c / d,e')"
+kind_record "$dir" t1 claude
+kind_record "$dir" t2 codex
+kind_record "$dir" t3 claude
+kind_record "$dir" t4 agy
+check "a table: a row a kind, in the order they come" "t1 t3/t2/t4/tmux:%99" "$(rows table t1 t2 t3 t4 tmux:%99)"
+for want in table grid main 3x2 'a,b / c' 'a/b'; do
+    check "a layout crew knows: $want" "0" "$(layout_known "$want"; echo $?)"
+done
+for bad in 2x x2 3x2x1 Proof box abc ''; do
+    check "a layout crew does not know: $bad" "1" "$(layout_known "$bad"; echo $?)"
+done
+check "the moves of rows: the first of each under the one before, then each row rightward" "b below a
+c beside a
+d beside b" "$(printf 'a c\nb d\n' | layout_moves)"
+check "the moves of main" "b beside m
+c below b
+d beside c" "$(printf 'main m\nb\nc d\n' | layout_moves)"
+
+# Laying out a tab: its entries whose pane is there, moved by the layout,
+# which the tab keeps.
+term_move() { echo "move $1 $2 $3" >>"$tmp/calls"; }
+term_even() { echo "even $1" >>"$tmp/calls"; }
+for m in l1 l2 l3 l4 l5; do
+    crew_spawn "$m" --tab lane claude >/dev/null
+done
+rm -f "$tmp/calls"
+check "layout a tab" "lane: grid" "$(crew_layout grid --tab lane)"
+check "the tab keeps its layout" "grid" "$(cat "$dir/layouts/lane")"
+l1=$(cat "$dir/panes/l1") l2=$(cat "$dir/panes/l2") l3=$(cat "$dir/panes/l3") l4=$(cat "$dir/panes/l4") l5=$(cat "$dir/panes/l5")
+check "the moves of a grid of five" "move $l4 below $l1
+move $l2 beside $l1
+move $l3 beside $l2
+move $l5 beside $l4
+even $l1
+even $l4" "$(calls)"
+echo "$l2" >>"$tmp/closed"
+check "a closed pane leaves no hole" "lane: grid" "$(crew_layout)"
+check "the moves without it" "move $l4 below $l1
+move $l3 beside $l1
+move $l5 beside $l4
+even $l1
+even $l4" "$(calls)"
+crew_spawn l6 --tab lane claude >/dev/null
+check "a new member of a tab with a layout is laid out with it" "4" "$(grep -c '^move ' "$tmp/calls")"
+rm -f "$tmp/calls"
+term_move() { [ "$1" != "$l3" ] || return 3; echo "move $1 $2 $3" >>"$tmp/calls"; }
+check "a pane in its place already is no failure" "0" "$(crew_layout >/dev/null; echo $?)"
+term_move() { echo "crew: refused" >&2; return 1; }
+check "a refused move fails the layout, and is said" "crew: refused" "$(crew_layout 2>&1 >/dev/null | sort -u)"
+check "a layout crew does not know" "2" "$(crew_layout zigzag --tab lane >/dev/null 2>&1; echo $?)"
+check "a layout needs its tab" "2" "$(crew_layout grid >/dev/null 2>&1; echo $?)"
+check "a tab crew does not know" "1" "$(crew_layout grid --tab nowhere >/dev/null 2>&1; echo $?)"
+term_move() { echo "move $1 $2 $3" >>"$tmp/calls"; }
+rm -f "$tmp/calls"
+check "rows of names go to the tab of the first" "lane: l1,l3 / l4" "$(crew_layout l1,l3 / l4)"
+check "and are moved so" "move $l4 below $l1
+move $l3 beside $l1" "$(calls | grep '^move ')"
+
 finish

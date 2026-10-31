@@ -166,7 +166,7 @@ crew_panes() {
             fi
         fi
         order=0
-        [ "$tab" = - ] || order=$(grep -nx -- "$who" "$dir/tabs/$tab" | cut -d: -f1)
+        [ "$tab" = - ] || order=$(grep -nx -- "$who" "$dir/tabs/$tab" | cut -d: -f1) || order=0
         printf '%s\t%s\t%-8s %-7s %-8s %-48s %-14s %s\n' "${tab:--}" "$order" "$who" "${kind:--}" "${tab:--}" "$pane" "$tty" "$title"
     done | sort -s -t '	' -k1,1 -k2,2n | cut -f3-
 }
@@ -280,6 +280,8 @@ crew_spawn() {
     if [ -n "$tab" ]; then
         tab_add "$dir" "$tab" "$name"
         [ -n "$anchor" ] || term_tab "$pane" "$tab" || echo "crew: could not name the tab $tab" >&2
+        # A tab with a layout puts its new member in its row.
+        layout_apply "$dir" "$tab" || echo "crew: $tab is not laid out as it should be; see above" >&2
     elif [ -n "$anchor" ]; then
         # Placed next to a member's pane: in that member's tab.
         anchor_tab=$(tab_of_pane "$dir" "$anchor")

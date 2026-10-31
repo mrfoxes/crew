@@ -51,6 +51,10 @@ For the coordinator
                                 its first member), or right of, under, or
                                 over <member>'s; its kind is read from <cmd>
                                 unless given
+  layout [<layout>] [--tab <tab>]
+                                lay out a tab's panes: table, grid, main,
+                                <columns>x<rows>, or rows of names (a,b / c);
+                                alone, every tab by the layout it has
   move <name> --beside|--below|--above <member>
                                 move <name>'s pane right of, under, or over
                                 <member>'s, its agent still running
@@ -97,6 +101,7 @@ unlock) crew_unlock "$@" ;;
 panes) crew_panes "$@" ;;
 spawn) crew_spawn "$@" ;;
 move) crew_move "$@" ;;
+layout) crew_layout "$@" ;;
 invite) crew_invite "$@" ;;
 leave) crew_leave "$@" ;;
 mute) crew_mute "$@" ;;

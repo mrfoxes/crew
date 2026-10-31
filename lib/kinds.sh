@@ -79,9 +79,10 @@ kind_known() {
     [ "$1" = other ] || kinds_names | grep -qx -- "$1"
 }
 
-# <name>'s kind in the crew <dir>, or nothing.
+# <name>'s kind in the crew <dir>, or nothing; never fails, so that an
+# assignment from it holds under set -e.
 kind_member() {
-    cat "$1/kind/$2" 2>/dev/null
+    cat "$1/kind/$2" 2>/dev/null || :
 }
 
 # Records <kind> as <name>'s in the crew <dir>.

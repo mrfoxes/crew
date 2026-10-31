@@ -33,6 +33,11 @@
 #                       the mark off
 #   <t>_tab <id> <name> names the tab the pane sits in, where the terminal
 #                       keeps such a name; does nothing where it does not
+#   <t>_even <id>       shares the pane's row out evenly among its panes,
+#                       where the terminal does not on its own
+#
+# <t>_move exits 3 when the terminal leaves the pane where it was, which a
+# layout takes for a pane in its place already.
 #
 # Each fails with a reason on stderr. Nothing outside lib/term*.sh drives
 # iTerm2 or tmux.
@@ -151,6 +156,12 @@ term_color() {
 term_tab() {
     backend=$(term_of "$1") || return
     "${backend}_tab" "${1#*:}" "$2"
+}
+
+# Shares out the row of <pane> evenly, where the terminal does not.
+term_even() {
+    backend=$(term_of "$1") || return
+    "${backend}_even" "${1#*:}"
 }
 
 # Presses one key in the pane: enter, esc, tab, shift-tab, up, down, left,

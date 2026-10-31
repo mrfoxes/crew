@@ -233,9 +233,28 @@ whatever tab it is in.
 
 ## Laying out a table
 
-One row for each kind of agent, its panes side by side. `--beside` and
-`--below` split one pane, not a whole row, so open the first pane of every
-row down the left, then fill each row rightward:
+`crew layout <layout> --tab <tab>` moves the panes of a tab into rows, their
+agents running on, and keeps the layout for the tab in `layouts/<tab>`:
+
+```
+crew layout table --tab proof               # a row for each kind
+crew layout grid --tab proof                # as square as the count allows: 5 is 3 over 2
+crew layout 3x2 --tab proof                 # rows of 3, in the tab's order
+crew layout main --tab main                 # the first pane whole on the left, a grid beside it
+crew layout claude,claude2,claude3 / agy,agy2   # these rows, in the first one's tab
+crew layout                                 # every tab again, by the layout it has
+```
+
+A table's rows come in the order the kinds first sit in the tab, a row's
+panes in the tab's order. A closed pane leaves no hole: `crew layout` alone
+lays every tab out again with the panes still there, and a member spawned
+in a tab with a layout is placed in its row at once. A pane in its place
+already is left there; a move the terminal refuses is said, and the layout
+goes on with the next ones.
+
+By hand, the same is spawns and moves in order. `--beside` and `--below`
+split one pane, not a whole row, so open the first pane of every row down
+the left, then fill each row rightward, as `crew layout` does:
 
 ```
 crew spawn claude --tab proof claude        # the table, in a tab of its own
@@ -306,7 +325,7 @@ lib/kinds.sh        kinds of agent: share/kinds read and overridden, a member's 
 lib/term.sh         the terminal contract, and what both keep alike: find our own, keys
 lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
 lib/term-tmux.sh    tmux's half of it
-lib/layout.sh       placing panes: spawn beside, under, over; move
+lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layouts
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
@@ -333,6 +352,7 @@ threads/<name>             a Codex member's thread, for codex queue
 muted/<name>               a member woken only by messages to its name (crew mute)
 kind/<name>                each member's kind (claude, codex, agy, other)
 tabs/<tab>                 a tab's members, in the order they were placed
+layouts/<tab>              the layout a tab is kept in (crew layout)
 reports/<name>.md          each member's report at the end (crew report)
 archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)
