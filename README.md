@@ -550,7 +550,9 @@ It recognises Codex's "Would you like to run the following command?" and
 Claude Code's "Bash command ... Do you want to proceed?", and answers each
 with its kind's `approve` key (a kind with none has its prompts held). A command that
 breaks a rule of `share/forbid` (or the project's own `.crew/forbid`, which
-replaces it) is held, and so is every other menu waiting at the bottom of
+replaces it, looked for at each prompt, so one written while the gate runs
+counts at once; rules that cannot be read hold every command) is held, and
+so is every other menu waiting at the bottom of
 the pane (a file edit, a fetch, a trust dialog): you decide those with `crew
 key`. A question the agent asks in prose, with no choices under it, is not a
 prompt. Antigravity 1.4.11 with `toolPermission: always-proceed` asks for

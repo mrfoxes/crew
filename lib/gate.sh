@@ -132,7 +132,18 @@ gate_look() {
     tight=$(printf '%s' "$prompt" | cut -f3)
     case "$kind" in
     other) why="not a command" ;;
-    *) why=$(gate_forbidden "$gate_rules" "$command") || why=$(gate_forbidden "$gate_rules" "$tight") || why="" ;;
+    *)
+        # The crew's own forbid is looked for at each prompt, so one
+        # written while the gate runs counts at once; rules that cannot
+        # be read hold the prompt.
+        rules=$gate_rules
+        [ ! -f "${dir:-}/forbid" ] || rules=$dir/forbid
+        if [ ! -r "$rules" ]; then
+            why="no rules in $rules"
+        else
+            why=$(gate_forbidden "$rules" "$command") || why=$(gate_forbidden "$rules" "$tight") || why=""
+        fi
+        ;;
     esac
     # The key that answers yes is the kind's (share/kinds): a kind with
     # none has its prompts held.
@@ -230,8 +241,8 @@ gate_setup() {
         return 2
     fi
     dir=$(crew_dir) || return 1
-    gate_rules=$dir/forbid
-    [ -f "$gate_rules" ] || gate_rules=$CREW_HOME/share/forbid
+    # The default rules; a crew's own forbid replaces them, at each prompt.
+    gate_rules=$CREW_HOME/share/forbid
     gate_state=$(mktemp -d "$dir/tmp/gate.XXXXXX") || return 1
     gate_dirs "$gate_state"
     for name in $names; do

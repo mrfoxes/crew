@@ -169,6 +169,24 @@ rm -f "$gate_state/answered/codex"
 show codex-run codex-run
 check "gate presses for the same prompt" "pressed y
 12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+# A crew's own forbid, written while the gate runs, counts at the next
+# prompt; rules that cannot be read hold it.
+dir=$tmp/forbid-crew
+mkdir -p "$dir"
+echo 'cargo +test' >"$dir/forbid"
+rm -f "$gate_state/held/codex" "$gate_state/answered/codex"
+show codex-run
+check "gate reads a forbid written while it runs" "12:00:00 HOLD codex (cargo +test): cargo test --test editors" "$(gate_look codex tmux:%1)"
+rm "$dir/forbid"
+rm -f "$gate_state/held/codex" "$gate_state/answered/codex"
+# shellcheck disable=SC2034 # read by the library under test
+gate_rules=$tmp/no-such-rules
+show codex-run
+check "gate holds when its rules cannot be read" "12:00:00 HOLD codex (no rules in $tmp/no-such-rules): cargo test --test editors" "$(gate_look codex tmux:%1)"
+# shellcheck disable=SC2034 # read by the library under test
+gate_rules=$CREW_HOME/share/forbid
+unset dir
+rm -f "$gate_state/held/codex" "$gate_state/answered/codex"
 # The key that answers yes is the kind's (share/kinds): the owner's kinds
 # can change it, and a kind with none has its prompts held.
 mkdir -p "$XDG_CONFIG_HOME/crew"
