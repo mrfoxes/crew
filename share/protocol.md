@@ -116,6 +116,33 @@ build directory are shared:
 5. Send your reviewer `Pushed:` with the hash, and watch CI. A red CI on your
    commit comes before anything else.
 
+## From your own clone
+
+When you were spawned with `--clone`, your working tree is a clone of your
+own, next to the project's, and `CREW_DIR` points at this crew: `crew`
+works there as anywhere. Nobody shares your files, index, or build
+directory; you land through `origin`, on `main`. Your commits carry the
+project's identity: check `git config user.email` once, and tell the
+coordinator if it is not the project's.
+
+1. The project's checks pass.
+2. `crew lock <you>`. If it is taken, keep working and retry.
+3. Commit your work, then `git pull --rebase` in your own clone only, run
+   the checks again, and push to `main`.
+4. `crew unlock <you>` at once. If the push is rejected again, unlock and
+   tell `owner`.
+5. Send your reviewer `Pushed:` with the hash, and watch CI.
+
+The gate holds `git pull` and `git rebase` for every member, a clone's
+included, since it cannot tell a clone from the shared tree. For step 3,
+send the coordinator `Question:` with the command, keep the lock, and wait
+for the answer. Do not get round the gate with `git reset`, `git stash`, or
+`git push --force`.
+
+If you work in the shared tree while others push from clones, `origin/main`
+moves under you. Commit your paths as in Landing, then, under the lock only,
+`git pull --rebase --autostash`, and push.
+
 ## Reviews
 
 When the one you review sends `Pushed:`, read the commit with `git show

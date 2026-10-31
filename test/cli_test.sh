@@ -31,6 +31,23 @@ check "unlock" "lock released" "$(crew unlock tess)"
 check "mute" "0" "$(crew mute tess >/dev/null; echo $?)"
 check "unmute" "0" "$(crew unmute tess >/dev/null; echo $?)"
 check "layout with no tab laid out" "0" "$(crew layout >/dev/null; echo $?)"
+# A member's clone, recorded as spawn --clone does: on the board whether it
+# is there, behind, or gone, and removed by leave when nothing is left.
+git init -q --bare -b main "$tmp/origin.git"
+git -C "$tmp/repo" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m first
+git -C "$tmp/repo" branch -M main
+git -C "$tmp/repo" remote add origin "$tmp/origin.git"
+git -C "$tmp/repo" push -q origin main
+git clone -q "$tmp/origin.git" "$tmp/repo-tess" 2>/dev/null
+mkdir -p "$dir/clones"
+echo "$tmp/repo-tess" >"$dir/clones/tess"
+check "board with a clone" "1" "$(crew board | grep -c "^clone: $tmp/repo-tess, 0 behind origin/main")"
+echo "$tmp/repo-gone" >"$dir/clones/tess"
+check "board with a clone that is gone" "1" "$(crew board | grep -c "^clone: $tmp/repo-gone (gone)$")"
+echo "$tmp/repo-tess" >"$dir/clones/tess"
+check "leave keeps the clone" "1" "$(crew leave tess >/dev/null; [ -d "$tmp/repo-tess" ] && echo 1)"
+check "leave --clone removes a clone with nothing left" "0" "$(crew leave tess --clone >/dev/null; echo $?)"
+check "and the clone is gone" "1" "$([ -d "$tmp/repo-tess" ] || echo 1)"
 check "leave" "0" "$(crew leave tess >/dev/null; echo $?)"
 check "archive" "0" "$(crew archive >/dev/null; echo $?)"
 check "version" "0" "$(crew version >/dev/null; echo $?)"

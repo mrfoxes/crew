@@ -37,7 +37,7 @@ flags() { words "$1" | tr ' ' '\n' | sed -n 's/=.*//; /^--/p' | sort | tr '\n' '
 check "the first command" "help" "$(spec | sed -n 1p | cut -d' ' -f1)"
 check "the last command" "version" "$(spec | tail -n 1 | cut -d' ' -f1)"
 check "a command is a line" "1" "$(spec | grep -c '^peek ')"
-check "spawn flags, across the lines of its usage" "--above --below --beside --join --kind --tab" "$(flags spawn)"
+check "spawn flags, across the lines of its usage" "--above --below --beside --cache --clone --join --kind --tab" "$(flags spawn)"
 check "spawn takes a member after --beside" "1" "$(words spawn | grep -c -- ' --beside=member ')"
 check "spawn takes a kind after --kind" "1" "$(words spawn | grep -c -- ' --kind=kind ')"
 check "spawn's positionals" "<name> <cmd>..." "$(words spawn | tr ' ' '\n' | grep '^<' | tr '\n' ' ' | sed 's/ $//')"
@@ -101,7 +101,7 @@ crew spawn |
 crew spawn x --beside |agy claude codex
 crew spawn x --kind |agy claude codex other
 crew spawn x --kind c|claude codex
-crew spawn x --|--above --below --beside --join --kind --tab
+crew spawn x --|--above --below --beside --cache --clone --join --kind --tab
 crew spawn x --kind agy --b|--below --beside
 crew spawn x --kind agy |
 crew move claude --|--above --below --beside

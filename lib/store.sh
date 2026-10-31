@@ -329,6 +329,7 @@ crew_board() {
         kind=$(kind_member "$dir" "$who")
         tab=$(tab_of "$dir" "$who")
         echo "== $who (${kind:+$kind, }${tab:+tab $tab, }$pane, $(crew_age "$f") min ago)"
+        clone_board "$dir" "$who" "$(crew_project "$dir")"
         cat "$f"
         echo
     done

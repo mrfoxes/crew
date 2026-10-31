@@ -12,6 +12,7 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/claims.sh"
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
+. "$CREW_HOME/lib/clones.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"

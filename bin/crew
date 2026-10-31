@@ -19,6 +19,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/claims.sh"
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
+. "$CREW_HOME/lib/clones.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/doctor.sh"
@@ -48,12 +49,14 @@ For the coordinator
   panes                         every pane, who joined it, and its kind
   cost [name...]                what the members spent: tokens, and dollars by the rates
   spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join]
-        [--kind <kind>] <cmd>...
+        [--kind <kind>] [--clone [--cache <dir>]...] <cmd>...
                                 open a pane running <cmd> for <name>: beside
                                 this one, in the tab named <tab> (opened for
                                 its first member), or right of, under, or
                                 over <member>'s; its kind is read from <cmd>
-                                unless given
+                                unless given; with --clone, in the member's
+                                own clone of the project, ../<project>-<name>,
+                                --cache copying a directory the project has
   layout [<layout>] [--tab <tab>]
                                 lay out a tab's panes: table, grid, main,
                                 <columns>x<rows>, or rows of names (a,b / c);
@@ -62,7 +65,8 @@ For the coordinator
                                 move <name>'s pane right of, under, or over
                                 <member>'s, its agent still running
   invite <name> [seconds]       once its agent is up, tell it to join, in caveman mode
-  leave <name>                  forget <name>'s pane
+  leave <name> [--clone]        forget <name>'s pane; --clone also removes its
+                                clone, when nothing is left in it
   mute <name>                   wake <name> only for messages to its name
   unmute <name>                 wake it for messages to all again
   focus <name> [--zoom]         bring <name>'s pane to the front, alone in

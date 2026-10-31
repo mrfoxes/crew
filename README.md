@@ -264,6 +264,46 @@ where its agent's titles cannot reach it, marked with its kind's color:
 `CREW_COLOR=0` names the pane without a color. `crew leave` takes both off
 a pane still open.
 
+## A clone for a member
+
+`crew spawn <name> --clone <cmd>...` gives a member a checkout of its own,
+`../<project dir name>-<name>`, instead of the project's: its builds,
+index, and commits touch nobody else's, and it lands through `origin`.
+`<cmd>` runs there with `CREW_DIR` set to the crew's directory, so the
+member joins the same crew.
+
+```
+crew spawn lean --clone --cache .lake claude    # ../proj-lean, with the project's .lake copied
+crew board                                      # under lean: clone: ../proj-lean, 2 behind origin/main
+crew leave lean --clone                         # removes it when nothing is left
+```
+
+- The clone is made from the local checkout (no network for the objects),
+  then `origin` is set to the project's own URL, `git fetch origin` runs,
+  and `main` is checked out at `origin/main`: the member works on `main`.
+  When origin has no `main`, the project's current branch stands in for it,
+  and spawn says so.
+- The project's own `user.*` settings (name, email, signing key) are copied
+  into the clone: a plain `git clone` does not carry them, and the commits
+  would go out under your global identity.
+- Each `--cache <dir>` (a path from the project's root, such as `.lake` or
+  `node_modules`) is copied into the clone, at the same place, when the
+  project has it and the clone has not; spawn says what it copied.
+- A clone there already is reused after `git fetch` and a fast-forward of
+  its main, when its tree is clean. With changes, or of another origin, it
+  is left as it is, and spawn says so and stops.
+- `crew board` adds a line under the member: the clone, how many commits it
+  is behind `origin/main` as last fetched (the board never fetches), and
+  `IDENTITY` with both emails when the clone's `user.email` is not the
+  project's.
+- `crew leave <name> --clone` lists what the clone holds that origin does
+  not (commits, changed and untracked files), and removes it only when
+  there is nothing; otherwise it stays. `crew leave <name>` alone keeps the
+  clone and `clones/<name>`, so the board still shows it.
+- The gate holds `git pull` and `git rebase` for every member, a clone's
+  too: the protocol has the member ask the coordinator, who answers with
+  `crew key`. A project that wants them free has its own `.crew/forbid`.
+
 ## Tabs
 
 `crew spawn <name> --tab <tab>` puts a member in the tab named `<tab>`:
@@ -408,6 +448,7 @@ lib/term.sh         the terminal contract, and what both keep alike: find our ow
 lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
 lib/term-tmux.sh    tmux's half of it
 lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layouts
+lib/clones.sh       a member's clone: made, reused, shown on the board, removed
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
@@ -436,6 +477,7 @@ sessions/<name>            a Claude Code member's session, for crew cost
 rates                      the project's prices per model, over the owner's (optional)
 muted/<name>               a member woken only by messages to its name (crew mute)
 kind/<name>                each member's kind (claude, codex, agy, other)
+clones/<name>              the path of a member's clone (crew spawn --clone)
 tabs/<tab>                 a tab's members, in the order they were placed
 layouts/<tab>              the layout a tab is kept in (crew layout)
 reports/<name>.md          each member's report at the end (crew report)

@@ -82,10 +82,12 @@ crew_join() {
 
 # Forgets <name>'s pane, thread, and kind, and takes its name and color off
 # the pane when it is still there: messages to <name> wait in the stream
-# from now on.
+# from now on. Its clone stays, and so does clones/<name>, so that the
+# board still shows it; with --clone the clone goes too when nothing is
+# left in it, and stays, listed, when something is.
 crew_leave() {
-    if [ $# -ne 1 ]; then
-        echo "usage: crew leave <name>" >&2
+    if [ $# -lt 1 ] || [ $# -gt 2 ] || { [ $# -eq 2 ] && [ "$2" != --clone ]; }; then
+        echo "usage: crew leave <name> [--clone]" >&2
         return 2
     fi
     crew_name "$1" || return 2
@@ -95,6 +97,11 @@ crew_leave() {
     rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1"
     tab_drop "$dir" "$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
+    if [ "${2:-}" = --clone ]; then
+        clone_leave "$dir" "$1"
+    elif [ -n "$(clone_of "$dir" "$1")" ]; then
+        echo "its clone stays at $(clone_of "$dir" "$1"); 'crew leave $1 --clone' removes it when nothing is left in it"
+    fi
 }
 
 # Mutes <name>, marked by muted/<name>: a message to all no longer wakes it,
@@ -241,13 +248,14 @@ crew_focus() {
 
 # Opens a pane beside this one, in a new tab with --tab, or right of, under,
 # or over <member>'s pane with --beside, --below, or --above, running
-# <command> in the project's root, joined as <name>, of the kind --kind
+# <command> in the project's root (in a clone of its own with --clone, where
+# --cache copies a directory the project has, such as .lake), joined as <name>, of the kind --kind
 # names or the command runs. The agent still runs 'crew join <name>' to
 # learn the protocol; its pane is known from the start, and with --join it
 # is told to as soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] [--clone [--cache <dir>]...] <command>..." >&2
         return 2
     fi
     name=$1
@@ -259,6 +267,8 @@ crew_spawn() {
     join=""
     kind=""
     tab=""
+    clone=""
+    cache=""
     while [ $# -gt 0 ]; do
         case "$1" in
         --tab)
@@ -282,15 +292,35 @@ crew_spawn() {
             anchor=$(crew_pane "$1") || return 1
             ;;
         --join) join=1 ;;
+        --clone) clone=1 ;;
+        --cache)
+            shift
+            [ -n "${1:-}" ] || break
+            cache="$cache${cache:+
+}$1"
+            ;;
         *) break ;;
         esac
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] [--clone [--cache <dir>]...] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
+    setenv=""
+    start="cd $(shell_word "$root")"
+    if [ -n "$clone" ]; then
+        # The member works in its own clone, in this crew all the same.
+        where_clone=$(clone_ready "$dir" "$root" "$name" "$cache") || return 1
+        start="cd $(shell_word "$where_clone")"
+        # export, and not a prefix: a line of several commands keeps it for
+        # each, and sh, bash, zsh, and fish all read it.
+        setenv="export CREW_DIR=$(shell_word "$dir") && "
+    elif [ -n "$cache" ]; then
+        echo "crew: --cache is for --clone" >&2
+        return 2
+    fi
     # One argument is a line for the owner's shell; several are a command
     # and its arguments, each kept whole.
     if [ $# -eq 1 ]; then
@@ -308,7 +338,7 @@ crew_spawn() {
         anchor=$(tab_anchor "$dir" "$tab")
         [ -z "$anchor" ] || where=beside
     fi
-    pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line" "$anchor") || return 1
+    pane=$(term_spawn "$where" "$start && $setenv$line" "$anchor") || return 1
     echo "$pane" >"$dir/panes/$name"
     [ -n "$kind" ] || kind=$(kind_of_line "$line")
     kind_record "$dir" "$name" "${kind:-other}"
