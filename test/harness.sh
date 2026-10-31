@@ -9,6 +9,7 @@ here=$(cd "$(dirname "$0")" && pwd)
 CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/store.sh"
 . "$CREW_HOME/lib/kinds.sh"
+. "$CREW_HOME/lib/claims.sh"
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"

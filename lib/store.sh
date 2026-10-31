@@ -227,6 +227,9 @@ crew_write() {
     [ ! -t 0 ] || echo "crew: type the $kind, then press ctrl-d" >&2
     cat >"$file"
     echo "$file"
+    if [ "$kind" = status ]; then
+        claims_warn "$dir" "$2"
+    fi
 }
 
 # Puts the session's stream, cursors, statuses, reports, and wake claims
@@ -308,8 +311,8 @@ crew_unlock() {
     echo "lock released"
 }
 
-# The crew at a glance: statuses, the lock, the latest messages, and the
-# latest commits with their CI.
+# The crew at a glance: statuses, files claimed twice or by nobody, the
+# lock, the latest messages, and the latest commits with their CI.
 crew_board() {
     crew_count "${1:-10}" "crew board [count]" || return 2
     dir=$(crew_dir) || return 1
@@ -328,6 +331,8 @@ crew_board() {
         cat "$f"
         echo
     done
+    claims_board_conflicts "$dir"
+    claims_board_unclaimed "$dir"
     if [ -d "$dir/lock" ]; then
         echo "== lock: $(cat "$dir/lock/owner" 2>/dev/null || echo held)"
     else

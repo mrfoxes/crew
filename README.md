@@ -102,7 +102,7 @@ wake line stays the number and the sender.
 While they work:
 
 ```
-crew board                  # statuses with their age and pane (gone, if closed), lock, messages, git, CI
+crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
 crew peek codex 20          # the last 20 lines of codex's pane
@@ -112,6 +112,13 @@ crew watch codex claude     # answer their prompts and wake recipients, from thi
 crew gate codex claude      # the first half of watch: answer prompts, hold the forbidden
 crew relay                  # the other half: wake recipients for every sender
 ```
+
+When the crew shares one tree, `crew status` warns, on stderr, of each path on
+the `Files:` line that another member's status lists (with who, and how many
+minutes ago) and writes the status anyway; a path ending in `/` claims every
+path under it. The board adds `== conflicts`, each path two members claim, and
+`== unclaimed`, each file changed in the tree that nobody claims, each only
+when it has a line.
 
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
@@ -322,6 +329,7 @@ approved command runs with the agent's rights.
 bin/crew            the command
 lib/store.sh        .crew/, the numbered stream, unread cursors, the push lock, the board
 lib/kinds.sh        kinds of agent: share/kinds read and overridden, a member's kind told
+lib/claims.sh       the Files: lines: the warning of a path claimed twice, the board's conflicts and unclaimed
 lib/term.sh         the terminal contract, and what both keep alike: find our own, keys
 lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
 lib/term-tmux.sh    tmux's half of it

@@ -68,8 +68,9 @@ Blocked on: nothing, or what
 EOF
 ```
 
-`crew board` shows every status with its age, the lock, the latest messages,
-and CI.
+`crew board` shows every status with its age, the paths two statuses claim
+(`conflicts`) and the changed files nobody claims (`unclaimed`), the lock, the
+latest messages, and CI.
 
 ## One working tree, many hands
 
@@ -79,6 +80,15 @@ build directory are shared:
 - Edit only the files on your `Files:` line. Before taking one, check that no
   other status lists it; for a file several of you need, send `Heads-up:`,
   edit, commit, and release it within minutes.
+- `crew status` does that check for you. For each path on your `Files:` line
+  that another status lists, it warns on stderr with who and how long ago,
+  and writes your status anyway. On a warning, send that member a
+  `Heads-up:` and wait for the answer, or pick another file and write your
+  status again. Never edit the file on the strength of the warning alone.
+- Write the `Files:` line so it can be read: paths separated by commas or
+  spaces, as written from the project root (a leading `./` does not count). A
+  path ending in `/` is a directory and claims every path under it. For no
+  file, write `none`, `nothing`, `n/a`, or `-`.
 - Never run what touches what is not yours: no `git add -A`, `git add -u`,
   `git add .`, `git commit -a`, `git commit --amend`, `git stash`,
   `git checkout`, `git switch`, `git restore`, `git reset`, `git clean`,
