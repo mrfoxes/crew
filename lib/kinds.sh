@@ -89,3 +89,24 @@ kind_record() {
     mkdir -p "$1/kind"
     echo "$3" >"$1/kind/$2"
 }
+
+# Whether the screen on stdin shows <kind>'s input line: a line near the
+# bottom, its box drawn or not, that is the kind's idle mark alone or the
+# mark and a space (❯ Try "…", › Ask Codex, >). A kind with no mark, or
+# one crew does not know, never shows it.
+kind_drawn() {
+    k_mark=$(kind_field "$1" idle)
+    [ -n "$k_mark" ] || return 1
+    awk -v m="$k_mark" '
+        {
+            gsub(/│|┃|╭|╮|╰|╯/, "")
+            sub(/^[ \t]+/, "")
+            sub(/[ \t]+$/, "")
+            if ($0 != "") line[++n] = $0
+        }
+        END {
+            for (i = n; i > 0 && i > n - 6; i--)
+                if (line[i] == m || index(line[i], m " ") == 1) exit 0
+            exit 1
+        }'
+}

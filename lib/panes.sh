@@ -257,12 +257,16 @@ crew_move() {
     echo "$1: $pane, now $where $3"
 }
 
-# Waits until the agent in <name>'s pane is up and its screen has settled,
-# at most <seconds> (60), then tells it to join and to work in caveman mode:
-# $caveman in a prompt is what calls Codex's skill of that name. A prompt
-# waiting there (a trust dialog) is printed instead: answer it with crew key,
-# then invite again. A line typed before the agent is up would go to the
-# shell.
+# Waits until the agent in <name>'s pane is up and ready for a line, at
+# most <seconds> (60), then tells it to join and to work in caveman mode:
+# $caveman in a prompt is what calls Codex's skill of that name. Up is
+# something other than a shell in the foreground of the pane's tty; ready
+# is its kind's input line drawn on two reads in a row (share/kinds), or
+# two reads alike: an idle agent may redraw a hint or a notice every few
+# seconds. A prompt waiting there (a trust dialog) is printed instead:
+# answer it with crew key, then invite again. A line typed before the agent
+# is up would go to the shell. Giving up, it says which of the two never
+# came.
 crew_invite() {
     if [ $# -lt 1 ]; then
         echo "usage: crew invite <name> [seconds]" >&2
@@ -272,11 +276,29 @@ crew_invite() {
     crew_count "${2:-60}" "crew invite <name> [seconds]" || return 2
     pane=$(crew_pane "$name") || return 1
     tty=$(term_tty "$pane") || return 1
+    kind=$(kind_member "$(crew_dir)" "$name")
     before=""
+    drawn=""
+    up=""
     i=0
     while :; do
         screen=$(term_read "$pane" 2>/dev/null) || screen=""
-        if [ -n "$screen" ] && [ "$screen" = "$before" ] && term_running "$tty"; then
+        # A screen counts only with the agent up: one the shell drew is
+        # never ready.
+        if [ -n "$screen" ] && term_running "$tty"; then
+            up=1
+        else
+            screen=""
+        fi
+        was=$drawn
+        drawn=""
+        if [ -n "$screen" ] && printf '%s\n' "$screen" | kind_drawn "$kind"; then
+            drawn=1
+        fi
+        ready=""
+        [ -z "$screen" ] || [ "$screen" != "$before" ] || ready=1
+        [ -z "$drawn" ] || [ -z "$was" ] || ready=1
+        if [ -n "$ready" ]; then
             prompt=$(printf '%s\n' "$screen" | gate_prompt | cut -f2)
             if [ -n "$prompt" ]; then
                 echo "crew: $name waits on a prompt: $prompt" >&2
@@ -290,7 +312,12 @@ crew_invite() {
         before=$screen
         i=$((i + 1))
         if [ "$i" -gt "${2:-60}" ]; then
-            echo "crew: nothing but a shell in $name's pane after ${2:-60} seconds" >&2
+            if [ -z "$up" ]; then
+                echo "crew: nothing but a shell in $name's pane after ${2:-60} seconds" >&2
+            else
+                echo "crew: $name's agent runs, but after ${2:-60} seconds its screen has not settled, nor shown its input line" >&2
+                echo "crew: see it with 'crew peek $name', then 'crew invite $name' again or 'crew poke $name ...'" >&2
+            fi
             return 1
         fi
         sleep 1

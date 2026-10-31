@@ -60,6 +60,19 @@ check "self from a variable" "codex" "$(CODEX_THREAD_ID=abc kind_of_self)"
 check "self from the first variable set" "claude" "$(CLAUDECODE=1 CODEX_THREAD_ID=abc kind_of_self)"
 check "self from nothing" "" "$(kind_of_self)"
 
+# The input line of an idle agent, near the bottom of its screen, and
+# none on a screen of another kind or of no kind.
+drawn() { kind_drawn "$1" <"$here/fixtures/$2.txt" && echo yes || echo no; }
+check "claude's input line" "yes" "$(drawn claude claude-idle)"
+check "claude's input line with a notice" "yes" "$(drawn claude claude-idle-notice)"
+check "codex's input line" "yes" "$(drawn codex codex-idle)"
+check "agy's input line" "yes" "$(drawn agy agy-idle)"
+check "another kind's input line" "no" "$(drawn claude codex-idle)"
+check "a kind with no mark" "no" "$(drawn other claude-idle)"
+check "a screen with no input line" "no" "$(drawn codex other)"
+# A menu's cursor is drawn the same way: invite reads the prompt first.
+check "a prompt's cursor" "yes" "$(drawn codex codex-run)"
+
 # A member's kind: spawn records it, join records the one it runs under or
 # keeps the spawned one, leave forgets it.
 git init -q "$tmp/repo"

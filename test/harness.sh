@@ -38,7 +38,7 @@ export XDG_CONFIG_HOME="$tmp/config"
 cd "$tmp" || exit 1
 
 # A pane that shows the fixtures named with show, one a read, the last for
-# good: a file fakes term_read with it.
+# good: a file fakes term_read with it. A name with a / is a file's path.
 show() {
     screens=$*
     echo 1 >"$tmp/read.n"
@@ -50,7 +50,10 @@ fixture_read() {
     [ "$i" -le $# ] || i=$#
     eval "f=\$$i"
     echo $((i + 1)) >"$tmp/read.n"
-    cat "$here/fixtures/$f.txt"
+    case "$f" in
+    */*) cat "$f" ;;
+    *) cat "$here/fixtures/$f.txt" ;;
+    esac
 }
 
 # The file's count, as test/run.sh adds them up; fails on a failure.

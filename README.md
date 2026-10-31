@@ -105,9 +105,13 @@ interruption, and delivered when the turn ends: Claude Code 2.1.314 shows
 tool call`, Antigravity 1.4.11 `alt+m to send immediately`; each then runs
 `crew unread`. A line typed into a pane before its agent is up goes to the
 shell instead: `crew spawn codex --join codex` waits until something other
-than the shell runs there and the screen has settled, then types the join
+than the shell runs there and the agent is ready, then types the join
 line; `crew invite codex` does the same for a pane spawned without it, and
 prints the prompt (a trust dialog) it finds waiting instead, for `crew key`.
+Ready is the kind's input line (`idle` in `share/kinds`) drawn on two reads
+in a row, or two reads alike: an idle Claude Code redraws its hint and its
+notices every few seconds. Giving up, invite says which never came: an
+agent in the pane, or a screen ready for a line.
 
 A Codex member is woken another way: `crew join` inside Codex 0.166.0 records
 its thread (`CODEX_THREAD_ID`), and a message to it is queued with `codex

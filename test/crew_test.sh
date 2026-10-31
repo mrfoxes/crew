@@ -278,6 +278,20 @@ term_running() { return 1; }
 show codex-idle
 check "invite gives up on a shell" "crew: nothing but a shell in claude's pane after 1 seconds" "$(crew_invite claude 1 2>&1 >/dev/null)"
 check "invite wants seconds" "2" "$(crew_invite claude soon >/dev/null 2>&1; echo $?)"
+# An idle agent redraws: a notice comes and goes (Claude Code 2.1.316), a
+# hint turns. Its input line, drawn on two reads in a row, is enough.
+term_running() { return 0; }
+kind_record "$dir" claude claude
+show claude-idle claude-idle-notice claude-idle claude-idle-notice claude-idle claude-idle-notice
+check "invite an idle agent whose notices come and go" 'tmux:%7 <- Run: crew join claude. Then follow the protocol it prints. Work in caveman mode ($caveman) from now on.
+claude invited' "$(crew_invite claude 3)"
+sed 's/❯ Try "how does <filepath> work?"/❯ Try "write a test for <filepath>"/' "$here/fixtures/claude-idle.txt" >"$tmp/hint.txt"
+show claude-idle "$tmp/hint.txt" claude-idle "$tmp/hint.txt"
+check "invite an idle agent whose hint turns" "claude invited" "$(crew_invite claude 3 | tail -n 1)"
+kind_record "$dir" claude other
+show claude-idle claude-idle-notice claude-idle claude-idle-notice claude-idle claude-idle-notice
+check "invite gives up on a screen that never settles" "crew: claude's agent runs, but after 2 seconds its screen has not settled, nor shown its input line" "$(crew_invite claude 2 2>&1 >/dev/null | sed -n 1p)"
+term_running() { return 1; }
 crew_invite() { echo "invite $1"; }
 check "spawn with --join invites" "agy: tmux:%9
 invite agy" "$(crew_spawn agy --tab --join true)"
