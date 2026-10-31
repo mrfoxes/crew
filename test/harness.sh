@@ -45,6 +45,9 @@ export CREW_NOTIFY=0
 unset CREW_IDLE_MINUTES
 # What an agent running the tests sets would change what join reads.
 unset CLAUDECODE CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
+# A member runs the tests with CREW_DIR naming its live crew, from inside a
+# pane: the crew and the pane are the tests' own, never those.
+unset CREW_DIR TMUX TMUX_PANE ITERM_SESSION_ID TERM_SESSION_ID
 # Every line of a log carries the time: one time here.
 crew_stamp() { echo 12:00:00; }
 

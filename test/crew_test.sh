@@ -18,6 +18,10 @@ term_name() { echo "name $1 $2" >>"$tmp/labels"; }
 term_color() { echo "color $1 ${2:-}" >>"$tmp/labels"; }
 term_tab() { echo "tab $1 $2" >>"$tmp/labels"; }
 
+# A member runs the tests from its pane, CREW_DIR naming its live crew: the
+# harness forgets both, so no test reaches that crew or that pane.
+check "the tests leave the crew and the pane they run from" "" "${CREW_DIR:-}${TMUX:-}${TMUX_PANE:-}${ITERM_SESSION_ID:-}${TERM_SESSION_ID:-}"
+
 # The stream: init, numbering under contention, routing, and the lock.
 git init -q "$tmp/repo"
 git -C "$tmp/repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
