@@ -133,7 +133,7 @@ check "rule named" "git +reset" "$(gate_forbidden "$CREW_HOME/share/forbid" "git
 # the keys it would press printed instead.
 gate_rules=$CREW_HOME/share/forbid
 gate_state=$tmp/gate
-mkdir -p "$gate_state/held" "$gate_state/answered"
+gate_dirs "$gate_state"
 gate_dry=""
 term_read() { fixture_read; }
 term_key() { echo "pressed $2"; }

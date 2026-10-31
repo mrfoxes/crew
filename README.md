@@ -378,6 +378,25 @@ redraws. `crew watch <name>...` is the gate and the relay in one pane. Run
 either where you see each line, and keep in mind what a line means: an
 approved command runs with the agent's rights.
 
+You are often in another tab or app, so `crew watch` and `crew gate` also
+send you a desktop notification (macOS or `notify-send`) when something
+needs you, once for each event, never again while it lasts, and again only
+once it has ended and come back. Each says what to run:
+
+- a held prompt, with the member and the command: `crew focus <name>` to
+  look, `crew key <name> <key>...` to answer;
+- a member's agent that exited, its pane back to a shell where an agent ran
+  before: `crew spawn ...` or `crew up` to bring it back;
+- a member's pane that is gone: `crew leave <name>`, or bring it back the
+  same way;
+- off by default, a member idle for `CREW_IDLE_MINUTES=<n>` minutes: its
+  agent's input line drawn, its screen unchanged for that long, and no
+  message from it whose subject starts with `Done:`.
+
+Each event also prints a line in the watch's pane, with the time.
+`CREW_NOTIFY=0` turns the notifications off and never the lines. Where
+there is no notifier the pane says so once.
+
 ## Where things live
 
 ```
@@ -390,7 +409,7 @@ lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, sp
 lib/term-tmux.sh    tmux's half of it
 lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layouts
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
-lib/gate.sh         reading approval prompts, the rules, the gate's loop
+lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
 lib/cost.sh         crew cost: what the members spent, from the agents' logs and the rates
 share/protocol.md   what agents follow, printed by crew help and crew join

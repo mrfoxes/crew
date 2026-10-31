@@ -107,19 +107,23 @@ gate_forbidden() {
 # it, or does nothing. What a look remembers for the next one lives in
 # $gate_state: held/<name> is the last prompt reported, answered/<name> the
 # screen a prompt was answered on, so a screen not redrawn yet is not
-# answered twice.
+# answered twice. The screen stays in $screen, and $screen_read says it was
+# read, for gate_tend to use without reading again.
 gate_look() {
     name=$1
     pane=$2
     held=$gate_state/held/$name
     answered=$gate_state/answered/$name
+    screen_read=""
     screen=$(term_read "$pane" 2>/dev/null) || {
         gate_say "$held" "gate: cannot read $name's pane $pane"
         return
     }
+    screen_read=1
     prompt=$(printf '%s\n' "$screen" | gate_prompt)
     if [ -z "$prompt" ]; then
         rm -f "$held" "$answered"
+        gate_end held "$name"
         return
     fi
     [ "$screen" != "$(cat "$answered" 2>/dev/null)" ] || return 0
@@ -138,6 +142,9 @@ gate_look() {
     fi
     if [ -n "$why" ]; then
         gate_say "$held" "HOLD $name ($why): $command"
+        if gate_new held "$name" "$command"; then
+            gate_notify "$name" "HOLD: $(gate_short "$command"). Look: crew focus $name. Answer: crew key $name <key>..."
+        fi
         return
     fi
     if [ "$gate_dry" = --dry ]; then
@@ -157,6 +164,7 @@ gate_look() {
     echo "$(crew_stamp) approved $name: $command"
     printf '%s' "$screen" >"$answered"
     rm -f "$held"
+    gate_end held "$name"
 }
 
 # Prints <line>, with the time, unless it is the one already in <file>, and
@@ -168,12 +176,14 @@ gate_say() {
 }
 
 # Watches the panes of <name>... every two seconds and prints one line a
-# prompt:
+# prompt, and one a member that needs the owner:
 #
 #   21:45:03 approved codex: cargo test --test editors
 #   21:47:10 HOLD codex (git +reset): git reset --hard
+#   21:52:31 exited claude: its agent is gone, its pane is back to a shell
 #
-# With --dry it answers nothing and says what it would do.
+# With --dry it answers nothing and says what it would do. A held prompt and
+# each of those events is also a desktop notification, once (see gate_tend).
 crew_gate() {
     gate_setup "$@" || return
     # A signal ends the loop, not just the sleep it interrupts.
@@ -219,15 +229,144 @@ gate_setup() {
     gate_rules=$dir/forbid
     [ -f "$gate_rules" ] || gate_rules=$CREW_HOME/share/forbid
     gate_state=$(mktemp -d "$dir/tmp/gate.XXXXXX") || return 1
-    mkdir -p "$gate_state/held" "$gate_state/answered" "$gate_state/pane"
+    gate_dirs "$gate_state"
     for name in $names; do
         crew_pane "$name" >"$gate_state/pane/$name" || return 1
     done
 }
 
-# One look at every pane the gate watches.
+# Makes the directories of the state directory <dir>: held/ and answered/
+# (see gate_look), pane/ (the pane of each member), told/<event>/ (what the
+# owner was told, see gate_new), up/ (members whose agent ran at a look),
+# and seen/ (the screen of each member and since when it is unchanged).
+gate_dirs() {
+    mkdir -p "$1/held" "$1/answered" "$1/pane" "$1/up" "$1/seen" \
+        "$1/told/held" "$1/told/exited" "$1/told/gone" "$1/told/idle"
+}
+
+# One look at every pane the gate watches, and a check that its member is
+# still there.
 gate_round() {
+    gate_clock=""
+    if [ -n "$(gate_idle_minutes)" ]; then
+        gate_clock=$(gate_now)
+    fi
     for name in $names; do
-        gate_look "$name" "$(cat "$gate_state/pane/$name")"
+        pane=$(cat "$gate_state/pane/$name")
+        gate_look "$name" "$pane"
+        gate_tend "$name" "$pane"
     done
+}
+
+# The time, in seconds since the epoch; a function so that a test can set it.
+gate_now() {
+    date +%s
+}
+
+# The minutes a member may sit idle before the owner is told, from
+# CREW_IDLE_MINUTES; nothing when it is not a positive number, so that the
+# idle check is off unless asked for.
+gate_idle_minutes() {
+    case "${CREW_IDLE_MINUTES:-}" in
+    '' | *[!0-9]* | 0*) ;;
+    *) echo "$CREW_IDLE_MINUTES" ;;
+    esac
+}
+
+# Whether the event <event> of <name> is new, and if so remembers <key> as
+# told: told/<event>/<name> holds the key of the last one, so that an event
+# is told once while it lasts, and a different key (another held prompt in
+# its place) is a new one. gate_end forgets it once the event is over.
+gate_new() {
+    if [ "$3" = "$(cat "$gate_state/told/$1/$2" 2>/dev/null)" ]; then
+        return 1
+    fi
+    printf '%s' "$3" >"$gate_state/told/$1/$2"
+}
+
+# Forgets that the owner was told of the event <event> of <name>, so that
+# it is told again if it comes back.
+gate_end() {
+    rm -f "$gate_state/told/$1/$2"
+}
+
+# A desktop notification for the owner about <name>, unless CREW_NOTIFY=0.
+# Without a notifier it says so once in the pane: the lines stay the way to
+# know, and the next events try again without repeating the complaint.
+gate_notify() {
+    if [ "${CREW_NOTIFY:-1}" = 0 ]; then
+        return 0
+    fi
+    crew_notify "crew: $1" "$2" && return 0
+    if [ ! -e "$gate_state/no-notifier" ]; then
+        : >"$gate_state/no-notifier"
+        echo "$(crew_stamp) gate: cannot notify: no notifier here; the lines in this pane stay"
+    fi
+}
+
+# <text> cut to what fits a notification: 80 characters at most.
+gate_short() {
+    if [ "${#1}" -gt 80 ]; then
+        printf '%s...' "$(printf '%s' "$1" | cut -c1-77)"
+    else
+        printf '%s' "$1"
+    fi
+}
+
+# What a look cannot see in <name>'s pane <pane>, told to the owner once
+# while it lasts:
+#
+#   exited  the pane's tty is back to a shell where an agent ran at an
+#           earlier look
+#   gone    the terminal no longer lists the pane
+#   idle    with CREW_IDLE_MINUTES, the kind's input line drawn on a screen
+#           unchanged for that long, and no message from the member whose
+#           subject starts with Done:
+#
+# The screen is the one gate_look read; the tty is asked for once, and the
+# terminal's list a second time only when the tty is not found.
+gate_tend() {
+    t_name=$1
+    t_pane=$2
+    if t_tty=$(term_tty "$t_pane" 2>/dev/null); then
+        gate_end gone "$t_name"
+        if term_running "$t_tty"; then
+            : >"$gate_state/up/$t_name"
+            gate_end exited "$t_name"
+        elif [ -e "$gate_state/up/$t_name" ] && gate_new exited "$t_name" 1; then
+            echo "$(crew_stamp) exited $t_name: its agent is gone, its pane is back to a shell"
+            gate_notify "$t_name" "Its agent exited, the pane is back to a shell. Look: crew focus $t_name. Bring it back: crew spawn $t_name ... or crew up"
+        fi
+    elif term_gone "$t_pane"; then
+        rm -f "$gate_state/up/$t_name"
+        if gate_new gone "$t_name" 1; then
+            echo "$(crew_stamp) gone $t_name: its pane $t_pane is gone"
+            gate_notify "$t_name" "Its pane is gone. Forget it: crew leave $t_name. Bring it back: crew spawn $t_name ... or crew up"
+        fi
+    fi
+    gate_idle "$t_name"
+}
+
+# The idle check of gate_tend, from $screen when gate_look read it. The
+# screen's checksum and the time it first came are kept in seen/<name>.
+gate_idle() {
+    i_min=$(gate_idle_minutes)
+    if [ -z "$i_min" ] || [ -z "$screen_read" ]; then
+        return 0
+    fi
+    i_sum=$(printf '%s' "$screen" | cksum | cut -d ' ' -f1)
+    i_file=$gate_state/seen/$1
+    if [ "$i_sum" != "$(cut -d ' ' -f1 "$i_file" 2>/dev/null)" ]; then
+        echo "$i_sum $gate_clock" >"$i_file"
+        gate_end idle "$1"
+        return 0
+    fi
+    i_since=$(cut -d ' ' -f2 "$i_file")
+    if [ $((gate_clock - i_since)) -ge $((i_min * 60)) ] &&
+        printf '%s\n' "$screen" | kind_drawn "$(kind_member "$dir" "$1")" &&
+        ! grep -q "^# [0-9]*\. $1 to [a-z0-9-]*: Done:" "$dir"/seq/* 2>/dev/null &&
+        gate_new idle "$1" 1; then
+        echo "$(crew_stamp) idle $1: waiting for input for $i_min minutes, and no Done: sent"
+        gate_notify "$1" "Idle for $i_min minutes, waiting for input, no Done: sent. Look: crew focus $1"
+    fi
 }

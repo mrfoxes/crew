@@ -17,6 +17,9 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/doctor.sh"
 . "$CREW_HOME/lib/cost.sh"
 export CREW_WAKE=0
+# No test notifies the owner; the ones that test notifying fake crew_notify.
+export CREW_NOTIFY=0
+unset CREW_IDLE_MINUTES
 # What an agent running the tests sets would change what join reads.
 unset CLAUDECODE CODEX_THREAD_ID CLAUDE_CODE_SESSION_ID
 # Every line of a log carries the time: one time here.
