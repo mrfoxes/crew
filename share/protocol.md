@@ -68,6 +68,14 @@ Blocked on: nothing, or what
 EOF
 ```
 
+To update one or more fields in place without rewriting the rest, pass them as
+arguments; with no argument and a terminal on stdin, `crew status <you>` prints
+your status:
+
+```
+crew status <you> "Files: none" "Pushed: 1234567 ..." "Next: ..."
+```
+
 `crew board` shows every status with its age, the paths two statuses claim
 (`conflicts`) and the changed files nobody claims (`unclaimed`), the lock, the
 latest messages, and CI.

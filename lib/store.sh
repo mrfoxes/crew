@@ -209,27 +209,112 @@ crew_show() {
     done
 }
 
-# Writes <name>'s <kind> (status or report) from stdin to status/<name>.md
-# or reports/<name>.md and prints the path: a command, so an agent's sandbox
+# Whether stdin is a terminal; a function so tests can stand in for one.
+crew_tty() { [ -t 0 ]; }
+
+# Reads, writes, or updates <name>'s status in status/<name>.md: prints it
+# when stdin is a terminal and no field is given, rewrites the "Field: value"
+# lines given in place (adding any the status lacks) when fields are given,
+# else reads the whole status from stdin. Prints the path when it writes.
+crew_status() {
+    if [ $# -lt 1 ]; then
+        echo 'usage: crew status <name> ["Field: value"...], or the status on stdin' >&2
+        return 2
+    fi
+    st_who=$1
+    shift
+    crew_name "$st_who" || return 2
+    st_nl='
+'
+    for st_arg in "$@"; do
+        case "$st_arg" in
+        *:*) st_key=${st_arg%%:*} ;;
+        *) st_key= ;;
+        esac
+        case "$st_arg" in
+        *"$st_nl"*) st_key= ;;
+        esac
+        case "$st_key" in
+        [A-Za-z]*)
+            case "$st_key" in
+            *[![:alnum:]\ _-]*) st_key= ;;
+            esac
+            ;;
+        *) st_key= ;;
+        esac
+        if [ -z "$st_key" ]; then
+            echo 'usage: crew status <name> ["Field: value"...], or the status on stdin' >&2
+            return 2
+        fi
+    done
+    dir=$(crew_dir) || return 1
+    file=$dir/status/$st_who.md
+    if [ $# -eq 0 ]; then
+        if crew_tty; then
+            [ ! -f "$file" ] || cat "$file"
+            return 0
+        fi
+        cat >"$file"
+    else
+        st_in=/dev/null
+        [ ! -f "$file" ] || st_in=$file
+        st_tmp=$(mktemp "$dir/tmp/status.XXXXXX")
+        awk '
+            BEGIN {
+                for (i = 2; i < ARGC; i++) {
+                    line = ARGV[i]
+                    sep = index(line, ":")
+                    key = substr(line, 1, sep - 1)
+                    rest = substr(line, sep + 1)
+                    if (rest != "" && substr(rest, 1, 1) != " ")
+                        line = key ": " rest
+                    if (!(key in val)) order[++n] = key
+                    val[key] = line
+                }
+                ARGC = 2
+            }
+            {
+                sep = index($0, ":")
+                key = sep ? substr($0, 1, sep - 1) : ""
+                if (key in val) {
+                    if (!done[key]++) print val[key]
+                } else {
+                    print $0
+                }
+            }
+            END {
+                for (i = 1; i <= n; i++) {
+                    key = order[i]
+                    if (!done[key]) print val[key]
+                }
+            }
+        ' "$st_in" "$@" >"$st_tmp"
+        mv "$st_tmp" "$file"
+    fi
+    echo "$file"
+    claims_warn "$dir" "$st_who"
+}
+
+# Writes <name>'s <kind> (status or report) to status/<name>.md or
+# reports/<name>.md and prints the path: a command, so an agent's sandbox
 # needs no leave to write outside its tree.
 crew_write() {
     kind=$1
-    if [ $# -ne 2 ]; then
+    shift
+    if [ "$kind" = status ]; then
+        crew_status "$@"
+        return
+    fi
+    if [ $# -ne 1 ]; then
         echo "usage: crew $kind <name>, the text on stdin" >&2
         return 2
     fi
-    crew_name "$2" || return 2
+    crew_name "$1" || return 2
     dir=$(crew_dir) || return 1
-    case "$kind" in
-    status) file=$dir/status/$2.md ;;
-    *) file=$dir/reports/$2.md ;;
-    esac
-    [ ! -t 0 ] || echo "crew: type the $kind, then press ctrl-d" >&2
+    file=$dir/reports/$1.md
+    ! crew_tty || echo "crew: type the $kind, then press ctrl-d" >&2
     cat >"$file"
     echo "$file"
-    if [ "$kind" = status ]; then
-        claims_warn "$dir" "$2"
-    fi
 }
 
 # Puts the session's stream, cursors, statuses, reports, and wake claims

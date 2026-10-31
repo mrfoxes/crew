@@ -41,7 +41,7 @@ For everyone
   unread <name>                 the messages to <name> or all not read yet
   log [count]                   the last messages, whole (5)
   show <number>...              those messages, whole
-  status <name>                 write <name>'s status, text on stdin
+  status <name> [<field>...]    write or update <name>'s status, or print it
   report <name>                 write <name>'s report, text on stdin
   board [count] | --live [seconds]
                                 statuses, claims, lock, latest messages, git,

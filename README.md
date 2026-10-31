@@ -107,6 +107,7 @@ While they work:
 ```
 crew board                  # statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
 crew board --live           # a line a member, redrawn every 5 seconds, in a pane of its own
+crew status codex           # codex's status; with "Field: value"..., update those lines in place
 crew log 3                  # the last 3 messages, whole
 crew show 12                # message 0012
 crew focus codex            # codex's pane to the front, its tab and its window
@@ -121,12 +122,14 @@ crew watch --all            # every member with a pane, those spawned later too
 crew relay                  # the other half: wake recipients for every sender
 ```
 
-When the crew shares one tree, `crew status` warns, on stderr, of each path on
-the `Files:` line that another member's status lists (with who, and how many
-minutes ago) and writes the status anyway; a path ending in `/` claims every
-path under it. The board adds `== conflicts`, each path two members claim, and
-`== unclaimed`, each file changed in the tree that nobody claims, each only
-when it has a line.
+`crew status <name>` writes the status from stdin, rewrites the `"Field: value"`
+lines given as arguments in place (adding any the status lacks), or prints the
+status when stdin is a terminal and no field is given. When the crew shares one
+tree, `crew status` warns, on stderr, of each path on the `Files:` line that
+another member's status lists (with who, and how many minutes ago) and writes
+the status anyway; a path ending in `/` claims every path under it. The board
+adds `== conflicts`, each path two members claim, and `== unclaimed`, each file
+changed in the tree that nobody claims, each only when it has a line.
 
 ### Landing in one command
 

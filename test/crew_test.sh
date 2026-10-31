@@ -195,9 +195,21 @@ check "show" "# 0009. agy to claude: Question: which allocator?" "$(crew_show 00
 check "show two" "2" "$(crew_show 9 10 | grep -c '^# ')"
 check "show a missing one" "1" "$(crew_show 9999 >/dev/null 2>&1; echo $?)"
 
-# Status and report from stdin, and the age of a status on the board.
+# Status and report from stdin, one-line field updates, reading when stdin
+# is a terminal, and the age of a status on the board.
 check "status" "$dir/status/agy.md" "$(printf 'Agent: agy\nNext: nothing\n' | crew_write status agy)"
 check "status written" "Next: nothing" "$(sed -n 2p "$dir/status/agy.md")"
+check "status one field" "$dir/status/agy.md" "$(crew_write status agy "Next: one")"
+check "status one field rewrites in place" "$(printf 'Agent: agy\nNext: one')" "$(cat "$dir/status/agy.md")"
+check "status a new field and several" "$dir/status/agy.md" "$(crew_write status agy "Files: a.txt" "Next: two" "Pushed: 1234567")"
+check "status keeps others and adds what it lacked" "$(printf 'Agent: agy\nNext: two\nFiles: a.txt\nPushed: 1234567')" "$(cat "$dir/status/agy.md")"
+crew_write status codex "Files: a.txt" >/dev/null 2>&1
+check "status one-liner runs the claims warning" "crew: a.txt is also claimed by codex (a.txt on its Files: line, written 0 min ago): send it a Heads-up: and wait, or pick another file" "$(crew_write status agy "Files: a.txt" 2>&1 >/dev/null)"
+crew_write status codex "Files: none" >/dev/null
+crew_tty() { return 0; }
+check "status prints when stdin is a terminal" "$(printf 'Agent: agy\nNext: two\nFiles: a.txt\nPushed: 1234567')" "$(crew_write status agy)"
+crew_tty() { [ -t 0 ]; }
+check "status rejects a bad field" "2" "$(crew_write status agy "not a field" >/dev/null 2>&1; echo $?)"
 check "board shows the age and the kind" "1" "$(crew_board 1 | grep -c '^== agy (codex, tab runtime, no pane, 0 min ago)$')"
 check "report" "$dir/reports/agy.md" "$(echo finished | crew_write report agy)"
 check "status wants a name" "2" "$(echo x | crew_write status >/dev/null 2>&1; echo $?)"
