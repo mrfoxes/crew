@@ -98,6 +98,11 @@ pre {
     var(--bg-code);
 }
 
+.cmt {
+  color: var(--fg-muted);
+  font-style: italic;
+}
+
 pre code {
   background: none;
   padding: 0;
@@ -195,12 +200,12 @@ header.site-header::after {
 }
 
 .hero h1 {
-  font-size: var(--step-3);
+  font-size: clamp(1.9rem, 5.2vw, 2.45rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.12;
   margin: 0 0 0.9rem;
   letter-spacing: -0.03em;
-  text-wrap: balance;
+  text-wrap: pretty;
 }
 
 .hero .subtitle {

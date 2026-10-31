@@ -170,18 +170,18 @@ lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 cl
         From a git repository, check your terminal and installed agents with <code>crew doctor</code>,
         bring up a crew with <code>crew up</code>, and watch the members work:
       </p>
-      <pre><code># checks terminal, agents, skills, gh, Crewfile, rates
+      <pre><code><span class="cmt"># checks terminal, agents, skills, gh, Crewfile, rates</span>
 crew doctor
-# opens watch, live board, and two members with a reviewer for each
+<span class="cmt"># opens watch, live board, and two members with a reviewer for each</span>
 crew up pair
-# write the goal, lanes, reviewers, and end time
+<span class="cmt"># write the goal, lanes, reviewers, and end time</span>
 $EDITOR "$(crew dir)/README.md"
 crew send coord all "Plan: start from README.md" &lt;&lt;'EOF'
 Read $(crew dir)/README.md, claim your files with crew status, and land with crew land.
 EOF
-# full statuses, file claims, lock, messages, git, CI, cost
+<span class="cmt"># full statuses, file claims, lock, messages, git, CI, cost</span>
 crew board
-# sends End:, waits for Done:, archives stream, closes exited panes
+<span class="cmt"># sends End:, waits for Done:, archives stream, closes exited panes</span>
 crew down --archive --close</code></pre>
       <p>
         Each member joins with <code>crew join &lt;name&gt;</code>, which prints
