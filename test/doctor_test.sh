@@ -203,6 +203,34 @@ check "a gone pane warns" "1" "$(has '^warn  member codex: pane tmux:%2 is gone$
 check "a gone pane says crew leave" "1" "$(has '      crew leave codex$')"
 check "a gone pane is no fail" "0" "$(status)"
 
+# Inside a crew: the Crewfile and its budgets against the rates.
+cat >"$dir/Crewfile" <<'EOF'
+tab main layout=main watch board
+member claude reviewer=codex -- claude
+tab work layout=table
+member codex reviewer=agy budget=60 -- codex
+member agy reviewer=claude -- agy
+EOF
+report
+check "a good Crewfile is ok" "1" "$(has '^ok    Crewfile: 2 tabs, 3 members$')"
+check "a budget with no rates warns" "1" "$(has '^warn  budget codex: \$60, but no rates$')"
+check "it names the rates file to write" "1" "$(has "write prices in $dir/rates")"
+printf 'gpt-6-other 5.00 0.50 - 30.00 30.00\n' >"$dir/rates"
+export CREW_CODEX_HOME="$here/fixtures/cost/codex"
+echo 00000000-0000-4000-8000-000000000001 >"$dir/threads/codex"
+echo codex >"$dir/kind/codex"
+report
+check "a budget whose model no rate prices warns" "1" "$(has '^warn  budget codex: \$60, but no rate for gpt-6-astra$')"
+check "it names the rates file to add to" "1" "$(has "add a rate to $dir/rates")"
+printf 'gpt-6-astra 5.00 0.50 - 30.00 30.00\n' >>"$dir/rates"
+report
+check "a budget with rates for its model does not warn" "0" "$(has '^warn  budget codex:')"
+printf 'tab main\nmember bad broken\n' >"$dir/Crewfile"
+report
+check "a broken Crewfile fails with its file and line" "1" "$(has "^fail  Crewfile: $dir/Crewfile:2: ")"
+check "a broken Crewfile exits 1" "1" "$(status)"
+rm -f "$dir/Crewfile" "$dir/rates" "$dir/threads/codex" "$dir/kind/codex"
+
 # Doctor changes nothing: the crew is as it was.
 check "the crew is untouched" "claude
 codex" "$(ls "$dir/panes")"

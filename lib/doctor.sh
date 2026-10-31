@@ -219,14 +219,57 @@ doctor_tools() {
     fi
 }
 
-# The crew the command runs in, if any: its directory, its lock, its
-# relay, and the members whose pane is gone.
+# The crew's Crewfile, when it has one, and each member with a budget=
+# against the rates (the crew's rates, then the owner's) and the models its
+# logs show.
+doctor_crewfile() {
+    d_cfile=$(crewfile_path "$1")
+    [ -f "$d_cfile" ] || return 0
+    if ! d_records=$(crewfile_read "$d_cfile" 2>/dev/null); then
+        d_err=$(crewfile_read "$d_cfile" 2>&1 >/dev/null || true)
+        while IFS= read -r d_line <&3; do
+            [ -n "$d_line" ] || continue
+            doctor_say fail "Crewfile: ${d_line#crew: }"
+        done 3<<EOR
+$d_err
+EOR
+        return
+    fi
+    d_counts=$(printf '%s\n' "$d_records" | awk '
+        $1 == "tab" { t++ }
+        $1 == "member" { m++ }
+        END { printf "%d tabs, %d members\n", t + 0, m + 0 }')
+    doctor_say ok "Crewfile: $d_counts"
+    d_rates=$(cost_rates)
+    d_rfiles="$1/rates or ${XDG_CONFIG_HOME:-$HOME/.config}/crew/rates"
+    while IFS='	' read -r d_what _ d_name _ _ _ _ _ _ d_budget _ <&3; do
+        if [ "$d_what" != member ] || [ "${d_budget:--}" = - ]; then
+            continue
+        fi
+        if [ -z "$d_rates" ]; then
+            doctor_say warn "budget $d_name: \$$d_budget, but no rates" \
+                "write prices in $d_rfiles"
+            continue
+        fi
+        d_models=$(cost_member "$1" "$d_name" | awk '$1 == "row" && !seen[$4]++ { m = m (m ? ", " : "") $4 } END { print m }')
+        if [ -n "$d_models" ] && [ -z "$(cost_spent "$1" "$d_name")" ]; then
+            doctor_say warn "budget $d_name: \$$d_budget, but no rate for $d_models" \
+                "add a rate to $d_rfiles"
+        fi
+    done 3<<EOR
+$d_records
+EOR
+}
+
+# The crew the command runs in, if any: its directory, its Crewfile, its
+# lock, its relay, and the members whose pane is gone.
 doctor_crew() {
     if ! d_dir=$(crew_dir 2>/dev/null); then
         doctor_say ok "session: not inside a crew ('crew init' makes one)"
         return
     fi
     doctor_say ok "session: the crew at $d_dir"
+    doctor_crewfile "$d_dir"
     if [ ! -d "$d_dir/lock" ]; then
         doctor_say ok "lock: free"
     else
