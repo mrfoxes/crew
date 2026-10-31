@@ -91,12 +91,28 @@ new.txt" "$(git show --name-only --format= HEAD)"
 check "the message file is the message" "The body." "$(git log -1 --format=%b | sed -n 1p)"
 check "another changed file stays uncommitted" " M b.txt" "$(git status --porcelain)"
 check "the lock is free" "free" "$(lock)"
+check "a status with no Pushed: line gets one, and no other line changes" "Agent: ann
+Files: a.txt new.txt clone.txt
+Next: more
+Pushed: $hash Add the things, CI pending" "$(cat "$dir/status/ann.md")"
 check "it says what it did" "landed $hash Add the things
 told cat" "$(cat "$tmp/out")"
 check "the reviewer from --to is told" "1" "$(sent ann cat "pushed-$hash-add-the-things")"
 check "the message is Pushed: with the hash and the subject" "1" "$(grep -c "^# 0001\. ann to cat: Pushed: $hash Add the things$" "$dir"/messages/*-ann-to-cat-*)"
 check "and the stat of the commit" "1" "$(grep -c 'new.txt' "$dir"/messages/*-ann-to-cat-*)"
 tidy
+
+# A status with a Pushed: line has that line rewritten in place.
+printf 'Agent: ann\nPushed: none\nFiles: a.txt\nNext: more\n' | crew_write status ann >/dev/null 2>&1
+edit a.txt
+check "a second landing succeeds" "0" "$(land ann -F "$tmp/message" --to cat -- a.txt)"
+hash=$(git rev-parse --short HEAD)
+check "the Pushed: line is rewritten where it was" "Agent: ann
+Pushed: $hash Add the things, CI pending
+Files: a.txt
+Next: more" "$(cat "$dir/status/ann.md")"
+tidy
+status ann "a.txt new.txt clone.txt"
 
 # The reviewer from the Crewfile, and on the board.
 cat >"$dir/Crewfile" <<'EOF2'

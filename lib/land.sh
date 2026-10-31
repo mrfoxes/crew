@@ -73,6 +73,7 @@ crew_land() {
     crew_unlock "$ld_who" >/dev/null 2>&1 || :
     trap - INT TERM HUP
     [ "$ld_rc" -eq 0 ] || return "$ld_rc"
+    land_status
     land_tell
 }
 
@@ -299,6 +300,14 @@ land_rebase() {
         printf '%s\n' "$ld_out" | tail -n 20
     } | crew_send "$ld_who" owner "Question: check failed after rebasing $ld_before to $ld_hash" >/dev/null
     return 1
+}
+
+# Records the push in the member's status: its Pushed: line becomes
+# "<hash> <subject>, CI pending" (added when there is none), through the
+# store's atomic write; no other line changes. A failure is not a failure of
+# the landing, which is done.
+land_status() {
+    (crew_status "$ld_who" "Pushed: $ld_hash $ld_subject, CI pending" >/dev/null 2>&1) || :
 }
 
 # Tells the reviewer what was pushed: the hash and the subject, then the

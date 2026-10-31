@@ -150,8 +150,9 @@ member's working tree and stops on a failure, takes the lock (every 10
 seconds for 5 minutes, saying who holds it), checks that each path is on the
 member's `Files:` line and on no other member's, adds the new ones, commits
 those paths only (`git commit -F <file> -- <path>...`), pushes, and releases
-the lock in every case. Then it sends the reviewer `Pushed: <hash>
-<subject>`, with the commit's stat. It lands from the member's clone when it
+the lock in every case. Then it sets the `Pushed:` line of the member's
+status to `<hash> <subject>, CI pending` (adding it when there is none), and
+sends the reviewer `Pushed: <hash> <subject>`, with the commit's stat. It lands from the member's clone when it
 has one (to its branch of `origin`), else from the project's tree (to the
 branch's upstream). In a clone, under the lock, it fetches `origin` and, when
 `origin/<branch>` has moved, rebases onto it and runs `--check` again on the

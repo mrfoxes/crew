@@ -124,7 +124,8 @@ It runs the check in your working tree, takes the lock (trying every 10
 seconds for 5 minutes, and saying who holds it), refuses a path that is not
 on your `Files:` line or that another member claims, adds your new files,
 commits those paths and nothing else, pushes, unlocks, and sends your
-reviewer `Pushed:` with the hash and the subject. The reviewer is
+reviewer `Pushed:` with the hash and the subject, and sets the `Pushed:` line
+of your status to the hash and the subject, CI pending. The reviewer is
 `--to <member>`, else the `reviewer=` of your line in the Crewfile; with
 neither it stops before anything else. If the push is rejected it tells
 `owner` with `Question:` and does not pull or rebase. A stop leaves your
