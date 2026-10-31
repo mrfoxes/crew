@@ -226,8 +226,14 @@ term_key() {
 # Types a line and presses Return, as the owner would. The two go apart: a
 # TUI that gets both in one burst takes them for a paste and keeps the Return
 # as a newline. A newline inside the line would submit it halfway.
+# CR and LF become spaces; other control bytes belong to crew key.
 term_poke() {
-    term_type "$1" "$(printf '%s' "$2" | tr '\n' ' ')" || return
+    poke_line=$(printf '%s' "$2" | tr '\r\n' '  ')
+    if printf '%s' "$poke_line" | LC_ALL=C grep -q '[[:cntrl:]]'; then
+        echo "crew: poke refuses control bytes; use 'crew key' to press keys" >&2
+        return 2
+    fi
+    term_type "$1" "$poke_line" || return
     sleep 0.5
     term_key "$1" enter
 }

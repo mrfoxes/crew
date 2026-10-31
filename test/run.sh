@@ -32,7 +32,7 @@ for f in "$@"; do
     if ! printf '%s\n' "$summary" | awk -v area="$area" '
         $2 ~ /^[0-9]+$/ && $0 == (area ": " $2 " passed, 0 failed") { complete = 1 }
         END { exit !complete }'; then
-        echo "crew: $area did not end with '$area: <n> passed, 0 failed'" >&2
+        echo "crew: $area did not finish successfully; expected '$area: <n> passed, 0 failed'" >&2
         status=1
     fi
     out="$out$summary

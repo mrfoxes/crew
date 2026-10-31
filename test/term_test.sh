@@ -15,6 +15,36 @@ check "key y" "tmux send-keys -t %1 -l -- y" "$(term_key tmux:%1 y)"
 check "key delete" "tmux send-keys -t %1 DC" "$(term_key tmux:%1 delete)"
 check "key unknown" "2" "$(term_key tmux:%1 f13 2>/dev/null; echo $?)"
 
+# Poke dispatches through the real terminal contract; only each terminal's
+# type/key functions and the delay are faked, in a subshell so they cannot
+# affect the later tests. Keep the bytes apart from the Return key.
+poke() (
+    tmux_type() { printf '%s' "$2" >"$tmp/poke.bytes"; }
+    iterm_type() { printf '%s' "$2" >"$tmp/poke.bytes"; }
+    tmux_key() { printf '%s\n' "$2" >>"$tmp/poke.keys"; }
+    iterm_key() { printf '%s\n' "$2" >>"$tmp/poke.keys"; }
+    sleep() { :; }
+    rm -f "$tmp/poke.bytes" "$tmp/poke.keys"
+    term_poke "$1" "$2" 2>"$tmp/poke.err"
+    echo $?
+)
+poke_bytes() { od -An -tx1 "$tmp/poke.bytes" | tr -d ' \n'; }
+for target in tmux:%1 iterm:X; do
+    check "poke $target normalizes CR and LF" "0" "$(poke "$target" "$(printf 'a\rb\nc\r\nd')")"
+    check "poke $target passes spaces to its terminal" "6120622063202064" "$(poke_bytes)"
+    check "poke $target submits once after typing" "enter" "$(cat "$tmp/poke.keys")"
+
+    literal=$(printf '%s' '"quotes" $dollar \backslash' " 'single'" ' café')
+    check "poke $target accepts literal text" "0" "$(poke "$target" "$literal")"
+    check "poke $target preserves every literal byte" "$literal" "$(cat "$tmp/poke.bytes")"
+
+    for control in 001 011 033 037 177; do
+        check "poke $target refuses control $control" "2" "$(poke "$target" "a$(printf "\\$control")b")"
+        check "poke $target types nothing for control $control" "yes" "$([ ! -e "$tmp/poke.bytes" ] && [ ! -e "$tmp/poke.keys" ] && echo yes)"
+        check "poke $target names key for control $control" "1" "$(grep -c 'crew key' "$tmp/poke.err")"
+    done
+done
+
 # Spawning over a pane: tmux, faked, splits before it; a pane of the other
 # terminal is refused before either is asked.
 tmux() { echo "$*" >>"$tmp/tmux.args"; [ "$1" != split-window ] || echo %5; }

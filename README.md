@@ -122,6 +122,11 @@ crew watch --all            # every member with a pane, those spawned later too
 crew relay                  # the other half: wake recipients for every sender
 ```
 
+`crew poke` turns carriage returns and line feeds into spaces so the text is
+submitted as one line. It refuses other control bytes before typing anything;
+use `crew key` to press keys. Quotes, dollar signs, backslashes, and UTF-8 text
+are kept as given.
+
 `crew status <name>` writes the status from stdin, rewrites the `"Field: value"`
 lines given as arguments in place (adding any the status lacks), or prints the
 status when stdin is a terminal and no field is given. When the crew shares one

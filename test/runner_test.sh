@@ -16,7 +16,7 @@ run() {
 
 printf 'exit 0\n' >"$tmp/runner/early_test.sh"
 check "an early successful exit fails its area" "1" "$(run early)"
-check "the missing summary is explained" "crew: early did not end with 'early: <n> passed, 0 failed'" "$(cat "$tmp/runner.err")"
+check "the required passing summary is explained" "crew: early did not finish successfully; expected 'early: <n> passed, 0 failed'" "$(cat "$tmp/runner.err")"
 
 printf "echo 'good: 2 passed, 0 failed'\n" >"$tmp/runner/good_test.sh"
 check "a completed area passes" "0" "$(run good)"
@@ -30,6 +30,7 @@ check "a summary before the end does not count" "1" "$(run late)"
 
 printf "echo 'failed: 2 passed, 1 failed'\n" >"$tmp/runner/failed_test.sh"
 check "a failure count fails even with exit zero" "1" "$(run failed)"
+check "a completed failure is not called a missing summary" "crew: failed did not finish successfully; expected 'failed: <n> passed, 0 failed'" "$(cat "$tmp/runner.err")"
 
 printf "echo 'error: 2 passed, 0 failed'\nexit 1\n" >"$tmp/runner/error_test.sh"
 check "a successful summary cannot hide a failed exit" "1" "$(run error)"
