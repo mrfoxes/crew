@@ -88,6 +88,7 @@ iterm_color() {
                         try
                             set saved to (variable named "user.crew_background") of s
                         end try
+                        if saved is missing value then set saved to ""
                         if saved is "" then
                             if (count of argv) < 4 then return
                             set bg to background color of s

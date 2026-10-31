@@ -73,6 +73,10 @@ term_color iterm:X '#d97757'
 check "color in iTerm2" "X 217 119 87" "$(cat "$tmp/osascript.args")"
 term_color iterm:X
 check "color off in iTerm2" "X" "$(cat "$tmp/osascript.args" | sed 's/ *$//')"
+# A session crew never tinted gives missing value for the variable, not "".
+osascript() { cat >"$tmp/osascript.in"; }
+term_color iterm:X '#d97757'
+check "color in iTerm2 of a session never tinted" "1" "$(grep -c 'if saved is missing value then set saved to ""' "$tmp/osascript.in")"
 check "name of no pane" "1" "$(term_name nowhere x 2>/dev/null; echo $?)"
 
 # Closing a pane: tmux kills it, iTerm2 closes its session; a word that is
