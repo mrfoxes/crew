@@ -1,0 +1,188 @@
+#compdef crew
+# zsh completion for crew: the commands, their flags, the members, the keys,
+# the message numbers, and the kinds. Put this directory on fpath before
+# compinit.
+#
+# Nothing here lists a command or a flag: _crew_spec reads them from the
+# usage text of 'crew --help' each time Tab is pressed, so a command added to
+# bin/crew completes with no edit to this file. crew.bash and crew.fish hold
+# the same awk program, which test/completions_test.sh keeps identical.
+
+# One line a command: its name, then its words from the usage text, which are
+# flags (--pane=pane when the flag takes a value) and positionals (<name>,
+# <key>... when it repeats).
+_crew_spec() {
+    command crew --help 2>/dev/null | awk '
+        # usage-parser begin
+        /^  [^ ]/ {
+            emit()
+            line = substr($0, 3)
+            cmd = line
+            sub(/ .*/, "", cmd)
+            syn = substr(line, length(cmd) + 1)
+            if (match(syn, /  +[^ ]/)) {
+                if (!dcol) dcol = 2 + length(cmd) + RSTART + RLENGTH - 1
+                syn = substr(syn, 1, RSTART - 1)
+            }
+            next
+        }
+        /^   +[^ ]/ && cmd != "" {
+            match($0, /[^ ]/)
+            if (!dcol || RSTART < dcol) syn = syn " " $0
+            next
+        }
+        /^[^ ]/ || /^$/ { emit() }
+        END { emit() }
+        function emit(    n, w, i, t, parts, np, j, words, type) {
+            if (cmd == "") return
+            words = ""
+            np = 0
+            n = split(syn, w, " ")
+            for (i = 1; i <= n; i++) {
+                t = w[i]
+                gsub(/[[]/, "", t)
+                gsub(/[]]/, "", t)
+                if (t == "" || t == "|") continue
+                if (t ~ /^</) {
+                    type = t
+                    if (np) {
+                        sub(/^</, "", type)
+                        sub(/>.*/, "", type)
+                        for (j = 1; j <= np; j++) words = words " " parts[j] "=" type
+                        np = 0
+                    } else words = words " " t
+                } else {
+                    for (j = 1; j <= np; j++) words = words " " parts[j]
+                    np = 0
+                    if (t ~ /^--/) np = split(t, parts, "|")
+                    else words = words " <" t ">"
+                }
+            }
+            for (j = 1; j <= np; j++) words = words " " parts[j]
+            print cmd words
+            cmd = ""
+        }
+        # usage-parser end
+    '
+}
+
+# The members: the panes and the statuses of the crew, once each. Nothing
+# outside a crew, and no error.
+_crew_members() {
+    local dir
+    dir=$(command crew dir 2>/dev/null) || return 0
+    { ls -1 "$dir/panes"; ls -1 "$dir/status" | sed -n 's/\.md$//p'; } 2>/dev/null | sort -u
+}
+
+# The numbers of the messages, four digits as crew show reads them.
+_crew_numbers() {
+    local dir
+    dir=$(command crew dir 2>/dev/null) || return 0
+    ls -1 "$dir/seq" 2>/dev/null | awk '{ printf "%04d\n", $1 }'
+}
+
+# The kinds: share/kinds of the checkout this crew runs from (found by
+# following the links from the crew on PATH, as bin/crew does, so that the
+# file is read wherever this one is installed or copied), then the owner's
+# and the crew's own kinds files, and other. The kinds crew ships stand in
+# when none can be read.
+_crew_kinds() {
+    local self link dir f kinds
+    local -a files
+    self=$(command -v crew) || self=
+    while [[ -n $self && -L $self ]]; do
+        link=$(readlink "$self")
+        case "$link" in
+        /*) self=$link ;;
+        *) self=$(dirname "$self")/$link ;;
+        esac
+    done
+    files=("${XDG_CONFIG_HOME:-$HOME/.config}/crew/kinds")
+    [[ -z $self ]] || files=("$(dirname "$self")/../share/kinds" $files)
+    dir=$(command crew dir 2>/dev/null) && files+=("$dir/kinds")
+    kinds=$(
+        for f in $files; do
+            [[ ! -f $f ]] || cat "$f"
+        done | awk '!/^[[:space:]]*(#|$)/ && NF >= 6 && !seen[$1]++ { print $1 }'
+    )
+    printf '%s\n' "${kinds:-claude codex agy}" other
+}
+
+_crew() {
+    local cmd line type w i skip=0 pos=0
+    local -a cands uw positionals letters valued
+
+    if ((CURRENT == 2)); then
+        cands=(${(f)"$(_crew_spec | cut -d' ' -f1)"})
+        compadd -a cands
+        return 0
+    fi
+    cmd=$words[2]
+    line=$(_crew_spec | awk -v c="$cmd" '$1 == c { print; exit }')
+    [[ -n $line ]] || return 0
+    uw=(${=line})
+    shift uw
+
+    # The words before this one: a flag that takes a value takes the next
+    # word too, any other word is the next positional.
+    for ((i = 3; i < CURRENT; i++)); do
+        if ((skip)); then
+            skip=0
+            continue
+        fi
+        w=$words[i]
+        if [[ $w == --* ]]; then
+            valued=(${(M)uw:#$w=*})
+            ((${#valued})) && skip=1
+        else
+            ((pos++))
+        fi
+    done
+
+    # What this word is: a flag's value, or the next positional.
+    if ((skip)); then
+        type=${${(M)uw:#$words[CURRENT-1]=*}[1]#*=}
+    elif [[ $words[CURRENT] != -* ]]; then
+        positionals=(${(M)uw:#\<*})
+        if ((${#positionals} > pos)); then
+            type=$positionals[pos+1]
+        elif ((${#positionals})) && [[ $positionals[-1] == *... ]]; then
+            type=$positionals[-1]
+        fi
+        type=${type%...}
+        type=${type#<}
+        type=${type%>}
+        # spawn names a new member: no name to complete.
+        [[ "$cmd $pos $type" != "spawn 0 name" ]] || type=
+    fi
+
+    case "$type" in
+    name | from | member) cands=(${(f)"$(_crew_members)"}) ;;
+    to) cands=(${(f)"$(_crew_members)"} all owner) ;;
+    number) cands=(${(f)"$(_crew_numbers)"}) ;;
+    kind) cands=(${(f)"$(_crew_kinds)"}) ;;
+    key)
+        case "$words[CURRENT]" in
+        ctrl-* | alt-*)
+            letters=(a b c d e f g h i j k l m n o p q r s t u v w x y z)
+            cands=(${words[CURRENT]%%-*}-${^letters})
+            ;;
+        *)
+            cands=(enter esc tab shift-tab up down left right home end space backspace delete)
+            # ctrl- and alt- wait for their letter.
+            compadd -S '' -- ctrl- alt-
+            ;;
+        esac
+        ;;
+    *)
+        cands=()
+        if ((!skip)) && [[ $words[CURRENT] == -* ]]; then
+            cands=(${${(M)uw:#--*}%%=*})
+        fi
+        ;;
+    esac
+    ((${#cands})) && compadd -a cands
+    return 0
+}
+
+_crew "$@"

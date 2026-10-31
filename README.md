@@ -19,6 +19,19 @@ daemon, no service, no extension.
 ln -s ~/Documents/repos/github.com/mrfoxes/crew/bin/crew ~/.local/bin/crew
 ```
 
+Tab completes the commands, their flags, the members, the keys, the message
+numbers, and the kinds, in the shell you use:
+
+```
+ln -s ~/Documents/repos/github.com/mrfoxes/crew/share/completions/crew.fish ~/.config/fish/completions/crew.fish   # fish
+fpath=(~/Documents/repos/github.com/mrfoxes/crew/share/completions $fpath); autoload -Uz compinit; compinit      # zsh, in ~/.zshrc
+source ~/Documents/repos/github.com/mrfoxes/crew/share/completions/crew.bash                                       # bash, in ~/.bashrc
+```
+
+They read the commands and flags from `crew --help` when Tab is pressed, so a
+new command completes with no edit to them, and the members from the crew
+that `crew dir` finds.
+
 ## A session
 
 Before the first spawn, `crew doctor` checks what a crew needs under it and
@@ -275,6 +288,7 @@ lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
+share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
 .github/workflows/  the tests on Ubuntu and macOS, at every push
