@@ -10,7 +10,7 @@
 <body>
   <header class="site-header">
     <div class="wrap nav-bar">
-      <a class="brand" href="#top">crew</a>
+      <a class="brand" href="#top"><svg class="mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><rect x="1" y="3" width="6.4" height="18" rx="1.6" fill="#d97757"/><rect x="8.8" y="3" width="6.4" height="18" rx="1.6" fill="#10a37f"/><rect x="16.6" y="3" width="6.4" height="18" rx="1.6" fill="#4285f4"/></svg><span>crew</span></a>
       <nav class="nav-links" aria-label="Sections">
         <a href="#promises">Promises</a>
         <a href="#quickstart">Quickstart</a>
@@ -93,11 +93,11 @@ doctor: 62 passed, 0 failed</div>
         <div class="term-bottom">
           <div class="board-pane">
             <div class="pane-title">crew board --live</div>
-            <pre>member   kind    tab   state    issue                        age  spent
-claude   claude  main  working  #42 gate global flags         1m  1.84
-codex    codex   main  prompt   #33 test harness isolation    2m  3.10
-agy      agy     main  working  #54 doctor checks Crewfile    1m  0.92
-lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre>
+            <pre>member   <span class="col-wide">kind    tab   </span>state    issue                        <span class="col-wide">age  spent</span>
+claude   <span class="col-wide">claude  main  </span>working  #42 gate global flags         <span class="col-wide"> 1m  1.84</span>
+codex    <span class="col-wide">codex   main  </span>prompt   #33 test harness isolation    <span class="col-wide"> 2m  3.10</span>
+agy      <span class="col-wide">agy     main  </span>working  #54 doctor checks Crewfile    <span class="col-wide"> 1m  0.92</span>
+lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</span></pre>
           </div>
           <div class="watch-pane">
             <div class="pane-title">crew watch --all</div>
@@ -170,14 +170,19 @@ lock: free   relay: 48210   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</pre
         From a git repository, check your terminal and installed agents with <code>crew doctor</code>,
         bring up a crew with <code>crew up</code>, and watch the members work:
       </p>
-      <pre><code>crew doctor                                 # checks terminal, agents, skills, gh, Crewfile, rates
-crew up pair                                # opens watch, live board, and two members with a reviewer for each
-$EDITOR "$(crew dir)/README.md"             # write the goal, lanes, reviewers, and end time
+      <pre><code># checks terminal, agents, skills, gh, Crewfile, rates
+crew doctor
+# opens watch, live board, and two members with a reviewer for each
+crew up pair
+# write the goal, lanes, reviewers, and end time
+$EDITOR "$(crew dir)/README.md"
 crew send coord all "Plan: start from README.md" &lt;&lt;'EOF'
 Read $(crew dir)/README.md, claim your files with crew status, and land with crew land.
 EOF
-crew board                                  # full statuses, file claims, lock, messages, git, CI, cost
-crew down --archive --close                 # sends End:, waits for Done:, archives stream, closes exited panes</code></pre>
+# full statuses, file claims, lock, messages, git, CI, cost
+crew board
+# sends End:, waits for Done:, archives stream, closes exited panes
+crew down --archive --close</code></pre>
       <p>
         Each member joins with <code>crew join &lt;name&gt;</code>, which prints
         <code>share/protocol.md</code>, the session plan in <code>.crew/README.md</code>, and any

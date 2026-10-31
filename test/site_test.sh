@@ -55,6 +55,15 @@ for ref in $local_refs; do
         "$([ -f "$CREW_HOME/docs/$ref" ] && echo 1 || echo 0)"
 done
 
+# Nothing is cut off: a pre scrolls sideways, code in a table cell wraps, and
+# the mockup's grids let their items shrink.
+check "pre scrolls sideways" "1" \
+    "$(awk '/^pre \{/,/^\}/' "$css" | grep -c 'overflow-x: auto')"
+check "table code wraps" "1" \
+    "$(awk '/^td code, th code \{/,/^\}/' "$css" | grep -c 'overflow-wrap: anywhere')"
+check "the pane grid lets its items shrink" "1" \
+    "$(grep -c 'repeat(3, minmax(0, 1fr))' "$css" | awk '$1 >= 1 { print 1 }')"
+
 # No external script or stylesheet is loaded from another host.
 ext_assets=$(
     grep -E '<(script|link)[^>]+(src|href)="https?://' "$html" |
