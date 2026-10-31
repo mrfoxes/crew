@@ -135,6 +135,12 @@ iterm_focus() {
                         return' >/dev/null
 }
 
+# Closes session <id>.
+iterm_close() {
+    iterm_with "$1" 'tell s to close
+                        return' >/dev/null
+}
+
 # iTerm2's AppleScript has no zoom: Maximize Active Pane is a menu item.
 iterm_zoom() {
     echo "crew: iTerm2 zooms a pane only by hand: View > Maximize Active Pane (shift-cmd-return)" >&2

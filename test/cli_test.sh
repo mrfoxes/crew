@@ -52,6 +52,8 @@ check "leave keeps the clone" "1" "$(crew leave tess >/dev/null; [ -d "$tmp/repo
 check "leave --clone removes a clone with nothing left" "0" "$(crew leave tess --clone >/dev/null; echo $?)"
 check "and the clone is gone" "1" "$([ -d "$tmp/repo-tess" ] || echo 1)"
 check "leave" "0" "$(crew leave tess >/dev/null; echo $?)"
+check "down with nothing to wait for" "nobody to wait for: no member has a pane or a line in the Crewfile
+nothing is left" "$(crew down)"
 check "archive" "0" "$(crew archive >/dev/null; echo $?)"
 check "version" "0" "$(crew version >/dev/null; echo $?)"
 check "an unknown command" "2" "$(crew nosuch >/dev/null 2>&1; echo $?)"

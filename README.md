@@ -303,6 +303,36 @@ and left alone. A preset is a Crewfile in `~/.config/crew/presets/<name>`
 (under `$XDG_CONFIG_HOME`): `crew up <preset>` copies it to a crew that
 has no Crewfile, and refuses one that has its own, which is the truth.
 
+## Ending a crew
+
+```
+crew down                   # End: to all, wait up to 15 minutes for each Done:
+crew down 5                 # wait up to 5 minutes
+crew down --archive         # archive the stream when nothing is left
+crew down --close           # close the panes whose agent exited
+```
+
+`crew down` sends `all` an `End:` from `owner` that points to "The end" in
+the protocol (land or save a patch, write the report, send `Done:`), and
+a muted member gets one by name, since a message to `all` does not wake it.
+It polls the stream every five seconds, printing each member as its
+`Done:` comes, and who is left when that changes. A member counts when it
+has a pane or a line in the Crewfile; one with no pane, with a pane that is
+gone, or whose agent has exited back to a shell does not hold the wait,
+and neither does the coordinator's own pane. Only a `Done:` sent after the
+`End:` counts.
+
+Then it says what is left, and exits 1 when anything is: members without a
+`Done:`, unpushed commits and changed files in the shared tree and in each
+member's clone, patches in `reports/`, and the lock if held. It stops the
+watch and the board that `crew up` opened (ctrl-c, then it forgets
+`up/watch` and `up/board`) and kills nothing else.
+
+`--archive` runs `crew archive` only when nothing is left, once the watch is
+off the relay. `--close` closes the panes of members whose agent has
+exited, and the watch and the board once they are back at a shell; a pane
+whose agent still runs is never closed, and neither is the coordinator's.
+
 ## Kinds of agent
 
 What crew knows of each agent is one line of `share/kinds`: the name ps
@@ -558,6 +588,7 @@ lib/layout.sh       placing panes: spawn beside, under, over; move; tabs; layout
 lib/crewfile.sh     the Crewfile read, checked, and asked
 lib/up.sh           crew up: the crew of the Crewfile brought up, or back
 lib/live.sh         crew board --live: a line a member, redrawn
+lib/down.sh         crew down: End: sent, Done: waited for, what is left said, panes stopped and closed
 lib/clones.sh       a member's clone: made, reused, shown on the board, removed
 lib/land.sh         crew land: check, lock, commit the member's paths, push, unlock, Pushed:
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking

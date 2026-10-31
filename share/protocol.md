@@ -185,3 +185,11 @@ listed in the report) with your files put back by
 coordinator. Write your report (`crew report <you>`, the text on stdin:
 commits, issues, reviews given and got, what the next crew should do first),
 then send `all` your `Done:`.
+
+The owner ends the crew with `End:`, a message from `owner` to `all` (or to
+you by name, when you are muted). When it reaches you, stop starting new
+work, do all of the above at once, and send `Done:` even if you sent one
+earlier: `crew down` counts only the `Done:` that comes after its `End:`.
+If you cannot land something, say what and why in the `Done:`; do not
+leave. Your agent stays up until the owner closes the pane, so a later
+message can still reach you.

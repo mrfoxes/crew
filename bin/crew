@@ -28,6 +28,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/crewfile.sh"
 . "$CREW_HOME/lib/up.sh"
 . "$CREW_HOME/lib/live.sh"
+. "$CREW_HOME/lib/down.sh"
 
 usage() {
     cat <<'EOF'
@@ -58,6 +59,12 @@ For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   up [<preset>] [--dry]         bring the crew of the Crewfile up, or back:
                                 tabs, members, invites, layouts
+  down [minutes] [--archive] [--close]
+                                end the crew: tell all, wait for each Done:
+                                (15 minutes), say what is left, stop the
+                                watch and board crew up opened; --archive
+                                archives when nothing is left, --close closes
+                                the panes whose agent exited
   doctor                        check what a crew needs: terminal, agents, skills, gh
   panes                         every pane, who joined it, and its kind
   cost [name...]                what the members spent: tokens, and dollars by the rates
@@ -112,6 +119,7 @@ case "$cmd" in
 help) cat "$CREW_HOME/share/protocol.md" ;;
 init) crew_init "$@" ;;
 up) crew_up "$@" ;;
+down) crew_down "$@" ;;
 doctor) crew_doctor "$@" ;;
 dir) crew_dir "$@" ;;
 join) crew_join "$@" ;;

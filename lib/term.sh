@@ -39,6 +39,8 @@
 #                       and itself; a zoom lasts until the next focus
 #   <t>_zoom <id>       shows the pane alone in its tab, where the terminal
 #                       lets a script; fails saying so where it does not
+#   <t>_close <id>      closes the pane, whatever runs in it: a caller makes
+#                       sure nothing does
 #
 # <t>_move exits 3 when the terminal leaves the pane where it was, which a
 # layout takes for a pane in its place already.
@@ -172,6 +174,12 @@ term_even() {
 term_focus() {
     backend=$(term_of "$1") || return
     "${backend}_focus" "${1#*:}"
+}
+
+# Closes <pane>. Nothing here asks what runs in it: crew down looks first.
+term_close() {
+    backend=$(term_of "$1") || return
+    "${backend}_close" "${1#*:}"
 }
 
 # Shows <pane> alone in its tab, until the next focus.

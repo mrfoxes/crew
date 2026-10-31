@@ -37,6 +37,8 @@ CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/live.sh"
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/land.sh"
+# shellcheck source=/dev/null
+. "$CREW_HOME/lib/down.sh"
 export CREW_WAKE=0
 # No test notifies the owner; the ones that test notifying fake crew_notify.
 export CREW_NOTIFY=0

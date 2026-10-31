@@ -125,6 +125,11 @@ tmux_focus() {
     [ "$(tmux display-message -p -t "$1" '#{window_zoomed_flag}')" != 1 ] || tmux resize-pane -Z -t "$1"
 }
 
+# Closes pane <id>.
+tmux_close() {
+    tmux kill-pane -t "$1"
+}
+
 # Shows pane <id> alone in its window, until the next focus.
 tmux_zoom() {
     [ "$(tmux display-message -p -t "$1" '#{window_zoomed_flag}')" = 1 ] || tmux resize-pane -Z -t "$1"

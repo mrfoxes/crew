@@ -75,4 +75,13 @@ term_color iterm:X
 check "color off in iTerm2" "X" "$(cat "$tmp/osascript.args" | sed 's/ *$//')"
 check "name of no pane" "1" "$(term_name nowhere x 2>/dev/null; echo $?)"
 
+# Closing a pane: tmux kills it, iTerm2 closes its session; a word that is
+# no pane closes nothing.
+tmux() { echo "tmux $*"; }
+check "close in tmux" "tmux kill-pane -t %7" "$(term_close tmux:%7)"
+osascript() { cat >"$tmp/close.script"; }
+term_close iterm:X
+check "close in iTerm2" "1" "$(grep -c 'tell s to close' "$tmp/close.script")"
+check "close of no pane" "1" "$(term_close nowhere 2>/dev/null; echo $?)"
+
 finish
