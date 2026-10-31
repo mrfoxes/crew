@@ -44,12 +44,13 @@ For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
   doctor                        check what a crew needs: terminal, agents, skills, gh
   panes                         every pane, who joined it, and its kind
-  spawn <name> [--tab | --beside|--below|--above <member>] [--join]
+  spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join]
         [--kind <kind>] <cmd>...
                                 open a pane running <cmd> for <name>: beside
-                                this one, in a new tab, or right of, under,
-                                or over <member>'s; its kind is read from
-                                <cmd> unless given
+                                this one, in the tab named <tab> (opened for
+                                its first member), or right of, under, or
+                                over <member>'s; its kind is read from <cmd>
+                                unless given
   move <name> --beside|--below|--above <member>
                                 move <name>'s pane right of, under, or over
                                 <member>'s, its agent still running

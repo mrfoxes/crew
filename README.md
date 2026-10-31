@@ -60,7 +60,7 @@ crew init --home                            # or under ~/.crew, tree untouched
 $EDITOR "$(crew dir)/README.md"             # the plan, lanes, reviewers, end time
 crew spawn claude claude                    # a pane beside this one, running claude
 crew spawn codex codex
-crew spawn agy --tab agy                    # a new tab instead of a split
+crew spawn agy --tab runtime agy            # in the tab runtime, opened for its first member
 crew spawn agy --below codex agy            # under codex's pane: a column beside yours
 crew spawn agy --above codex agy            # over it
 crew spawn agy --beside codex agy           # right of it, in its row
@@ -206,6 +206,31 @@ where its agent's titles cannot reach it, marked with its kind's color:
 `CREW_COLOR=0` names the pane without a color. `crew leave` takes both off
 a pane still open.
 
+## Tabs
+
+`crew spawn <name> --tab <tab>` puts a member in the tab named `<tab>`:
+the first member opens it, and each next one is placed beside the last
+member still there, so a lane's members share a tab and the coordinator's
+stays small. A member spawned next to another (`--beside`, `--below`,
+`--above`) sits in that member's tab. `tabs/<tab>` lists a tab's members
+in the order they were placed; `crew leave` takes a member out, and a tab
+left empty is forgotten.
+
+```
+crew spawn claude --tab proof claude        # opens the tab proof
+crew spawn claude2 --tab proof claude       # beside claude, in proof
+crew spawn agy --tab runtime agy            # opens the tab runtime
+crew spawn codex --tab runtime codex        # beside agy
+```
+
+tmux names the window after the tab and keeps the name (`automatic-rename`
+and `allow-rename` off). iTerm2's AppleScript sets no tab title an agent's
+titles would not overwrite, so there the tab's name is in each member's
+badge, after the member's: `claude2 · proof`. `crew panes` lists a tab's
+members together, in their order, and `crew board` names each member's
+tab. Peek, poke, keys, the gate, and the relay reach a pane by its id,
+whatever tab it is in.
+
 ## Laying out a table
 
 One row for each kind of agent, its panes side by side. `--beside` and
@@ -213,7 +238,7 @@ One row for each kind of agent, its panes side by side. `--beside` and
 row down the left, then fill each row rightward:
 
 ```
-crew spawn claude --tab claude              # the table, in a tab of its own
+crew spawn claude --tab proof claude        # the table, in a tab of its own
 crew spawn agy --below claude agy           # the first of the row under it
 crew spawn claude2 --beside claude claude
 crew spawn claude3 --beside claude2 claude
@@ -307,6 +332,7 @@ panes/<name>               each member's pane
 threads/<name>             a Codex member's thread, for codex queue
 muted/<name>               a member woken only by messages to its name (crew mute)
 kind/<name>                each member's kind (claude, codex, agy, other)
+tabs/<tab>                 a tab's members, in the order they were placed
 reports/<name>.md          each member's report at the end (crew report)
 archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)

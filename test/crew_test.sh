@@ -16,6 +16,7 @@ kind_of_self() { :; }
 # The names and colors a pane gets, one a line, instead of the terminal's.
 term_name() { echo "name $1 $2" >>"$tmp/labels"; }
 term_color() { echo "color $1 ${2:-}" >>"$tmp/labels"; }
+term_tab() { echo "tab $1 $2" >>"$tmp/labels"; }
 
 # The stream: init, numbering under contention, routing, and the lock.
 git init -q "$tmp/repo"
@@ -96,9 +97,10 @@ term_spawn() { printf '%s\n' "$2" >"$tmp/spawn.line"; echo tmux:%9; }
 check "spawn" "agy: tmux:%9" "$(crew_spawn agy claude --model 'x y' "it's")"
 check "spawn keeps each word whole" "cd $(cd "$tmp/repo" && pwd -P) && claude --model 'x y' 'it'\\''s'" "$(cat "$tmp/spawn.line")"
 check "spawn records the pane" "tmux:%9" "$(cat "$dir/panes/agy")"
-crew_spawn agy --tab 'cd sub && codex' >/dev/null
+crew_spawn agy --tab runtime 'cd sub && codex' >/dev/null
 check "spawn passes one word to the shell" "cd $(cd "$tmp/repo" && pwd -P) && cd sub && codex" "$(cat "$tmp/spawn.line")"
-check "spawn wants a command" "2" "$(crew_spawn agy --tab >/dev/null 2>&1; echo $?)"
+check "spawn wants a command" "2" "$(crew_spawn agy --tab runtime >/dev/null 2>&1; echo $?)"
+check "spawn wants a tab's name" "2" "$(crew_spawn agy --tab >/dev/null 2>&1; echo $?)"
 term_spawn() { printf '%s %s\n' "$1" "${3:-}" >"$tmp/spawn.where"; echo tmux:%9; }
 crew_spawn codex --below agy codex >/dev/null
 check "spawn below a member" "below tmux:%9" "$(cat "$tmp/spawn.where")"
@@ -192,7 +194,7 @@ check "show a missing one" "1" "$(crew_show 9999 >/dev/null 2>&1; echo $?)"
 # Status and report from stdin, and the age of a status on the board.
 check "status" "$dir/status/agy.md" "$(printf 'Agent: agy\nNext: nothing\n' | crew_write status agy)"
 check "status written" "Next: nothing" "$(sed -n 2p "$dir/status/agy.md")"
-check "board shows the age and the kind" "1" "$(crew_board 1 | grep -c '^== agy (codex, no pane, 0 min ago)$')"
+check "board shows the age and the kind" "1" "$(crew_board 1 | grep -c '^== agy (codex, tab runtime, no pane, 0 min ago)$')"
 check "report" "$dir/reports/agy.md" "$(echo finished | crew_write report agy)"
 check "status wants a name" "2" "$(echo x | crew_write status >/dev/null 2>&1; echo $?)"
 check "gate wants a name" "2" "$(gate_setup --dry >/dev/null 2>&1; echo $?)"
@@ -260,7 +262,7 @@ check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/th
 # The board tells a pane that is gone.
 printf 'Agent: agy\n' >"$dir/status/agy.md"
 echo "tmux:%8" >"$dir/panes/agy"
-check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (codex, tmux:%8 gone, 0 min ago)$')"
+check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (codex, tab runtime, tmux:%8 gone, 0 min ago)$')"
 printf 'Agent: claude\n' >"$dir/status/claude.md"
 check "board tells a pane that is there" "1" "$(crew_board 1 | grep -c '^== claude (tmux:%7, 0 min ago)$')"
 crew_mute claude >/dev/null
@@ -297,7 +299,7 @@ check "invite gives up on a screen that never settles" "crew: claude's agent run
 term_running() { return 1; }
 crew_invite() { echo "invite $1"; }
 check "spawn with --join invites" "agy: tmux:%9
-invite agy" "$(crew_spawn agy --tab --join true)"
+invite agy" "$(crew_spawn agy --tab runtime --join true)"
 rm -f "$dir/panes/agy"
 
 

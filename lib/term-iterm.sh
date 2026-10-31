@@ -113,6 +113,13 @@ iterm_color() {
                         return' "${2:-}" "${3:-}" "${4:-}" >/dev/null
 }
 
+# Names the tab of session <id>: iTerm2's AppleScript sets no tab's title
+# an agent's titles would not overwrite, so the tab's name goes in the
+# badges of its sessions, with each member's name, and here nothing is done.
+iterm_tab() {
+    :
+}
+
 # Opens a session beside the current one (split), in a new tab (tab), or
 # right of, under, or over the iTerm2 pane <anchor> (beside, below,
 # above), and types <line> into it.

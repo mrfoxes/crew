@@ -42,3 +42,64 @@ term_move() {
     fi
     "${backend}_move" "${pane#*:}" "$where" "${anchor#*:}"
 }
+
+# The crew's tabs, by name: tabs/<tab> lists its members, one a line, in
+# the order they were placed there. A member sits in one tab at most.
+
+# The tab <member> sits in, in the crew <dir>, or nothing.
+tab_of() {
+    for t_file in "$1"/tabs/*; do
+        [ -f "$t_file" ] || continue
+        if grep -qx -- "$2" "$t_file"; then
+            basename "$t_file"
+            return
+        fi
+    done
+}
+
+# The members of <tab>, in the order they were placed.
+tab_members() {
+    cat "$1/tabs/$2" 2>/dev/null
+}
+
+# Puts <member> last in <tab>, out of any tab it sat in before.
+tab_add() {
+    tab_drop "$1" "$3"
+    mkdir -p "$1/tabs"
+    echo "$3" >>"$1/tabs/$2"
+}
+
+# Takes <member> out of its tab; a tab left empty is forgotten.
+tab_drop() {
+    for t_file in "$1"/tabs/*; do
+        [ -f "$t_file" ] || continue
+        grep -vx -- "$2" "$t_file" >"$t_file.new" || :
+        if [ -s "$t_file.new" ]; then
+            mv "$t_file.new" "$t_file"
+        else
+            rm -f "$t_file" "$t_file.new"
+        fi
+    done
+}
+
+# The pane of the last member of <tab> whose pane is still there, which a
+# new member of the tab is placed next to; nothing when the tab is gone.
+tab_anchor() {
+    t_anchor=""
+    for t_member in $(tab_members "$1" "$2"); do
+        t_pane=$(cat "$1/panes/$t_member" 2>/dev/null) || continue
+        term_gone "$t_pane" || t_anchor=$t_pane
+    done
+    echo "$t_anchor"
+}
+
+# The tab of the member whose pane is <pane>, or nothing.
+tab_of_pane() {
+    for t_file in "$1"/panes/*; do
+        [ -f "$t_file" ] || continue
+        if [ "$(cat "$t_file")" = "$2" ]; then
+            tab_of "$1" "$(basename "$t_file")"
+            return
+        fi
+    done
+}

@@ -323,7 +323,8 @@ crew_board() {
         fi
         [ ! -e "$dir/muted/$who" ] || pane="$pane, muted"
         kind=$(kind_member "$dir" "$who")
-        echo "== $who (${kind:+$kind, }$pane, $(crew_age "$f") min ago)"
+        tab=$(tab_of "$dir" "$who")
+        echo "== $who (${kind:+$kind, }${tab:+tab $tab, }$pane, $(crew_age "$f") min ago)"
         cat "$f"
         echo
     done

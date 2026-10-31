@@ -31,6 +31,8 @@
 #   <t>_color <id> [<color>]
 #                       marks the pane with <color> (#rrggbb); none takes
 #                       the mark off
+#   <t>_tab <id> <name> names the tab the pane sits in, where the terminal
+#                       keeps such a name; does nothing where it does not
 #
 # Each fails with a reason on stderr. Nothing outside lib/term*.sh drives
 # iTerm2 or tmux.
@@ -143,6 +145,12 @@ term_name() {
 term_color() {
     backend=$(term_of "$1") || return
     "${backend}_color" "${1#*:}" "${2:-}"
+}
+
+# Names the tab <pane> sits in, where the terminal can.
+term_tab() {
+    backend=$(term_of "$1") || return
+    "${backend}_tab" "${1#*:}" "$2"
 }
 
 # Presses one key in the pane: enter, esc, tab, shift-tab, up, down, left,

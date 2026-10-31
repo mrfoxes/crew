@@ -88,6 +88,7 @@ crew_leave() {
     pane=$(cat "$dir/panes/$1" 2>/dev/null) || pane=""
     [ -z "$pane" ] || term_gone "$pane" || crew_unlabel "$pane"
     rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/kind/$1"
+    tab_drop "$dir" "$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
 
@@ -126,11 +127,14 @@ crew_member() {
     esac
 }
 
-# Shows <name> on <pane>, out of its agent's reach, marked with <kind>'s
-# color unless CREW_COLOR=0. A label that fails says so and leaves the
+# Shows <name> on <pane>, and the tab it sits in, out of its agent's reach,
+# marked with <kind>'s color unless CREW_COLOR=0. A label that fails says so and leaves the
 # pane as it is: naming is no reason to fail a spawn.
 crew_label() {
-    term_name "$1" "$2" || echo "crew: could not name the pane $1 $2" >&2
+    label=$2
+    label_tab=$(tab_of "$(crew_dir)" "$2")
+    [ -z "$label_tab" ] || label="$2 · $label_tab"
+    term_name "$1" "$label" || echo "crew: could not name the pane $1 $2" >&2
     color=""
     [ "${CREW_COLOR:-1}" = 0 ] || color=$(kind_field "$3" color)
     term_color "$1" "$color" || echo "crew: could not color the pane $1" >&2
@@ -142,21 +146,29 @@ crew_unlabel() {
     term_color "$1" "" 2>/dev/null || :
 }
 
-# Every pane crew can see, with the member joined to it and its kind.
+# Every pane crew can see, with the member joined to it, its kind, and its
+# tab, the members of a tab together, in the order they were placed.
 crew_panes() {
     dir=$(crew_dir 2>/dev/null) || dir=""
     term_list | while IFS='	' read -r pane tty title; do
         who=-
         kind=-
+        tab=-
         if [ -n "$dir" ]; then
             for f in "$dir"/panes/*; do
                 [ -e "$f" ] || continue
                 [ "$(cat "$f")" = "$pane" ] && who=$(basename "$f")
             done
-            [ "$who" = - ] || kind=$(kind_member "$dir" "$who")
+            if [ "$who" != - ]; then
+                kind=$(kind_member "$dir" "$who")
+                tab=$(tab_of "$dir" "$who")
+                tab=${tab:--}
+            fi
         fi
-        printf '%-8s %-7s %-48s %-14s %s\n' "$who" "${kind:--}" "$pane" "$tty" "$title"
-    done
+        order=0
+        [ "$tab" = - ] || order=$(grep -nx -- "$who" "$dir/tabs/$tab" | cut -d: -f1)
+        printf '%s\t%s\t%-8s %-7s %-8s %-48s %-14s %s\n' "${tab:--}" "$order" "$who" "${kind:--}" "${tab:--}" "$pane" "$tty" "$title"
+    done | sort -s -t '	' -k1,1 -k2,2n | cut -f3-
 }
 
 crew_peek() {
@@ -200,7 +212,7 @@ crew_key() {
 # is told to as soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
         return 2
     fi
     name=$1
@@ -211,9 +223,15 @@ crew_spawn() {
     anchor=""
     join=""
     kind=""
+    tab=""
     while [ $# -gt 0 ]; do
         case "$1" in
-        --tab) where=tab ;;
+        --tab)
+            shift
+            tab=${1:-}
+            crew_name "$tab" || return 2
+            where=tab
+            ;;
         --kind)
             shift
             kind=${1:-}
@@ -234,7 +252,7 @@ crew_spawn() {
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab <tab> | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -249,10 +267,24 @@ crew_spawn() {
         done
         line=${line# }
     fi
+    # A tab opens for its first member; the next ones are placed beside
+    # the last member still there, the tab's row growing.
+    if [ -n "$tab" ]; then
+        anchor=$(tab_anchor "$dir" "$tab")
+        [ -z "$anchor" ] || where=beside
+    fi
     pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line" "$anchor") || return 1
     echo "$pane" >"$dir/panes/$name"
     [ -n "$kind" ] || kind=$(kind_of_line "$line")
     kind_record "$dir" "$name" "${kind:-other}"
+    if [ -n "$tab" ]; then
+        tab_add "$dir" "$tab" "$name"
+        [ -n "$anchor" ] || term_tab "$pane" "$tab" || echo "crew: could not name the tab $tab" >&2
+    elif [ -n "$anchor" ]; then
+        # Placed next to a member's pane: in that member's tab.
+        anchor_tab=$(tab_of_pane "$dir" "$anchor")
+        [ -z "$anchor_tab" ] || tab_add "$dir" "$anchor_tab" "$name"
+    fi
     crew_label "$pane" "$name" "${kind:-other}"
     echo "$name: $pane"
     [ -z "$join" ] || crew_invite "$name"

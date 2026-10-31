@@ -111,7 +111,7 @@ color tmux:%9 #4285f4" "$(labels)"
 check "join says the kind" "You are agy, of kind agy, in the crew at $dir, in the pane tmux:%9: a message to you is typed into it." "$(crew_join agy | sed -n 1p)"
 kind_of_self() { :; }
 check "join of no kind records other" "other" "$(crew_join codex --pane tmux:%9 >/dev/null; kind_member "$dir" codex)"
-check "panes show the kind" "agy      agy     tmux:%9" "$(rm "$dir/panes/codex"; crew_panes | cut -c1-24)"
+check "panes show the kind" "agy      agy     -        tmux:%9" "$(rm "$dir/panes/codex"; crew_panes | cut -c1-33)"
 printf 'Agent: agy\n' >"$dir/status/agy.md"
 check "board shows the kind" "1" "$(crew_board 1 | grep -c '^== agy (agy, tmux:%9, 0 min ago)$')"
 rm -f "$tmp/labels"

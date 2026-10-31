@@ -107,3 +107,11 @@ tmux_color() {
         tmux set-option -p -t "$1" @crew_color "$2"
     fi
 }
+
+# Names the window of pane <id> <name>, and keeps the name: neither tmux
+# nor a program in it renames the window after.
+tmux_tab() {
+    tmux rename-window -t "$1" "$2" &&
+        tmux set-option -w -t "$1" automatic-rename off &&
+        tmux set-option -w -t "$1" allow-rename off
+}
