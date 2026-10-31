@@ -428,7 +428,8 @@ crew leave lean --clone                         # removes it when nothing is lef
 `crew spawn <name> --tab <tab>` puts a member in the tab named `<tab>`:
 the first member opens it, and each next one is placed beside the last
 member still there, so a lane's members share a tab and the coordinator's
-stays small. A member spawned next to another (`--beside`, `--below`,
+stays small. A tab or a pane crew opens, and a pane it moves, leaves the
+focus where it was: you stay in your pane while `crew up` fills the others. A member spawned next to another (`--beside`, `--below`,
 `--above`) sits in that member's tab. `tabs/<tab>` lists a tab's members
 in the order they were placed; `crew leave` takes a member out, and a tab
 left empty is forgotten.

@@ -183,8 +183,7 @@ iterm_spawn() {
         # walks every tab again: the loop's references count windows from
         # the front, which a move may reorder, and AppleScript cannot take
         # the contents of such a reference.
-        open='set f to current session of t
-                        tell s to set n to (split horizontally with default profile)
+        open='tell s to set n to (split horizontally with default profile)
                         set nid to unique id of n
                         try
                             repeat with i from 1 to 2
@@ -206,8 +205,7 @@ iterm_spawn() {
                         on error e
                             tell n to close
                             error "no pane over " & (item 1 of argv) & ": " & e & " (iTerm2 3.5 or later moves one there)"
-                        end try
-                        tell f to select'
+                        end try'
     else
         # Beside this pane while the tab holds an odd number, below it while
         # even: three or four panes make a grid, not a row of slivers.
@@ -217,8 +215,36 @@ iterm_spawn() {
                             tell s to set n to (split horizontally with default profile)
                         end if'
     fi
-    id=$(iterm_with "${me#iterm:}" "$open
-                        tell n to write text (item 2 of argv)
+    # A new tab, or a split, takes the focus: it is given back, by unique
+    # id, to the pane that held it in the anchor's tab, then to the tab
+    # and the pane that held it in the window, even when the open fails.
+    id=$(iterm_with "${me#iterm:}" "set fid to unique id of current session of t
+                        set wid to unique id of current session of current tab of w
+                        set failure to \"\"
+                        try
+                            $open
+                            tell n to write text (item 2 of argv)
+                        on error e
+                            set failure to e
+                        end try
+                        repeat with w2 in windows
+                            repeat with t2 in tabs of w2
+                                repeat with x in sessions of t2
+                                    if unique id of x is fid then tell x to select
+                                end repeat
+                            end repeat
+                        end repeat
+                        repeat with w2 in windows
+                            repeat with t2 in tabs of w2
+                                repeat with x in sessions of t2
+                                    if unique id of x is wid then
+                                        tell t2 to select
+                                        tell x to select
+                                    end if
+                                end repeat
+                            end repeat
+                        end repeat
+                        if failure is not \"\" then error failure
                         return unique id of n" "$line") || return
     echo "iterm:$id"
 }
@@ -283,12 +309,7 @@ on run argv
         set r to r2
     end repeat
     set cur to item 3 of r
-    set focused to ""
-    tell application "iTerm2"
-        try
-            set focused to unique id of current session of current window
-        end try
-    end tell
+    set focused to item 4 of r
     set verdict to "unchanged"
     set failed to false
     set why to ""
@@ -313,16 +334,19 @@ on run argv
         set failed to true
         set why to e
     end try
-    -- The move hands the focus to the moved pane: give it back.
+    -- The move hands the focus to the moved pane: give it back, to the
+    -- pane that held it in the anchor's tab, then to the tab and the pane
+    -- that held it in the anchor's window.
     my pick(cur)
-    if focused is not "" then my pick(focused)
+    my show(focused)
     if failed then error why
     return verdict
 end run
 
 -- The tab that holds <dst>: each of its panes with its size, one a line;
 -- the side of <dst> that <src> sits on in the order the tab lists them
--- (before, after, or apart); and the tab's current pane.
+-- (before, after, or apart); the tab's current pane; and the current pane
+-- of its window's current tab.
 on look(src, dst)
     tell application "iTerm2"
         repeat with i from 1 to count of windows
@@ -341,7 +365,7 @@ on look(src, dst)
                     set side to "apart"
                     if sk > 0 and sk = dk - 1 then set side to "before"
                     if sk > 0 and sk = dk + 1 then set side to "after"
-                    return {out, side, unique id of current session of tab j of window i}
+                    return {out, side, unique id of current session of tab j of window i, unique id of current session of current tab of window i}
                 end if
             end repeat
         end repeat
@@ -364,5 +388,22 @@ on pick(u)
         end repeat
     end tell
 end pick
+
+-- Makes the session <u> the current one of its window: its tab, then it.
+on show(u)
+    tell application "iTerm2"
+        repeat with i from 1 to count of windows
+            repeat with j from 1 to count of tabs of window i
+                repeat with k from 1 to count of sessions of tab j of window i
+                    if unique id of session k of tab j of window i is u then
+                        tell tab j of window i to select
+                        tell session k of tab j of window i to select
+                        return
+                    end if
+                end repeat
+            end repeat
+        end repeat
+    end tell
+end show
 EOF
 }

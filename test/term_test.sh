@@ -19,16 +19,30 @@ check "key unknown" "2" "$(term_key tmux:%1 f13 2>/dev/null; echo $?)"
 # terminal is refused before either is asked.
 tmux() { echo "$*" >>"$tmp/tmux.args"; [ "$1" != split-window ] || echo %5; }
 check "spawn above in tmux" "tmux:%5" "$(TMUX=1 term_spawn above true tmux:%3)"
-check "spawn above in tmux splits over the pane" "split-window -v -b -t %3 -P -F #{pane_id}" "$(sed -n 1p "$tmp/tmux.args")"
+check "spawn above in tmux splits over the pane" "split-window -d -v -b -t %3 -P -F #{pane_id}" "$(sed -n 1p "$tmp/tmux.args")"
 check "spawn above in tmux refuses an iTerm2 pane" "1" "$(TMUX=1 term_spawn above true iterm:X 2>/dev/null; echo $?)"
 check "spawn above in iTerm2 refuses a tmux pane" "1" "$(TMUX='' term_spawn above true tmux:%3 2>/dev/null; echo $?)"
 # Beside a pane: tmux splits it side by side, then spreads the row out.
 : >"$tmp/tmux.args"
 check "spawn beside in tmux" "tmux:%5" "$(TMUX=1 term_spawn beside true tmux:%3)"
-check "spawn beside in tmux splits the pane side by side, then evens the row" "split-window -h -t %3 -P -F #{pane_id}
+check "spawn beside in tmux splits the pane side by side, then evens the row" "split-window -d -h -t %3 -P -F #{pane_id}
 select-layout -E -t %5" "$(sed -n 1,2p "$tmp/tmux.args")"
 check "spawn beside in tmux refuses an iTerm2 pane" "1" "$(TMUX=1 term_spawn beside true iterm:X 2>/dev/null; echo $?)"
 check "spawn beside in iTerm2 refuses a tmux pane" "1" "$(TMUX='' term_spawn beside true tmux:%3 2>/dev/null; echo $?)"
+# The focus stays where it was: tmux opens a window, or splits a pane, with
+# -d; iTerm2 gives it back, by unique id, to the pane that held it in the
+# anchor's tab, then to the tab and the pane that held it in the window.
+tmux() { echo "$*" >>"$tmp/tmux.args"; case $1 in new-window | split-window) echo %5 ;; esac; }
+: >"$tmp/tmux.args"
+TMUX=1 term_spawn tab true >/dev/null
+TMUX=1 term_spawn below true tmux:%3 >/dev/null
+TMUX=1 term_spawn split true >/dev/null
+check "spawn in tmux leaves the focus where it was" "3" "$(grep -c -E '^(new-window|split-window) -d ' "$tmp/tmux.args")"
+osascript() { cat >"$tmp/osascript.in"; echo Y; }
+check "spawn in iTerm2" "iterm:Y" "$(TMUX='' term_spawn below true iterm:X)"
+check "spawn in iTerm2 keeps who held the focus" "2" "$(grep -c -E 'set (fid|wid) to unique id of current session of (t|current tab of w)$' "$tmp/osascript.in")"
+check "spawn in iTerm2 gives it back, the window's tab too" "1" "$(grep -c 'tell t2 to select' "$tmp/osascript.in")"
+unset -f osascript
 
 # Moving a pane: tmux joins it to the other, the focus left where it is,
 # beside it (the row evened out), under it, or over it; panes of two

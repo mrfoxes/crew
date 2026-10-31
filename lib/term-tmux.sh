@@ -44,21 +44,22 @@ tmux_key() {
 
 # Opens a pane beside the current one (split), in a new window (tab), or
 # right of, under, or over the tmux pane <anchor> (beside, below, above),
-# and types <line> into it.
+# and types <line> into it. -d leaves the focus where it was: the new
+# window does not become the current one, nor the new pane the active one.
 tmux_spawn() {
     where=$1
     line=$2
     anchor=${3:-}
     case "$where:$anchor" in
-    tab:*) id=$(tmux new-window -P -F '#{pane_id}') ;;
-    beside:tmux:*) id=$(tmux split-window -h -t "${anchor#tmux:}" -P -F '#{pane_id}') && tmux_even "$id" ;;
-    below:tmux:*) id=$(tmux split-window -v -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
-    above:tmux:*) id=$(tmux split-window -v -b -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
+    tab:*) id=$(tmux new-window -d -P -F '#{pane_id}') ;;
+    beside:tmux:*) id=$(tmux split-window -d -h -t "${anchor#tmux:}" -P -F '#{pane_id}') && tmux_even "$id" ;;
+    below:tmux:*) id=$(tmux split-window -d -v -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
+    above:tmux:*) id=$(tmux split-window -d -v -b -t "${anchor#tmux:}" -P -F '#{pane_id}') ;;
     beside:* | below:* | above:*)
         echo "crew: $anchor is not a tmux pane" >&2
         return 1
         ;;
-    *) id=$(tmux split-window -P -F '#{pane_id}') && tmux select-layout tiled >/dev/null ;;
+    *) id=$(tmux split-window -d -P -F '#{pane_id}') && tmux select-layout tiled >/dev/null ;;
     esac || return
     tmux send-keys -t "$id" -l -- "$line" && tmux send-keys -t "$id" Enter
     echo "tmux:$id"

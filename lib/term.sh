@@ -20,7 +20,8 @@
 #                       new tab (tab), or right of, under, or over the pane
 #                       <anchor> (beside, below, above), runs <line> there
 #                       through the owner's shell, so the pane outlives it,
-#                       and prints the new pane
+#                       and prints the new pane; the focus stays where it
+#                       was, its window's tab and pane alike
 #   <t>_move <id> <where> <anchor id>
 #                       moves the pane right of, under, or over the other
 #                       (beside, below, above), its agent running on; the
