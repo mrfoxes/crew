@@ -188,9 +188,9 @@ crew_peek() {
         echo "usage: crew peek <name> [lines]" >&2
         return 2
     fi
-    pane=$(crew_pane "$1") || return 1
     crew_count "${2:-30}" "crew peek <name> [lines]" || return 2
-    term_read "$pane" | grep -v '^[[:space:]]*$' | tail -n "${2:-30}"
+    pane=$(crew_pane "$1") || return 1
+    term_read "$pane" | grep -v '^[[:space:]]*$' | tail -n "$count_n"
 }
 
 crew_poke() {
@@ -393,7 +393,8 @@ crew_invite() {
         return 2
     fi
     name=$1
-    crew_count "${2:-60}" "crew invite <name> [seconds]" || return 2
+    crew_count "${2:-60}" "crew invite <name> [seconds]" positive || return 2
+    patience=$count_n
     pane=$(crew_pane "$name") || return 1
     tty=$(term_tty "$pane") || return 1
     kind=$(kind_member "$(crew_dir)" "$name")
@@ -431,11 +432,11 @@ crew_invite() {
         fi
         before=$screen
         i=$((i + 1))
-        if [ "$i" -gt "${2:-60}" ]; then
+        if [ "$i" -gt "$patience" ]; then
             if [ -z "$up" ]; then
-                echo "crew: nothing but a shell in $name's pane after ${2:-60} seconds" >&2
+                echo "crew: nothing but a shell in $name's pane after $patience seconds" >&2
             else
-                echo "crew: $name's agent runs, but after ${2:-60} seconds its screen has not settled, nor shown its input line" >&2
+                echo "crew: $name's agent runs, but after $patience seconds its screen has not settled, nor shown its input line" >&2
                 echo "crew: see it with 'crew peek $name', then 'crew invite $name' again or 'crew poke $name ...'" >&2
             fi
             return 1

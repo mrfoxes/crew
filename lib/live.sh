@@ -129,13 +129,14 @@ live_frame() {
 # until ctrl-c. A frame is worked out before the screen is cleared, so the
 # pane never shows half of one. A narrow pane cuts each line at its right.
 crew_board_live() {
-    crew_count "${1:-5}" "crew board --live [seconds]" || return 2
+    crew_count "${1:-5}" "crew board --live [seconds]" positive || return 2
+    v_every=$count_n
     dir=$(crew_dir) || return 1
     trap 'echo; exit' INT TERM
     while :; do
         v_width=$(tput cols 2>/dev/null) || v_width=80
         v_frame=$(live_frame "$dir" | cut -c "1-${v_width:-80}")
         printf '\033[H\033[2J%s\n' "$v_frame"
-        sleep "${1:-5}"
+        sleep "$v_every"
     done
 }

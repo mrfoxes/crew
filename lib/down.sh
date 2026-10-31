@@ -256,11 +256,10 @@ crew_down() {
         case "$dn_arg" in
         --archive) dn_archive=1 ;;
         --close) dn_closing=1 ;;
-        "" | *[!0-9]*)
-            echo "usage: crew down [minutes] [--archive] [--close]" >&2
-            return 2
+        *)
+            crew_count "$dn_arg" "crew down [minutes] [--archive] [--close]" || return 2
+            dn_minutes=$count_n
             ;;
-        *) dn_minutes=$dn_arg ;;
         esac
     done
     dir=$(crew_dir) || return 1

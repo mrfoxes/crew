@@ -71,4 +71,34 @@ check "version past a tag" "crew v1.0.0-1-g$hash ($day)" "$(sh "$tmp/home/bin/cr
 check "version" "0" "$(crew version >/dev/null; echo $?)"
 check "an unknown command" "2" "$(crew nosuch >/dev/null 2>&1; echo $?)"
 
+# Counts and intervals are decimal: a leading zero is dropped (08 is 8, not an
+# octal error), 0 is a count but not an interval, and a
+# negative, a word, and a number too long for arithmetic are refused.
+for n in 0 00 08 010; do
+    check "log $n" "0" "$(crew log "$n" >/dev/null 2>&1; echo $?)"
+    check "board $n" "0" "$(crew board "$n" >/dev/null 2>&1; echo $?)"
+    check "down $n" "0" "$(crew down "$n" >/dev/null 2>&1; echo $?)"
+done
+check "log 010 is ten messages" "$(crew log 10)" "$(crew log 010)"
+check "log 00 is none" "" "$(crew log 00)"
+echo body | crew send codex claude "Plan: counts" >/dev/null 2>&1
+last=$(ls "$dir/seq" | sort -n | tail -n 1)
+check "show 0$last is show $last" "$(crew show "$last")" "$(crew show "0$last")"
+check "show 000 is no message" "1" "$(crew show 000 >/dev/null 2>&1; echo $?)"
+for n in -1 -08 word 1.5 12345678901; do
+    check "log '$n' is refused" "2" "$(crew log "$n" >/dev/null 2>&1; echo $?)"
+    check "show '$n' is refused" "2" "$(crew show "$n" >/dev/null 2>&1; echo $?)"
+    check "board '$n' is refused" "2" "$(crew board "$n" >/dev/null 2>&1; echo $?)"
+    check "board --live '$n' is refused" "2" "$(crew board --live "$n" >/dev/null 2>&1; echo $?)"
+    check "down '$n' is refused" "2" "$(crew down "$n" >/dev/null 2>&1; echo $?)"
+    check "peek '$n' is refused" "2" "$(crew peek tess "$n" >/dev/null 2>&1; echo $?)"
+    check "invite '$n' is refused" "2" "$(crew invite tess "$n" >/dev/null 2>&1; echo $?)"
+done
+for n in 0 00 000; do
+    check "board --live $n is refused, not a busy loop" "2" "$(crew board --live "$n" >/dev/null 2>&1; echo $?)"
+    check "invite $n is refused, not a busy loop" "2" "$(crew invite tess "$n" >/dev/null 2>&1; echo $?)"
+done
+check "peek 08 gets as far as the pane" "1" "$(crew peek tess 08 >/dev/null 2>&1; echo $?)"
+check "invite 08 gets as far as the pane" "1" "$(crew invite tess 08 >/dev/null 2>&1; echo $?)"
+
 finish

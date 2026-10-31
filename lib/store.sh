@@ -80,7 +80,9 @@ crew_init() {
     echo "$dir"
 }
 
-# A count of lines or messages is digits, or the command prints <usage>.
+# A count of lines, messages, seconds, or minutes is digits, or the command
+# prints <usage>. It is read as decimal into $count_n (leading zeros dropped);
+# a third argument, positive, refuses 0, for an interval that would loop.
 crew_count() {
     case "$1" in
     "" | *[!0-9]*)
@@ -88,6 +90,20 @@ crew_count() {
         return 2
         ;;
     esac
+    # Read as decimal: leading zeros dropped, so 08 and 010 are 8 and 10, and
+    # a number too long for shell arithmetic is refused.
+    count_n=$(printf '%s' "$1" | sed 's/^0*//')
+    count_n=${count_n:-0}
+    case "$count_n" in
+    ??????????*)
+        echo "usage: $2" >&2
+        return 2
+        ;;
+    esac
+    if [ "${3:-}" = positive ] && [ "$count_n" = 0 ]; then
+        echo "usage: $2 (at least 1)" >&2
+        return 2
+    fi
 }
 
 # A name is lower-case letters, digits, and dashes: it goes into file names.
@@ -185,7 +201,7 @@ crew_unread() {
 crew_log() {
     crew_count "${1:-5}" "crew log [count]" || return 2
     dir=$(crew_dir) || return 1
-    for n in $(ls "$dir/seq" | sort -n | tail -n "${1:-5}"); do
+    for n in $(ls "$dir/seq" | sort -n | tail -n "$count_n"); do
         printf '\n'
         cat "$dir/seq/$n"
     done
@@ -200,8 +216,8 @@ crew_show() {
     dir=$(crew_dir) || return 1
     for n in "$@"; do
         crew_count "$n" "crew show <number>..." || return 2
-        n=$(printf '%s' "$n" | sed 's/^0*//')
-        if [ ! -f "$dir/seq/${n:-0}" ]; then
+        n=$count_n
+        if [ ! -f "$dir/seq/$n" ]; then
             echo "crew: there is no message $n" >&2
             return 1
         fi
@@ -442,7 +458,7 @@ crew_board() {
     fi
     echo
     echo "== messages"
-    ls "$dir/messages" | tail -n "${1:-10}"
+    ls "$dir/messages" | tail -n "$count_n"
     root=$(crew_project "$dir")
     if git -C "$root" rev-parse --git-dir >/dev/null 2>&1; then
         echo
