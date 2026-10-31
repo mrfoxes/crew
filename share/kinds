@@ -1,0 +1,21 @@
+# The kinds of agent crew knows, one line a kind. Fields are split by
+# spaces, and - is none:
+#
+#   kind      the name crew records for a member of this kind (kind/<name>)
+#   process   the command's name, as ps shows it and a spawn line runs it
+#   env       a variable the agent sets for the commands it runs, which
+#             tells it apart where a sandbox hides ps
+#   idle      the mark that starts its input line, near the bottom of its
+#             screen, once it is up and waits for a line
+#   approve   the key that answers yes to its command prompt in the gate
+#   color     its panes' color, #rrggbb
+#
+# The owner's ${XDG_CONFIG_HOME:-~/.config}/crew/kinds, then a crew's own
+# kinds, add kinds or replace these, a line for a kind replacing the one
+# before it. The versions each kind was seen with are in
+# test/fixtures/VERSIONS.
+#
+# kind    process  env              idle  approve  color
+claude    claude   CLAUDECODE       ❯     enter    #d97757
+codex     codex    CODEX_THREAD_ID  ›     y        #10a37f
+agy       agy      -                >     -        #4285f4

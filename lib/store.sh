@@ -73,7 +73,7 @@ crew_init() {
                 echo '/.crew/' >>"$common/info/exclude"
         fi
     fi
-    for d in messages seq cursors panes threads muted status reports tmp; do
+    for d in messages seq cursors panes threads muted kind status reports tmp; do
         mkdir -p "$dir/$d"
     done
     echo "$root" >"$dir/project"
@@ -322,7 +322,8 @@ crew_board() {
             pane="no pane"
         fi
         [ ! -e "$dir/muted/$who" ] || pane="$pane, muted"
-        echo "== $who ($pane, $(crew_age "$f") min ago)"
+        kind=$(kind_member "$dir" "$who")
+        echo "== $who (${kind:+$kind, }$pane, $(crew_age "$f") min ago)"
         cat "$f"
         echo
     done

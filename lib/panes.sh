@@ -40,6 +40,11 @@ crew_join() {
         pane=$(term_self) || pane=""
         [ -z "$pane" ] || ! term_gone "$pane" || pane=""
     fi
+    # The agent this runs under tells its kind; else the one spawn read
+    # from its command stays, else it is other.
+    kind=$(kind_of_self)
+    [ -n "$kind" ] || kind=$(kind_member "$dir" "$name")
+    kind_record "$dir" "$name" "${kind:-other}"
     # Codex names its thread: a message is queued to it, pane or no pane.
     if [ -n "${CODEX_THREAD_ID:-}" ]; then
         mkdir -p "$dir/threads"
@@ -55,7 +60,7 @@ crew_join() {
         rm -f "$dir/panes/$name"
         where="in no pane crew can find: run 'crew unread $name' often"
     fi
-    echo "You are $name, in the crew at $dir, $where."
+    echo "You are $name, of kind ${kind:-other}, in the crew at $dir, $where."
     echo
     cat "$CREW_HOME/share/protocol.md"
     if [ -f "$dir/README.md" ]; then
@@ -69,8 +74,8 @@ crew_join() {
     crew_unread "$name"
 }
 
-# Forgets <name>'s pane and thread: messages to <name> wait in the stream
-# from now on.
+# Forgets <name>'s pane, thread, and kind: messages to <name> wait in the
+# stream from now on.
 crew_leave() {
     if [ $# -ne 1 ]; then
         echo "usage: crew leave <name>" >&2
@@ -78,7 +83,7 @@ crew_leave() {
     fi
     crew_name "$1" || return 2
     dir=$(crew_dir) || return 1
-    rm -f "$dir/panes/$1" "$dir/threads/$1"
+    rm -f "$dir/panes/$1" "$dir/threads/$1" "$dir/kind/$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
 }
 
@@ -117,18 +122,20 @@ crew_member() {
     esac
 }
 
-# Every pane crew can see, with the member joined to it.
+# Every pane crew can see, with the member joined to it and its kind.
 crew_panes() {
     dir=$(crew_dir 2>/dev/null) || dir=""
     term_list | while IFS='	' read -r pane tty title; do
         who=-
+        kind=-
         if [ -n "$dir" ]; then
             for f in "$dir"/panes/*; do
                 [ -e "$f" ] || continue
                 [ "$(cat "$f")" = "$pane" ] && who=$(basename "$f")
             done
+            [ "$who" = - ] || kind=$(kind_member "$dir" "$who")
         fi
-        printf '%-8s %-48s %-14s %s\n' "$who" "$pane" "$tty" "$title"
+        printf '%-8s %-7s %-48s %-14s %s\n' "$who" "${kind:--}" "$pane" "$tty" "$title"
     done
 }
 
@@ -167,12 +174,13 @@ crew_key() {
 
 # Opens a pane beside this one, in a new tab with --tab, or right of, under,
 # or over <member>'s pane with --beside, --below, or --above, running
-# <command> in the project's root, joined as <name>. The agent still runs
-# 'crew join <name>' to learn the protocol; its pane is known from the start,
-# and with --join it is told to as soon as it is up.
+# <command> in the project's root, joined as <name>, of the kind --kind
+# names or the command runs. The agent still runs 'crew join <name>' to
+# learn the protocol; its pane is known from the start, and with --join it
+# is told to as soon as it is up.
 crew_spawn() {
     if [ $# -lt 2 ]; then
-        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
         return 2
     fi
     name=$1
@@ -182,9 +190,18 @@ crew_spawn() {
     where='split'
     anchor=""
     join=""
+    kind=""
     while [ $# -gt 0 ]; do
         case "$1" in
         --tab) where=tab ;;
+        --kind)
+            shift
+            kind=${1:-}
+            if ! kind_known "$kind"; then
+                echo "crew: '$kind' is not a kind crew knows: $(kinds_names | tr '\n' ' ')other" >&2
+                return 2
+            fi
+            ;;
         --beside | --below | --above)
             where=${1#--}
             shift
@@ -197,7 +214,7 @@ crew_spawn() {
         shift
     done
     if [ $# -eq 0 ]; then
-        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] <command>..." >&2
+        echo "usage: crew spawn <name> [--tab | --beside|--below|--above <member>] [--join] [--kind <kind>] <command>..." >&2
         return 2
     fi
     root=$(crew_project "$dir")
@@ -214,6 +231,8 @@ crew_spawn() {
     fi
     pane=$(term_spawn "$where" "cd $(shell_word "$root") && $line" "$anchor") || return 1
     echo "$pane" >"$dir/panes/$name"
+    [ -n "$kind" ] || kind=$(kind_of_line "$line")
+    kind_record "$dir" "$name" "${kind:-other}"
     echo "$name: $pane"
     [ -z "$join" ] || crew_invite "$name"
 }

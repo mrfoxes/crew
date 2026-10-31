@@ -36,6 +36,7 @@ crew spawn agy --beside codex agy           # right of it, in its row
 crew spawn codex --above iterm:<id> codex   # over a pane from crew panes: yours, say
 crew spawn claude claude --model 'x y'      # several words: each kept whole
 crew spawn codex 'cd sub && codex'          # one word: a line for your shell
+crew spawn mine --kind claude ./my-claude   # a kind its command does not show
 ```
 
 tmux opens a pane over another directly; iTerm2's AppleScript splits only
@@ -125,6 +126,31 @@ message from outside; while it runs (`relay.pid`, rewritten every second),
 the sender and the relay claim it with `tmp/wake.NNNN`, and whoever claims
 first wakes.
 
+## Kinds of agent
+
+What crew knows of each agent is one line of `share/kinds`: the name ps
+shows for its process, the variable it sets for the commands it runs, the
+mark that starts its input line, the key that approves its command
+prompts, and its panes' color.
+
+```
+# kind    process  env              idle  approve  color
+claude    claude   CLAUDECODE       ❯     enter    #d97757
+codex     codex    CODEX_THREAD_ID  ›     y        #10a37f
+agy       agy      -                >     -        #4285f4
+```
+
+`crew spawn` records a member's kind in `kind/<name>`, from `--kind` or
+from the first word of its command that names a kind's process (`cd sub
+&& codex` is codex); `crew join` records the kind of the agent it runs
+under, its nearest ancestor process, or, where a sandbox hides ps, the
+first kind whose variable is set, and keeps the spawned one when neither
+tells. A member of no kind is `other`. `crew panes` and `crew board` show
+each member's kind. `~/.config/crew/kinds` (under `$XDG_CONFIG_HOME`),
+then a crew's own `kinds`, add kinds or replace these, a line for a kind
+replacing the one before it: a wrapper script that runs Claude Code is one
+line, `mycc mycc - ❯ enter #d97757`.
+
 ## Laying out a table
 
 One row for each kind of agent, its panes side by side. `--beside` and
@@ -177,7 +203,8 @@ approval prompts it recognises, printing one line for each, with the time:
 ```
 
 It recognises Codex's "Would you like to run the following command?" and
-Claude Code's "Bash command ... Do you want to proceed?". A command that
+Claude Code's "Bash command ... Do you want to proceed?", and answers each
+with its kind's `approve` key (a kind with none has its prompts held). A command that
 breaks a rule of `share/forbid` (or the project's own `.crew/forbid`, which
 replaces it) is held, and so is every other menu waiting at the bottom of
 the pane (a file edit, a fetch, a trust dialog): you decide those with `crew
@@ -195,6 +222,7 @@ approved command runs with the agent's rights.
 ```
 bin/crew            the command
 lib/store.sh        .crew/, the numbered stream, unread cursors, the push lock, the board
+lib/kinds.sh        kinds of agent: share/kinds read and overridden, a member's kind told
 lib/term.sh         the terminal contract, and what both keep alike: find our own, keys
 lib/term-iterm.sh   iTerm2's half of it, through osascript: list, read, type, spawn, move
 lib/term-tmux.sh    tmux's half of it
@@ -203,6 +231,7 @@ lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn,
 lib/gate.sh         reading approval prompts, the rules, the gate's loop
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
+share/kinds         the kinds of agent crew knows
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 .github/workflows/  the tests on Ubuntu and macOS, at every push
 ```
@@ -219,9 +248,11 @@ status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
 threads/<name>             a Codex member's thread, for codex queue
 muted/<name>               a member woken only by messages to its name (crew mute)
+kind/<name>                each member's kind (claude, codex, agy, other)
 reports/<name>.md          each member's report at the end (crew report)
 archive/<date and time>/   earlier sessions (crew archive)
 forbid                     the project's gate rules (optional)
+kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path
 relay.pid, relay.last      the relay's heartbeat and last number, while one runs
 ```

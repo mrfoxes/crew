@@ -8,11 +8,14 @@ set -u
 here=$(cd "$(dirname "$0")" && pwd)
 CREW_HOME=$(dirname "$here")
 . "$CREW_HOME/lib/store.sh"
+. "$CREW_HOME/lib/kinds.sh"
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 export CREW_WAKE=0
+# What an agent running the tests sets would change what join reads.
+unset CLAUDECODE CODEX_THREAD_ID
 # Every line of a log carries the time: one time here.
 crew_stamp() { echo 12:00:00; }
 
@@ -29,6 +32,10 @@ check() {
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
+# The owner's own files, and a crew of the checkout the tests run from,
+# stay out of it.
+export XDG_CONFIG_HOME="$tmp/config"
+cd "$tmp" || exit 1
 
 # A pane that shows the fixtures named with show, one a read, the last for
 # good: a file fakes term_read with it.

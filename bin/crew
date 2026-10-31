@@ -15,6 +15,7 @@ done
 CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 
 . "$CREW_HOME/lib/store.sh"
+. "$CREW_HOME/lib/kinds.sh"
 . "$CREW_HOME/lib/term.sh"
 . "$CREW_HOME/lib/layout.sh"
 . "$CREW_HOME/lib/panes.sh"
@@ -40,11 +41,13 @@ For everyone
 
 For the coordinator
   init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
-  panes                         every pane, and who joined it
-  spawn <name> [--tab | --beside|--below|--above <member>] [--join] <cmd>...
+  panes                         every pane, who joined it, and its kind
+  spawn <name> [--tab | --beside|--below|--above <member>] [--join]
+        [--kind <kind>] <cmd>...
                                 open a pane running <cmd> for <name>: beside
                                 this one, in a new tab, or right of, under,
-                                or over <member>'s
+                                or over <member>'s; its kind is read from
+                                <cmd> unless given
   move <name> --beside|--below|--above <member>
                                 move <name>'s pane right of, under, or over
                                 <member>'s, its agent still running

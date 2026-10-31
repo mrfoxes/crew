@@ -10,6 +10,9 @@
 
 tmux() { echo "tmux $*"; }
 term_read() { fixture_read; }
+# The agent a join runs under: none, unless a check says otherwise; the
+# tests run under whatever agent runs them.
+kind_of_self() { :; }
 
 # The stream: init, numbering under contention, routing, and the lock.
 git init -q "$tmp/repo"
@@ -134,13 +137,13 @@ term_list() { printf 'tmux:%%7\t/dev/ttys001\tsh\n'; }
 check "a pane the terminal lists" "1" "$(term_gone tmux:%7; echo $?)"
 check "a pane the terminal lost" "0" "$(term_gone tmux:%8; echo $?)"
 check "a pane of a terminal that cannot be asked" "1" "$(term_gone iterm:X; echo $?)"
-check "join with a pane" "You are claude, in the crew at $dir, in the pane tmux:%7: a message to you is typed into it." "$(crew_join claude --pane 'tmux:%7' | sed -n 1p)"
+check "join with a pane" "You are claude, of kind other, in the crew at $dir, in the pane tmux:%7: a message to you is typed into it." "$(crew_join claude --pane 'tmux:%7' | sed -n 1p)"
 check "join keeps the pane" "tmux:%7" "$(cat "$dir/panes/claude")"
 check "join refuses a recipient" "2" "$(crew_join all >/dev/null 2>&1; echo $?)"
 # A sandbox that hides the pane does not lose the one spawn recorded.
 term_self() { return 1; }
 check "join from a hidden pane keeps the spawned one" "tmux:%7" "$(crew_join claude >/dev/null; cat "$dir/panes/claude")"
-check "join from nowhere says so" "You are agy, in the crew at $dir, in no pane crew can find: run 'crew unread agy' often." "$(crew_join agy | sed -n 1p)"
+check "join from nowhere says so" "You are agy, of kind codex, in the crew at $dir, in no pane crew can find: run 'crew unread agy' often." "$(crew_join agy | sed -n 1p)"
 # A subject is one line.
 f=$(echo x | crew_send codex agy "Heads-up: one
 two")
@@ -186,7 +189,7 @@ check "show a missing one" "1" "$(crew_show 9999 >/dev/null 2>&1; echo $?)"
 # Status and report from stdin, and the age of a status on the board.
 check "status" "$dir/status/agy.md" "$(printf 'Agent: agy\nNext: nothing\n' | crew_write status agy)"
 check "status written" "Next: nothing" "$(sed -n 2p "$dir/status/agy.md")"
-check "board shows the age" "1" "$(crew_board 1 | grep -c '^== agy (no pane, 0 min ago)$')"
+check "board shows the age and the kind" "1" "$(crew_board 1 | grep -c '^== agy (codex, no pane, 0 min ago)$')"
 check "report" "$dir/reports/agy.md" "$(echo finished | crew_write report agy)"
 check "status wants a name" "2" "$(echo x | crew_write status >/dev/null 2>&1; echo $?)"
 check "gate wants a name" "2" "$(gate_setup --dry >/dev/null 2>&1; echo $?)"
@@ -220,7 +223,7 @@ check "join drops a recorded pane that is gone" "tmux:%7" "$(crew_join codex >/d
 term_self() { return 1; }
 check "join records the thread" "abc-123" "$(CODEX_THREAD_ID=abc-123 crew_join codex >/dev/null; cat "$dir/threads/codex")"
 rm -f "$dir/panes/codex"
-check "join with a thread and no pane says so" "You are codex, in the crew at $dir, in no pane crew can find; a message to you is queued to your Codex thread." "$(crew_join codex | sed -n 1p)"
+check "join with a thread and no pane says so" "You are codex, of kind codex, in the crew at $dir, in no pane crew can find; a message to you is queued to your Codex thread." "$(crew_join codex | sed -n 1p)"
 check "self in Codex ignores the daemon's pane" "1" "$(CODEX_THREAD_ID=abc ITERM_SESSION_ID=w0t0p0:X term_self >/dev/null; echo $?)"
 # The wake goes through the thread first, the pane when the thread is gone,
 # and to every member with either.
@@ -254,7 +257,7 @@ check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/th
 # The board tells a pane that is gone.
 printf 'Agent: agy\n' >"$dir/status/agy.md"
 echo "tmux:%8" >"$dir/panes/agy"
-check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (tmux:%8 gone, 0 min ago)$')"
+check "board tells a pane that is gone" "1" "$(crew_board 1 | grep -c '^== agy (codex, tmux:%8 gone, 0 min ago)$')"
 printf 'Agent: claude\n' >"$dir/status/claude.md"
 check "board tells a pane that is there" "1" "$(crew_board 1 | grep -c '^== claude (tmux:%7, 0 min ago)$')"
 crew_mute claude >/dev/null

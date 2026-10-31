@@ -130,6 +130,12 @@ gate_look() {
     other) why="not a command" ;;
     *) why=$(gate_forbidden "$gate_rules" "$command") || why=$(gate_forbidden "$gate_rules" "$tight") || why="" ;;
     esac
+    # The key that answers yes is the kind's (share/kinds): a kind with
+    # none has its prompts held.
+    if [ -z "$why" ]; then
+        key=$(kind_field "$kind" approve)
+        [ -n "$key" ] || why="no key approves a $kind prompt"
+    fi
     if [ -n "$why" ]; then
         gate_say "$held" "HOLD $name ($why): $command"
         return
@@ -142,10 +148,6 @@ gate_look() {
     # withdrawn, scrolled away. A key then lands in the agent's composer, so
     # read again and press only for the same prompt.
     [ "$(term_read "$pane" 2>/dev/null | gate_prompt)" = "$prompt" ] || return 0
-    case "$kind" in
-    codex) key=y ;;
-    claude) key=enter ;;
-    esac
     # A press that fails (the terminal busy, the pane just closed) is said
     # once and tried again at the next look: the gate itself goes on.
     term_key "$pane" "$key" 2>/dev/null || {

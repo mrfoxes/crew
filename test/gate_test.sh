@@ -164,5 +164,18 @@ rm -f "$gate_state/answered/codex"
 show codex-run codex-run
 check "gate presses for the same prompt" "pressed y
 12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+# The key that answers yes is the kind's (share/kinds): the owner's kinds
+# can change it, and a kind with none has its prompts held.
+mkdir -p "$XDG_CONFIG_HOME/crew"
+echo 'codex codex CODEX_THREAD_ID › enter #000000' >"$XDG_CONFIG_HOME/crew/kinds"
+rm -f "$gate_state/answered/codex"
+show codex-run codex-run
+check "gate presses the kind's key" "pressed enter
+12:00:00 approved codex: cargo test --test editors" "$(gate_look codex tmux:%1)"
+echo 'codex codex CODEX_THREAD_ID › - #000000' >"$XDG_CONFIG_HOME/crew/kinds"
+rm -f "$gate_state/answered/codex" "$gate_state/held/codex"
+show codex-run
+check "gate holds a kind with no key" "12:00:00 HOLD codex (no key approves a codex prompt): cargo test --test editors" "$(gate_look codex tmux:%1)"
+rm -r "$XDG_CONFIG_HOME/crew"
 
 finish
