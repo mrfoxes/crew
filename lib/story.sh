@@ -15,12 +15,6 @@ story_source() {
     esac
 }
 
-# The subject of the message <file>: its first line, after the number and
-# the names.
-story_subject() {
-    sed -n '1s/^# [0-9]*\. [^:]*: //p' "$1"
-}
-
 # The plan and the Crewfile of the crew <dir>, whole, when it has them.
 story_plan() {
     if [ -f "$1/README.md" ]; then
@@ -70,38 +64,48 @@ story_stream() {
 }
 
 # The commits landed in <src>: each Pushed: with who landed it, and the
-# Review: that answered it, or that it still waits for one.
+# Review: that answered it, or that it still waits for one. One awk pass
+# reads every header (the number, From, To, and the subject), so a long
+# session costs no more than its messages.
 story_commits() {
-    s_lines=""
-    for n in $(ls "$1/seq" 2>/dev/null | sort -n); do
-        s_subject=$(story_subject "$1/seq/$n")
-        case "$s_subject" in
-        "Pushed: "*) ;;
-        *) continue ;;
-        esac
-        s_hash=$(printf '%s\n' "$s_subject" | awk '{ print $2 }')
-        s_from=$(crew_field "$1/seq/$n" From)
-        s_to=$(crew_field "$1/seq/$n" To)
-        s_review=""
-        for m in $(ls "$1/seq" | sort -n); do
-            [ "$m" -gt "$n" ] || continue
-            s_answer=$(story_subject "$1/seq/$m")
-            case "$s_answer" in
-            "Review: "*"$s_hash"*)
-                s_review=$(printf '%s (%04d, %s)' "$s_answer" "$m" "$(crew_field "$1/seq/$m" From)")
-                break
-                ;;
-            esac
-        done
-        [ -n "$s_review" ] || s_review="waiting for $s_to's review"
-        s_lines="$s_lines- ${s_subject#Pushed: }, landed by $s_from ($(printf '%04d' "$n")), $s_review
-"
+    s_src=$1
+    set --
+    for n in $(ls "$s_src/seq" | sort -n); do
+        set -- "$@" "$s_src/seq/$n"
     done
+    [ $# -gt 0 ] || return 0
+    s_lines=$(awk '
+        FNR == 1 {
+            i++
+            match($0, /^# [0-9]+\./)
+            number[i] = substr($0, 3, RLENGTH - 3)
+            subject[i] = $0
+            sub(/^# [0-9]+\. [^:]*: /, "", subject[i])
+        }
+        FNR == 3 { from[i] = $0; sub(/^From: /, "", from[i]) }
+        FNR == 4 { to[i] = $0; sub(/^To: /, "", to[i]) }
+        END {
+            for (p = 1; p <= i; p++) {
+                if (subject[p] !~ /^Pushed: /) continue
+                rest = substr(subject[p], 9)
+                hash = rest
+                sub(/ .*/, "", hash)
+                review = ""
+                for (r = p + 1; r <= i; r++) {
+                    if (subject[r] ~ /^Review: / && index(subject[r], hash) > 0) {
+                        review = subject[r] " (" number[r] ", " from[r] ")"
+                        break
+                    }
+                }
+                if (review == "") review = "waiting for " to[p] "'"'"'s review"
+                printf "- %s, landed by %s (%s), %s\n", rest, from[p], number[p], review
+            }
+        }' "$@")
     [ -n "$s_lines" ] || return 0
     echo
     echo "## The commits"
     echo
-    printf '%s' "$s_lines"
+    printf '%s\n' "$s_lines"
 }
 
 # The reports in <src>, each under the member's name, and the patches left.
