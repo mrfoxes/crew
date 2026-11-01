@@ -175,9 +175,14 @@ check "bob reads the Pushed:" "0" "$(crew unread bob 2>/dev/null | grep -q 'Push
 crew down 1 --close >"$tmp/down.out" 2>&1 &
 down_pid=$!
 check "End: is sent" "0" "$(wait_for 20 grep -q 'End:' "$tmp/down.out"; echo $?)"
+# The End: wakes ada with a line typed into its pane: "!exit" waits until
+# that line is in, or the two are typed into one line and ada never leaves
+# (macOS CI saw it).
+check "ada is woken for End:" "0" "$(wait_for 20 grep -q 'from owner\. Run: crew unread ada' "$tmp/log/ada.in"; echo $?)"
 tm send-keys -t "${ada#tmux:}" -l '!exit'
 tm send-keys -t "${ada#tmux:}" Enter
-agent_left() { [ "$(tm display-message -p -t "${ada#tmux:}" '#{pane_current_command}')" != claude ]; }
+# tmux names the command by its path on macOS: compare its last part.
+agent_left() { [ "$(tm display-message -p -t "${ada#tmux:}" '#{pane_current_command}' | sed 's#.*/##')" != claude ]; }
 check "ada's agent left its pane" "0" "$(wait_for 20 agent_left; echo $?)"
 # crew down closes a pane once ps shows only a shell in its foreground, as
 # term_running reads it; tmux's pane_current_command can turn first, with a
