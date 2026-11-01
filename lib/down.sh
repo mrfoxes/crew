@@ -106,15 +106,25 @@ down_wait() {
                 dn_done="$dn_done$dn_m "
                 continue
             fi
-            case $(down_state "$1" "$dn_m" "$4") in
+            dn_state=$(down_state "$1" "$dn_m" "$4")
+            case "$dn_state" in
+            running)
+                dn_left="$dn_left $dn_m"
+                continue
+                ;;
+            esac
+            # A member that sends its Done: and leaves in one instant is
+            # seen to have left before its Done: is read: read it again.
+            if down_done "$1" "$dn_m" "$5"; then
+                echo "$dn_m: Done: sent"
+                dn_done="$dn_done$dn_m "
+                continue
+            fi
+            case "$dn_state" in
             none) dn_why="has no pane" ;;
             self) dn_why="is this pane, the coordinator's" ;;
             gone) dn_why="has no pane any more" ;;
             exited) dn_why="has exited" ;;
-            *)
-                dn_left="$dn_left $dn_m"
-                continue
-                ;;
             esac
             echo "$dn_m: $dn_why: the wait does not hold for it"
             dn_free="$dn_free$dn_m "

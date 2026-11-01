@@ -175,4 +175,23 @@ term_tty() { return 1; }
 term_close() { echo "CLOSED $1"; }
 check "a pane of unknown state is left open" "tmux:%77: crew cannot tell what runs there: left open" "$(down_close tmux:%77)"
 
+# A member that sends its Done: and exits in one instant: the Done: is not
+# there when the wait looks for it, and the pane is gone when it looks at
+# the pane. It is a Done:, not a member that left without one.
+race=$tmp/race
+mkdir -p "$race/seq"
+printf '# 0005. owner to all: End: stop\n' >"$race/seq/5"
+down_state() {
+    printf '# 0006. ada to all: Done: nothing left\n' >"$race/seq/6"
+    echo exited
+}
+out=$(down_wait "$race" 1 "ada" "" 5 2>&1)
+status=$?
+check "a Done: sent as the agent exits counts" "ada: Done: sent" "$out"
+check "and the wait ends clean" "0" "$status"
+rm "$race/seq/6"
+down_state() { echo exited; }
+out=$(down_wait "$race" 1 "ada" "" 5 2>&1)
+check "an exit with no Done: still frees the wait" "ada: has exited: the wait does not hold for it" "$out"
+
 finish
