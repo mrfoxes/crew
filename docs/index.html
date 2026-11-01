@@ -213,7 +213,8 @@ crew down --archive --close</code></pre>
             <code>crew up</code> reads <code>.crew/Crewfile</code>, opens the watch and live board in
             <code>main</code>, spawns each member in its own clone (<code>../crew-&lt;name&gt;</code>)
             across <code>agy</code> and <code>advisors</code>, lays out the tabs, and invites every
-            member:
+            member (the owner's dollar amounts and budget are cut from this copy; the tokens are as
+            <code>crew story</code> printed them):
           </p>
           <pre><code># The crew of crew
 
@@ -236,19 +237,19 @@ member sonnet2 clone reviewer=agy2 -- claude --model claude-sonnet-5-5
 member sonnet3 clone reviewer=agy3 -- claude --model claude-sonnet-5-5
 # Two advisors for the ideas, in clones of their own too.
 tab advisors layout=grid
-member astra clone reviewer=fable budget=70 -- codex -m gpt-6-astra
+member astra clone reviewer=fable -- codex -m gpt-6-astra
 member fable clone reviewer=sonnet2 -- claude --model claude-fable-5-1
 
 ## The members
 
-- agy1 (agy, tab agy, clone ../crew-agy1, reviewed by sonnet1): 18.5M tokens  $7.02
-- agy2 (agy, tab agy, clone ../crew-agy2, reviewed by sonnet2): 38.8M tokens  $13.23
-- agy3 (agy, tab agy, clone ../crew-agy3, reviewed by sonnet3): 21.3M tokens  $7.74
-- astra (codex, tab advisors, clone ../crew-astra, reviewed by fable): 45.3M tokens  $55.78  $3.54 in the last hour
-- fable (claude, tab advisors, clone ../crew-fable, reviewed by sonnet2): 79.5M tokens  $40.20  $5.99 in the last hour
-- sonnet1 (claude, tab agy, clone ../crew-sonnet1, reviewed by agy1): 29.2M tokens  $7.32  $2.34 in the last hour
-- sonnet2 (claude, tab agy, clone ../crew-sonnet2, reviewed by agy2): 42.0M tokens  $10.59  $3.69 in the last hour
-- sonnet3 (claude, tab agy, clone ../crew-sonnet3, reviewed by agy3): 29.2M tokens  $7.25  $1.80 in the last hour</code></pre>
+- agy1 (agy, tab agy, clone ../crew-agy1, reviewed by sonnet1): 18.5M tokens
+- agy2 (agy, tab agy, clone ../crew-agy2, reviewed by sonnet2): 38.8M tokens
+- agy3 (agy, tab agy, clone ../crew-agy3, reviewed by sonnet3): 21.3M tokens
+- astra (codex, tab advisors, clone ../crew-astra, reviewed by fable): 45.3M tokens
+- fable (claude, tab advisors, clone ../crew-fable, reviewed by sonnet2): 79.5M tokens
+- sonnet1 (claude, tab agy, clone ../crew-sonnet1, reviewed by agy1): 29.2M tokens
+- sonnet2 (claude, tab agy, clone ../crew-sonnet2, reviewed by agy2): 42.0M tokens
+- sonnet3 (claude, tab agy, clone ../crew-sonnet3, reviewed by agy3): 29.2M tokens</code></pre>
         </div>
 
         <div class="story-item" id="moment-plan">
