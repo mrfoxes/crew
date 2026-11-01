@@ -413,6 +413,7 @@ member tess                              # started and joined by hand
 ```
 crew up                     # the crew of the Crewfile, up or back
 crew up --dry               # what it would do, touching nothing
+crew up --fresh             # an agent brought back starts a new conversation
 crew up pair                # start the Crewfile from the preset pair
 ```
 
