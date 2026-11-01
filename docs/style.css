@@ -13,8 +13,8 @@
   --line-2: rgba(255, 255, 255, 0.13);
   --fg: #e9ebf2;
   --fg-2: #c3c7d4;
-  --muted: #8b92a5;
-  --faint: #858da3;
+  --muted: #b8c0d0;
+  --faint: #9fa8bc;
   --claude: #d97757;
   --codex: #10a37f;
   --agy: #4285f4;
@@ -656,6 +656,7 @@ h1 {
   animation-timing-function: linear;
   animation-delay: 0.8s;
   animation-iteration-count: infinite;
+  animation-fill-mode: backwards;
 }
 
 .tl-c1, .tl-a1 { animation-name: tl-1; }
@@ -676,11 +677,12 @@ h1 {
   position: absolute;
   inset: -2px -5px;
   border-radius: 4px;
-  background: rgba(255, 92, 108, 0.26);
+  background: rgba(255, 92, 108, 0.12);
   box-shadow: inset 0 0 0 1px rgba(255, 92, 108, 0.5);
   opacity: 0;
   pointer-events: none;
   animation: tl-hold-flash 12s linear 0.8s infinite;
+  animation-fill-mode: backwards;
 }
 
 .board-pane .st-work,
@@ -700,10 +702,11 @@ h1 {
   animation-timing-function: steps(1, end);
   animation-delay: 0.8s;
   animation-iteration-count: infinite;
+  animation-fill-mode: backwards;
 }
 
 .board-pane .st-work::after {
-  content: "prompt ";
+  content: "prompt " / "";
   color: var(--warn);
   animation-name: st-claude;
 }
@@ -713,7 +716,7 @@ h1 {
 }
 
 .board-pane .st-prompt::after {
-  content: "working";
+  content: "working" / "";
   color: var(--ok);
   animation-name: st-codex;
 }
@@ -1447,6 +1450,19 @@ td code, th code {
 @keyframes rise {
   from { opacity: 0; transform: translateY(28px); }
   to { opacity: 1; transform: none; }
+}
+
+/* The visibility observer pauses decorative timelines outside the viewport. */
+.hero.motion-offscreen,
+.hero.motion-offscreen::before,
+.hero.motion-offscreen::after,
+.hero.motion-offscreen *,
+.hero.motion-offscreen *::before,
+.hero.motion-offscreen *::after,
+.backdrop.motion-offscreen::before,
+.backdrop.motion-offscreen::after,
+.kicker.motion-offscreen::after {
+  animation-play-state: paused !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

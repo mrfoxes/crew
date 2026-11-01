@@ -894,6 +894,26 @@ relay.pid, relay.last      the relay's heartbeat and last number, while one runs
         });
       });
     })();
+    (function () {
+      if (!window.IntersectionObserver) return;
+      var reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+      var targets = document.querySelectorAll('.hero, .backdrop, .kicker');
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          entry.target.classList.toggle('motion-offscreen', !entry.isIntersecting);
+        });
+      });
+      function observe() {
+        observer.disconnect();
+        targets.forEach(function (target) {
+          target.classList.toggle('motion-offscreen', reduced.matches);
+          if (!reduced.matches) observer.observe(target);
+        });
+      }
+      if (reduced.addEventListener) reduced.addEventListener('change', observe);
+      else reduced.addListener(observe);
+      observe();
+    })();
   </script>
 </body>
 </html>

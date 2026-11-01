@@ -65,12 +65,86 @@ check "table code wraps" "1" \
 check "the pane grid lets its items shrink" "1" \
     "$(grep -c 'repeat(3, minmax(0, 1fr))' "$css" | awk '$1 >= 1 { print 1 }')"
 
-# No external script or stylesheet is loaded from another host.
-ext_assets=$(
-    grep -E '<(script|link)[^>]+(src|href)="https?://' "$html" |
-        grep -v 'fonts\.' || :
-)
-check "no external script or style host" "" "$ext_assets"
+# Resource tags may load only local files or the two font hosts. Match the
+# host boundary: a URL that merely contains "fonts." is not an exception.
+# Navigation links to GitHub are not requests made by loading the page.
+ext_assets=$(awk 'BEGIN { RS = "<" }
+    /^[[:space:]]*(script|link|img|iframe|video|audio|source|object|embed)[[:space:]]/ {
+        sub(/>.*/, "")
+        tag = $0
+        while (match($0, /(src|href|poster|data)="[^"]*"/)) {
+            url = substr($0, RSTART, RLENGTH)
+            sub(/^[^=]*="/, "", url); sub(/"$/, "", url)
+            if (url ~ /^(https?:)?\/\// &&
+                !(tag ~ /^link[[:space:]]/ &&
+                  url ~ /^https:\/\/fonts\.(googleapis|gstatic)\.com(\/|$)/)) print url
+            $0 = substr($0, RSTART + RLENGTH)
+        }
+    }' "$html")
+check "resource hosts are local or Google Fonts" "" "$ext_assets"
+
+# File budgets catch accidental growth and missing motion gates without a
+# browser dependency. Runtime behavior and contrast are measured in #62.
+bg=$CREW_HOME/docs/bg.js
+check "the background script exists" "1" "$([ -f "$bg" ] && echo 1 || echo 0)"
+if [ -f "$bg" ]; then
+    check "bg.js is below 8 KiB" "1" \
+        "$(wc -c <"$bg" | awk '$1 < 8192 { print 1 }')"
+fi
+
+# Inline scripts have the same motion and network budget as separate files.
+inline=$tmp/inline.js
+awk '/^[[:space:]]*<script>/ { inside = 1; next }
+    /^[[:space:]]*<\/script>/ { inside = 0 }
+    inside { print }' "$html" >"$inline"
+for asset in "$CREW_HOME"/docs/*.css "$CREW_HOME"/docs/*.js "$inline"; do
+    [ -f "$asset" ] || continue
+    name=${asset##*/}
+    # Ignore comments so a description of a missing guard cannot pass it.
+    code=$tmp/site-$name
+    awk '
+        /^[[:space:]]*\/\// { next }
+        {
+            line = $0
+            text = ""
+            while (length(line)) {
+                if (comment) {
+                    end = index(line, "*/")
+                    if (!end) break
+                    line = substr(line, end + 2); comment = 0
+                } else {
+                    start = index(line, "/*")
+                    if (!start) { text = text line; break }
+                    text = text substr(line, 1, start - 1)
+                    line = substr(line, start + 2); comment = 1
+                }
+            }
+            print text
+        }' "$asset" >"$code"
+    if grep -Eq '@keyframes|(animation|transition)(-[a-z-]+)?[[:space:]]*:|requestAnimationFrame|IntersectionObserver|\.animate[[:space:]]*[(]' "$code"; then
+        check "$name handles reduced motion" "1" \
+            "$(grep -Eq 'prefers-reduced-motion[[:space:]]*:[[:space:]]*reduce' "$code" && echo 1 || echo 0)"
+    fi
+    if [ "$asset" = "$bg" ]; then
+        check "bg.js observes tab visibility" "1" \
+            "$(grep -Eq 'addEventListener[(][^,]*visibilitychange' "$code" && echo 1 || echo 0)"
+        check "bg.js can cancel its animation frame" "1" \
+            "$(grep -Eq 'cancelAnimationFrame[[:space:]]*[(]' "$code" && echo 1 || echo 0)"
+    fi
+    case "$asset" in
+    *.css)
+        # Local CSS needs no imports or external URLs; fonts come from the
+        # explicit, allowlisted link in index.html.
+        check "$name has no remote resources or imports" "" \
+            "$(grep -Ei '@import|url[(][^)]*//' "$code" || :)"
+        ;;
+    *.js)
+        # These scripts animate or copy text. They have no network job.
+        check "$name has no network API or remote URL" "" \
+            "$(grep -En "fetch[[:space:]]*[(]|XMLHttpRequest|WebSocket|EventSource|sendBeacon[[:space:]]*[(]|https?://|[\"']//" "$code" || :)"
+        ;;
+    esac
+done
 
 # The site is dark by design (color-scheme: dark), and has a mobile breakpoint.
 check "the site is dark by design" "1" \
