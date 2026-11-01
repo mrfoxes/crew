@@ -41,7 +41,9 @@ check "a commit waiting for its review" "1" "$(printf '%s\n' "$story" | grep -c 
 check "the reports, each under its name" "claude codex" "$(printf '%s\n' "$story" | sed -n 's/^### //p' | tr '\n' ' ' | sed 's/ $//')"
 check "a patch left" "1" "$(printf '%s\n' "$story" | grep -c '^A patch left by codex: reports/codex.patch$')"
 
-# From the archive, once the stream is put aside.
+# From the archive, once the stream is put aside. The archive is named after
+# the second, here always the same one, so the next archive must keep apart.
+date() { case "$1" in '+%Y-%m-%d-%H%M%S') echo 2026-11-01-000000 ;; *) command date "$@" ;; esac; }
 when=$(basename "$(crew_archive)")
 check "the live crew has no message now" "No message yet." "$(crew_story | sed -n 3p)"
 check "the archive tells the same story" "0001 0002 0003 0004" "$(crew_story "$when" | sed -n 's/^# \([0-9]*\)\. .*/\1/p' | tr '\n' ' ' | sed 's/ $//')"
@@ -55,5 +57,7 @@ rm "$dir/Crewfile"
 echo go | crew_send codex all "Plan: again" >/dev/null
 check "down --archive saves the story" "1" "$(crew_down --archive >/dev/null; ls "$dir"/archive/*/story.md | wc -l | tr -d ' ')"
 check "and the story is the archived session" "1" "$(cat "$dir"/archive/*/story.md | grep -c '^# 0001\. codex to all: Plan: again$')"
+check "two archives in one second keep apart" "2" "$(ls "$dir/archive" | wc -l | tr -d ' ')"
+check "and the second is named after the first" "1" "$([ -d "$dir/archive/2026-11-01-000000-2" ] && echo 1)"
 
 finish

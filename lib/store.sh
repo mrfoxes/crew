@@ -546,6 +546,14 @@ crew_archive() {
         return
     fi
     to=$dir/archive/$(date '+%Y-%m-%d-%H%M%S')
+    # A second archive in the same second would move into the first, nested:
+    # a free name, -2 onward, keeps them apart.
+    ar_base=$to
+    ar_n=1
+    while [ -e "$to" ]; do
+        ar_n=$((ar_n + 1))
+        to=$ar_base-$ar_n
+    done
     mkdir -p "$to"
     for d in messages seq cursors status reports; do
         mv "$dir/$d" "$to/"
