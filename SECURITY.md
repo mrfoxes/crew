@@ -45,6 +45,24 @@ checkout, then fetched from and landed through the project's own
 GitHub for CI through `gh` when it is installed, which `crew doctor`
 checks with `gh auth status`. Nothing else leaves this machine.
 
+## The installer
+
+`install.sh` downloads a release and checks its tarball against the
+`SHA256SUMS` of the same release: that catches a broken or truncated
+download, not a compromised release, since both come from the same
+place. To read the script before it runs:
+
+```
+curl -fsSLO https://github.com/mrfoxes/crew/releases/latest/download/install.sh
+less install.sh
+sh install.sh
+```
+
+It writes under `${XDG_DATA_HOME:-~/.local/share}/crew/`, links
+`~/.local/bin/crew` (or what `--prefix` names), and touches nothing
+else; it never asks for `sudo`. `crew update` runs the latest release's
+`install.sh` the same way.
+
 ## Reporting a vulnerability
 
 Report it privately through GitHub's vulnerability reporting for the

@@ -1,0 +1,42 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: for f in bin/crew lib/*.sh test/*.sh install.sh .github/package.sh; do sh -n "$f"; done
+      - name: ShellCheck
+        run: |
+          command -v shellcheck >/dev/null || brew install shellcheck
+          shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh install.sh .github/package.sh
+      - name: Tests
+        run: sh test/run.sh
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Package
+        run: sh .github/package.sh "$GITHUB_REF_NAME" dist
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "crew $GITHUB_REF_NAME" --notes-file dist/notes.md \
+            "dist/crew-$GITHUB_REF_NAME.tar.gz" dist/install.sh dist/SHA256SUMS

@@ -34,6 +34,16 @@ daemon, no service, no extension.
 curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh
 ```
 
+The line downloads the latest release and checks it against the release's
+`SHA256SUMS`, unpacks it under `${XDG_DATA_HOME:-~/.local/share}/crew/<version>/`,
+points `crew/current` at it, links `~/.local/bin/crew` (or `--prefix <dir>`),
+prints what to add to `PATH` and the completion line for your shell, and
+runs `crew doctor`; it never asks for `sudo`. Run again it upgrades in place
+(`--version vX.Y.Z` picks a release), and `--uninstall` removes the link and
+`crew/`, nothing else; `SECURITY.md` says how to read the script first.
+`crew update` says which version runs and which release is the latest, and
+installs the latest unless `--check`; a checkout is told to `git pull`.
+
 Or from a checkout anywhere on disk:
 
 ```
@@ -226,7 +236,8 @@ Crewfile gives a reviewer.
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
 keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
-forgets a pane you closed; `crew version` says which crew this is: the tag
+forgets a pane you closed; `crew version` says which crew this is: a
+release's tag (`crew v1.0.0`), the tag
 when the checkout has one (`crew v1.0.0 (2026-11-02)`, and
 `crew v1.0.0-3-g17aac8d (2026-11-05)` three commits past it), else the commit.
 
@@ -728,6 +739,7 @@ lib/down.sh         crew down: End: sent, Done: waited for, what is left said, p
 lib/clones.sh       a member's clone: made, reused, synced, shown on the board, removed
 lib/land.sh         crew land: check, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
 lib/story.sh        crew story: the session as one document, from the crew or an archive
+lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
@@ -738,10 +750,12 @@ share/kinds         the kinds of agent crew knows
 share/presets/      the Crewfiles crew up starts from: solo, pair, ring
 share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
+install.sh          the one-line install from a release: download, check, unpack, link
+.github/package.sh  what a release holds: the tarball with VERSION, install.sh, SHA256SUMS, the notes
 docs/               the site on GitHub Pages: index.html and style.css, written by hand
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
-.github/workflows/  the tests on Ubuntu and macOS, at every push
+.github/workflows/  the tests on Ubuntu and macOS at every push; a release at every tag v*
 LICENSE             MIT
 CHANGELOG.md        what each version adds, by area, with its issues
 CONTRIBUTING.md     the rules a change follows, and the checks before a push
