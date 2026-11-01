@@ -88,7 +88,7 @@
   background-size: 56px 28px;
   -webkit-mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 18%, rgba(0, 0, 0, 0.65) 54%, transparent 92%);
   mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 18%, rgba(0, 0, 0, 0.65) 54%, transparent 92%);
-  transform-origin: 50% 38%;
+  transform-origin: 50% 100%;
   transform: perspective(520px) rotateX(62deg) translate3d(0, 0, 0);
   will-change: transform;
   animation: fx-grid 2.8s linear infinite;
