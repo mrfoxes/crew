@@ -1,0 +1,23 @@
+name: e2e
+
+# The loop from crew send to a pane to crew unread, in a tmux server of its
+# own (test/e2e_tmux.sh): not part of the test job.
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: tmux
+        run: |
+          command -v tmux >/dev/null || { [ "$(uname)" = Darwin ] && brew install tmux || sudo apt-get install -y tmux; }
+          tmux -V
+      - name: End to end
+        run: sh test/run.sh e2e

@@ -13,6 +13,10 @@ each piece lives.
   command goes in the file whose responsibility it shares, and in `usage`.
 - Nothing may type into a pane without being asked to: tests read captured
   screens from `test/fixtures/`, never live panes.
+  The one exception is `test/e2e_tmux.sh` (`sh test/run.sh e2e`, never part
+  of the rest): it types only into panes it made, in a tmux server of its own
+  on a socket under a temporary directory that it kills on exit, out of reach
+  of the owner's panes.
 - A change to what agents must do updates `share/protocol.md` in the same
   commit; a change to the gate's rules updates `test/gate_test.sh`'s table too.
 - A new prompt format for the gate comes with a fixture captured from the real

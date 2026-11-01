@@ -6,6 +6,8 @@
 #
 #   sh test/run.sh              every area
 #   sh test/run.sh gate term    those areas only
+#   sh test/run.sh e2e          the end-to-end run in a tmux server of its
+#                               own (test/e2e_tmux.sh), never part of the rest
 here=$(cd "$(dirname "$0")" && pwd)
 
 if [ $# -eq 0 ]; then
@@ -13,7 +15,10 @@ if [ $# -eq 0 ]; then
 else
     for area in "$@"; do
         shift
-        set -- "$@" "$here/${area}_test.sh"
+        case "$area" in
+        e2e) set -- "$@" "$here/e2e_tmux.sh" ;;
+        *) set -- "$@" "$here/${area}_test.sh" ;;
+        esac
     done
 fi
 status=0
@@ -28,6 +33,7 @@ for f in "$@"; do
     printf '%s\n' "$line"
     area=${f##*/}
     area=${area%_test.sh}
+    area=${area%_tmux.sh}
     summary=$(printf '%s\n' "$line" | tail -n 1)
     if ! printf '%s\n' "$summary" | awk -v area="$area" '
         $2 ~ /^[0-9]+$/ && $0 == (area ": " $2 " passed, 0 failed") { complete = 1 }
@@ -39,6 +45,6 @@ for f in "$@"; do
 "
 done
 # Every file ends with "<area>: <n> passed, <m> failed".
-printf '%s' "$out" | awk '/^[a-z-]+: [0-9]+ passed, [0-9]+ failed$/ { p += $2; f += $4 }
+printf '%s' "$out" | awk '/^[a-z0-9-]+: [0-9]+ passed, [0-9]+ failed$/ { p += $2; f += $4 }
     END { printf "%d passed, %d failed\n", p, f }'
 exit "$status"
