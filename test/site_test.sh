@@ -45,10 +45,11 @@ for a in $anchors; do
         "$(grep -q "id=\"$a\"" "$html" && echo 1 || echo 0)"
 done
 
-# Every local file referenced by href= or src= exists in docs/.
+# Every local file referenced by href= or src= exists in docs/; a link to
+# another host (GitHub, the fonts) is not fetched.
 local_refs=$(
     sed -n 's/.*\(href\|src\)="\([^"#][^"]*\)".*/\2/p' "$html" |
-        grep -v '^https://github\.com/mrfoxes/crew' | sort -u
+        grep -v '^https\{0,1\}://' | sort -u
 )
 for ref in $local_refs; do
     check "local asset $ref exists" "1" \
@@ -71,9 +72,9 @@ ext_assets=$(
 )
 check "no external script or style host" "" "$ext_assets"
 
-# Light and dark theme rules and mobile breakpoint in style.css.
-check "dark theme media query in style.css" "1" \
-    "$(grep -q 'prefers-color-scheme: dark' "$css" && echo 1 || echo 0)"
+# The site is dark by design (color-scheme: dark), and has a mobile breakpoint.
+check "the site is dark by design" "1" \
+    "$(grep -q 'color-scheme: dark' "$css" && echo 1 || echo 0)"
 check "mobile media query in style.css" "1" \
     "$(grep -q '@media (max-width:' "$css" && echo 1 || echo 0)"
 

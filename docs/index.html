@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>crew: Coding agents side by side, in panes you can see</title>
   <meta name="description" content="Coding agents side by side, in panes you can see. A few POSIX shell scripts for iTerm2 and tmux: no daemon, no service, no extension.">
+  <meta name="theme-color" content="#05060a">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <div class="backdrop" aria-hidden="true"></div>
+
   <header class="site-header">
     <div class="wrap nav-bar">
       <a class="brand" href="#top"><svg class="mark" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><rect x="1" y="3" width="6.4" height="18" rx="1.6" fill="#d97757"/><rect x="8.8" y="3" width="6.4" height="18" rx="1.6" fill="#10a37f"/><rect x="16.6" y="3" width="6.4" height="18" rx="1.6" fill="#4285f4"/></svg><span>crew</span></a>
@@ -19,13 +25,14 @@
         <a class="nav-more" href="#cost">Cost</a>
         <a href="#reference">Reference</a>
         <a class="nav-more" href="#requirements">Requirements</a>
-        <a href="https://github.com/mrfoxes/crew">GitHub</a>
+        <a class="nav-gh" href="https://github.com/mrfoxes/crew">GitHub</a>
       </nav>
     </div>
   </header>
 
-  <main id="top" class="wrap">
-    <div class="hero">
+  <main id="top">
+    <section class="hero wrap">
+      <a class="eyebrow" href="https://github.com/mrfoxes/crew/releases/tag/v1.0.0"><span class="pulse" aria-hidden="true"></span>v1.0.0 is out<span class="eyebrow-sep" aria-hidden="true">/</span>MIT<span class="eyebrow-sep" aria-hidden="true">/</span>POSIX sh</a>
       <h1>Coding agents side by side, <br class="narrow">in panes you can see.</h1>
       <p class="subtitle">
         A few POSIX shell scripts for iTerm2 and tmux: no daemon, no service, no extension.
@@ -34,8 +41,13 @@
       </p>
 
       <div class="install-box" aria-label="Install command">
+        <span class="install-prompt" aria-hidden="true">$</span>
         <code id="install-cmd">curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh</code>
         <button class="copy-btn" type="button" id="copy-install">Copy</button>
+      </div>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="#quickstart">Sixty seconds to a crew</a>
+        <a class="btn btn-ghost" href="https://github.com/mrfoxes/crew">Read the source</a>
       </div>
 
       <div class="term-window" role="region" aria-label="Terminal tab with three members, the live board, and the watch">
@@ -83,10 +95,10 @@ gate: 112 passed, 0 failed</div>
                 <span class="pane-meta">reviewed by claude</span>
               </div>
               <div class="pane-body">crew: message 0036 from claude. Run: crew unread agy
-Checking commit 3fe68d8 with git show 3fe68d8...
+Checking commit cc809c1 with git show cc809c1...
 doctor: 62 passed, 0 failed</div>
             </div>
-            <div class="pane-prompt">&gt; crew send agy claude "Review: 3fe68d8 clean, one doc nit"</div>
+            <div class="pane-prompt">&gt; crew send agy claude "Review: cc809c1 clean, one doc nit"</div>
           </div>
         </div>
 
@@ -94,10 +106,10 @@ doctor: 62 passed, 0 failed</div>
           <div class="board-pane">
             <div class="pane-title">crew board --live</div>
             <pre>member   <span class="col-wide">kind    tab   </span>state    issue                        <span class="col-wide">age  spent</span>
-claude   <span class="col-wide">claude  main  </span>working  #42 gate global flags         <span class="col-wide"> 1m  1.84</span>
-codex    <span class="col-wide">codex   main  </span>prompt   #33 test harness isolation    <span class="col-wide"> 2m  3.10</span>
-agy      <span class="col-wide">agy     main  </span>working  #54 doctor checks Crewfile    <span class="col-wide"> 1m  0.92</span>
-lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 clean   CI: ✓ main</span></pre>
+claude   <span class="col-wide">claude  main  </span><span class="st-work">working</span>  #42 gate global flags         <span class="col-wide"> 1m  1.84</span>
+codex    <span class="col-wide">codex   main  </span><span class="st-prompt">prompt </span>  #33 test harness isolation    <span class="col-wide"> 2m  3.10</span>
+agy      <span class="col-wide">agy     main  </span><span class="st-work">working</span>  #54 doctor checks Crewfile    <span class="col-wide"> 1m  0.92</span>
+lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: cc809c1 clean   CI: ✓ main</span></pre>
           </div>
           <div class="watch-pane pane-extra">
             <div class="pane-title">crew watch --all</div>
@@ -107,30 +119,43 @@ lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 cl
           </div>
         </div>
       </div>
-    </div>
 
-    <section id="promises">
-      <h2>Three promises, and what keeps each</h2>
-      <p>
-        You already run two or three coding agents in terminal tabs by hand. <code>crew</code> keeps
-        everything you have: the same agents, the same panes, the same local <code>git</code>, the same
-        subscriptions, and adds only what hands cannot keep up with across panes.
-      </p>
+      <ul class="hud" aria-label="crew in numbers">
+        <li><span class="hud-num">0</span><span class="hud-label">daemons and services</span></li>
+        <li><span class="hud-num">0</span><span class="hud-label">dependencies beyond sh, awk, sed</span></li>
+        <li><span class="hud-num">3</span><span class="hud-label">kinds: claude, codex, agy</span></li>
+        <li><span class="hud-num">1</span><span class="hud-label">numbered stream you can read</span></li>
+      </ul>
+    </section>
+
+    <section id="promises" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">01</span>Promises</span>
+        <h2>Three promises, and what keeps each</h2>
+        <p class="lede">
+          You already run two or three coding agents in terminal tabs by hand. <code>crew</code> keeps
+          everything you have: the same agents, the same panes, the same local <code>git</code>, the same
+          subscriptions, and adds only what hands cannot keep up with across panes.
+        </p>
+      </header>
       <div class="cards-3">
-        <div class="card">
-          <h3>1. See everything</h3>
+        <article class="card card-claude">
+          <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <h3><span class="card-num">01</span>See everything</h3>
           <p>
             Nothing runs in the background or inside a wrapper window. Every member is an ordinary
             agent session in an iTerm2 or tmux pane tinted in its kind's color, where you can watch
             the screen redraw, focus it, read its last lines, or type straight into it.
           </p>
           <div class="artifact-list">
-            Kept by: <code>crew panes</code>, <code>crew peek</code>, <code>crew poke</code>,
-            <code>crew key</code>, <code>crew focus</code>, <code>crew layout</code>, <code>crew move</code>
+            <span class="artifact-label">Kept by</span>
+            <code>crew panes</code> <code>crew peek</code> <code>crew poke</code>
+            <code>crew key</code> <code>crew focus</code> <code>crew layout</code> <code>crew move</code>
           </div>
-        </div>
-        <div class="card">
-          <h3>2. Read everything</h3>
+        </article>
+        <article class="card card-codex">
+          <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 10h16M4 15h10M4 20h7"/></svg></div>
+          <h3><span class="card-num">02</span>Read everything</h3>
           <p>
             Members talk through one numbered stream of plain Markdown files in
             <code>.crew/messages/</code>. A wake line types only the message number and sender into the
@@ -138,13 +163,15 @@ lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 cl
             reports as plain text.
           </p>
           <div class="artifact-list">
-            Kept by: <code>.crew/messages/NNNN-*.md</code>, <code>.crew/README.md</code>,
-            <code>crew send</code>, <code>crew unread</code>, <code>crew board</code>,
-            <code>crew report</code>, <code>crew archive</code>
+            <span class="artifact-label">Kept by</span>
+            <code>.crew/messages/NNNN-*.md</code> <code>.crew/README.md</code>
+            <code>crew send</code> <code>crew unread</code> <code>crew board</code>
+            <code>crew report</code> <code>crew archive</code>
           </div>
-        </div>
-        <div class="card">
-          <h3>3. Hold everything</h3>
+        </article>
+        <article class="card card-agy">
+          <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 3.5v6c0 5-3.4 8.8-8 10.5-4.6-1.7-8-5.5-8-10.5v-6L12 2z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3><span class="card-num">03</span>Hold everything</h3>
           <p>
             <code>crew gate</code> approves every command prompt it reads that matches no rule in
             <code>share/forbid</code> or <code>.crew/forbid</code>, whatever the command, and holds the
@@ -153,24 +180,33 @@ lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: 3fe68d8 cl
             member's claimed paths, pushes, and wakes the reviewer.
           </p>
           <div class="artifact-list">
-            Kept by: <code>crew gate</code>, <code>forbid</code>, <code>crew lock</code>,
-            <code>Files:</code> claims, <code>crew land</code>, <code>budget=</code>
+            <span class="artifact-label">Kept by</span>
+            <code>crew gate</code> <code>forbid</code> <code>crew lock</code>
+            <code>Files:</code> <code>crew land</code> <code>budget=</code>
           </div>
-        </div>
+        </article>
       </div>
     </section>
 
-    <section id="quickstart">
-      <h2>Sixty seconds from install to <code>crew down</code></h2>
-      <p>
-        One line installs <code>crew</code>; then:
-      </p>
-      <pre><code>curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh</code></pre>
-      <p>
-        From a git repository, check your terminal and installed agents with <code>crew doctor</code>,
-        bring up a crew with <code>crew up</code>, and watch the members work:
-      </p>
-      <pre><code><span class="cmt"># checks terminal, agents, skills, gh, Crewfile, rates</span>
+    <section id="quickstart" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">02</span>Quickstart</span>
+        <h2>Sixty seconds from install to <code>crew down</code></h2>
+        <p class="lede">One line installs <code>crew</code>; then, from a git repository, check your terminal and installed agents with <code>crew doctor</code>, bring up a crew with <code>crew up</code>, and watch the members work.</p>
+      </header>
+      <div class="quick-grid">
+        <ol class="steps">
+          <li><span class="step-title">Install</span><span class="step-text">The release's <code>install.sh</code> checks the tarball against its <code>SHA256SUMS</code> and links <code>~/.local/bin/crew</code>. It never asks for <code>sudo</code>.</span></li>
+          <li><span class="step-title">Check</span><span class="step-text"><code>crew doctor</code> reads your terminal, agents, skills, <code>gh</code>, <code>Crewfile</code>, and rates, and changes nothing.</span></li>
+          <li><span class="step-title">Bring a crew up</span><span class="step-text"><code>crew up pair</code> opens the watch, the live board, and two members, each the other's reviewer.</span></li>
+          <li><span class="step-title">Plan</span><span class="step-text">Write the goal, the lanes, the reviewers, and the end time, then post the first <code>Plan:</code>.</span></li>
+          <li><span class="step-title">Watch</span><span class="step-text"><code>crew board</code> shows statuses, file claims, the lock, messages, git, CI, and cost.</span></li>
+          <li><span class="step-title">End</span><span class="step-text"><code>crew down</code> sends <code>End:</code>, waits for each <code>Done:</code>, and says what is left.</span></li>
+        </ol>
+        <div class="code-window">
+          <div class="code-bar" aria-hidden="true"><span></span><span></span><span></span><em>~/your-project</em></div>
+          <pre><code>curl -fsSL https://github.com/mrfoxes/crew/releases/latest/download/install.sh | sh
+<span class="cmt"># checks terminal, agents, skills, gh, Crewfile, rates</span>
 crew doctor
 <span class="cmt"># opens watch, live board, and two members with a reviewer for each</span>
 crew up pair
@@ -183,30 +219,39 @@ EOF
 crew board
 <span class="cmt"># sends End:, waits for Done:, archives stream, closes exited panes</span>
 crew down --archive --close</code></pre>
-      <p>
+        </div>
+      </div>
+      <p class="note">
         Each member joins with <code>crew join &lt;name&gt;</code>, which prints
         <code>share/protocol.md</code>, the session plan in <code>.crew/README.md</code>, and any
         unread messages. An agent needs no repo-specific instruction file to learn the protocol.
       </p>
     </section>
 
-    <section id="session">
-      <h2>A session as the owner reads it</h2>
-      <p>
-        <code>crew story</code> writes a session as one Markdown document: the plan, the
-        <code>Crewfile</code>, a line per member with its kind, tab, clone, reviewer, and cost, the
-        numbered stream, each <code>Pushed:</code> commit paired with its <code>Review:</code>, and the
-        reports left at the end. These six moments are cut from <code>crew story</code> on the crew of
-        8 members (<code>agy1</code>, <code>agy2</code>, <code>agy3</code>, <code>sonnet1</code>,
-        <code>sonnet2</code>, <code>sonnet3</code>, <code>astra</code>, <code>fable</code>) and a
-        coordinator (<code>coord</code>) that built milestone 1.0 of <code>crew</code> (with cuts
-        marked <code>[...]</code>):
-      </p>
+    <section id="session" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">03</span>A real session</span>
+        <h2>A session as the owner reads it</h2>
+        <p class="lede">
+          <code>crew story</code> writes a session as one Markdown document: the plan, the
+          <code>Crewfile</code>, a line per member with its kind, tab, clone, reviewer, and cost, the
+          numbered stream, each <code>Pushed:</code> commit paired with its <code>Review:</code>, and the
+          reports left at the end. These six moments are cut from <code>crew story</code> on the crew of
+          8 members (<code>agy1</code>, <code>agy2</code>, <code>agy3</code>, <code>sonnet1</code>,
+          <code>sonnet2</code>, <code>sonnet3</code>, <code>astra</code>, <code>fable</code>) and a
+          coordinator (<code>coord</code>) that built milestone 1.0 of <code>crew</code>, with cuts
+          marked <code>[...]</code>.
+        </p>
+        <p class="lede lede-small">
+          The repository's history was rewritten once before 1.0, to take an email address out of it,
+          so the commit hashes in these quotes are given as they are in the published history.
+        </p>
+      </header>
 
-      <div class="story-list">
-        <div class="story-item" id="moment-crewfile">
+      <ol class="timeline">
+        <li class="story-item kind-coord" id="moment-crewfile">
           <div class="story-head">
-            <span>1. The <code>Crewfile</code> and <code>crew up</code>: 8 members in clones</span>
+            <span class="story-title"><span class="story-num">1</span>The <code>Crewfile</code> and <code>crew up</code>: 8 members in clones</span>
             <span class="story-time">21:44:33</span>
           </div>
           <p>
@@ -250,11 +295,11 @@ member fable clone reviewer=sonnet2 -- claude --model claude-fable-5-1
 - sonnet1 (claude, tab agy, clone ../crew-sonnet1, reviewed by agy1): 29.2M tokens
 - sonnet2 (claude, tab agy, clone ../crew-sonnet2, reviewed by agy2): 42.0M tokens
 - sonnet3 (claude, tab agy, clone ../crew-sonnet3, reviewed by agy3): 29.2M tokens</code></pre>
-        </div>
+        </li>
 
-        <div class="story-item" id="moment-plan">
+        <li class="story-item kind-agy" id="moment-plan">
           <div class="story-head">
-            <span>2. The first <code>Plan:</code> and a claim warning answered by <code>Heads-up:</code>: messages <a href="#msg-0001"><code>0001</code></a>, <a href="#msg-0009"><code>0009</code></a>, and <a href="#msg-0010"><code>0010</code></a></span>
+            <span class="story-title"><span class="story-num">2</span>The first <code>Plan:</code> and a claim warning answered by <code>Heads-up:</code>: messages <a href="#msg-0001"><code>0001</code></a>, <a href="#msg-0009"><code>0009</code></a>, and <a href="#msg-0010"><code>0010</code></a></span>
             <span class="story-time">21:44:33 to 22:06:43</span>
           </div>
           <p>
@@ -296,42 +341,45 @@ To: fable
 Time: 2026-10-31 22:06:43
 
 `crew status` warned that you hold `README.md` and `test/cli_test.sh` for #29. I am dropping my claim on both while you land #29; let me know once they are free so I can take them for #53 (meanwhile I will take #54 on `lib/doctor.sh` and `test/doctor_test.sh`).</code></pre>
-        </div>
+        </li>
 
-        <div class="story-item" id="moment-gate">
+        <li class="story-item kind-codex" id="moment-gate">
           <div class="story-head">
-            <span>3. The gate approves a test run and holds a <code>git reset --hard</code>: <code>crew gate</code></span>
-            <span class="story-time">lib/gate.sh</span>
+            <span class="story-title"><span class="story-num">3</span>The gate approves a crew command and holds a rebase: <code>crew watch --all</code></span>
+            <span class="story-time">21:51:19 to 22:05:44</span>
           </div>
           <p>
             While members work, <code>crew watch</code> runs the gate and the relay in one pane: it
-            reads every member's pane every two seconds, approves test runs that break no rule in
-            <code>forbid</code>, and holds destructive commands like <code>git reset --hard</code> for
-            the owner:
+            reads every member's pane every two seconds, approves what breaks no rule in
+            <code>forbid</code>, and holds the rest for the owner. Here it approves a command from
+            Codex's sandbox and holds a rebase, which this crew's own <code>forbid</code> had freed
+            but the watch had not read yet; the gate reads a crew's <code>forbid</code> at each prompt
+            since:
           </p>
-          <pre><code>22:14:08 approved sonnet1: sh test/run.sh
-22:19:42 HOLD astra (git +reset): git reset --hard</code></pre>
-        </div>
+          <pre><code>21:51:19 approved astra: env CREW_DIR=[...] crew unread astra
+[...]
+22:05:44 HOLD astra (git +(stash|restore|clean|rebase|pull|merge|checkout|switch|cherry-pick|am)( |$)): git fetch origin &amp;&amp; git rebase origin/main</code></pre>
+        </li>
 
-        <div class="story-item" id="moment-land">
+        <li class="story-item kind-agy" id="moment-land">
           <div class="story-head">
-            <span>4. <code>crew land</code> and its <code>Pushed:</code>: message <a href="#msg-0034"><code>0034</code></a></span>
+            <span class="story-title"><span class="story-num">4</span><code>crew land</code> and its <code>Pushed:</code>: message <a href="#msg-0034"><code>0034</code></a></span>
             <span class="story-time">22:24:51</span>
           </div>
           <p>
-            After <code>sh test/run.sh</code> passes, <code>agy1</code> lands <code>3fe68d8</code> on
+            After <code>sh test/run.sh</code> passes, <code>agy1</code> lands <code>cc809c1</code> on
             <code>lib/doctor.sh</code> and <code>test/doctor_test.sh</code>, wakes
             <code>sonnet1</code> with <a href="#msg-0034"><code>0034</code></a> (<code>Pushed:</code>),
             and <code>crew story</code> pairs the commit with its review (<a href="#msg-0036"><code>0036</code></a>)
             under <code>## The commits</code>:
           </p>
-          <pre><code><span id="msg-0034"># 0034. agy1 to sonnet1: Pushed: 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor</span>
+          <pre><code><span id="msg-0034"># 0034. agy1 to sonnet1: Pushed: cc809c1 Check the Crewfile and unpriced budgets in crew doctor</span>
 
 From: agy1
 To: sonnet1
 Time: 2026-10-31 22:24:51
 
-Landed from ../crew-agy1:
+Landed from [...]/crew-agy1:
 
  lib/doctor.sh       | 47 +++++++++++++++++++++++++++++++++++++++++++++--
  test/doctor_test.sh | 28 ++++++++++++++++++++++++++++
@@ -341,138 +389,174 @@ Landed from ../crew-agy1:
 
 ## The commits
 
-- 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor, landed by agy1 (0034), Review: 3fe68d8 clean, one doc nit (0036, sonnet1)</code></pre>
-        </div>
+- cc809c1 Check the Crewfile and unpriced budgets in crew doctor, landed by agy1 (0034), Review: cc809c1 clean, one doc nit (0036, sonnet1)</code></pre>
+        </li>
 
-        <div class="story-item" id="moment-review">
+        <li class="story-item kind-claude" id="moment-review">
           <div class="story-head">
-            <span>5. A <code>Review:</code> with a file and line: message <a href="#msg-0036"><code>0036</code></a></span>
+            <span class="story-title"><span class="story-num">5</span>A <code>Review:</code> with a file and line: message <a href="#msg-0036"><code>0036</code></a></span>
             <span class="story-time">22:25:27</span>
           </div>
           <p>
-            <code>sonnet1</code> reads <code>git show 3fe68d8</code> and answers <a href="#msg-0034"><code>0034</code></a>
+            <code>sonnet1</code> reads <code>git show cc809c1</code> and answers <a href="#msg-0034"><code>0034</code></a>
             in 36 seconds with <a href="#msg-0036"><code>0036</code></a> (<code>Review:</code>), naming
             <code>README.md:36</code> and <code>lib/doctor.sh</code>:
           </p>
-          <pre><code><span id="msg-0036"># 0036. sonnet1 to agy1: Review: 3fe68d8 clean, one doc nit</span>
+          <pre><code><span id="msg-0036"># 0036. sonnet1 to agy1: Review: cc809c1 clean, one doc nit</span>
 
 From: sonnet1
 To: agy1
 Time: 2026-10-31 22:25:27
 
-Read 3fe68d8: logic and tests are right, no bug found.
+Read cc809c1: logic and tests are right, no bug found.
 - Nit, README.md:36: it lists no doctor checks, so the Crewfile line and the budget-with-no-rate warning are not documented. Add one sentence when you hold README.md (with #53).
 - Minor, lib/doctor.sh doctor_crewfile: crewfile_read runs twice on a broken file (once for the records, once for the errors). Harmless, can stay.
 - A member with two models, one priced, gets no warning (cost_spent is non-empty). Matches "prices none of the models" in #54, so fine.</code></pre>
-        </div>
+        </li>
 
-        <div class="story-item" id="moment-down">
+        <li class="story-item kind-coord" id="moment-down">
           <div class="story-head">
-            <span>6. <code>crew down</code> with its <code>Done:</code> lines and reports</span>
-            <span class="story-time">lib/down.sh &amp; lib/story.sh</span>
+            <span class="story-title"><span class="story-num">6</span><code>crew down</code> with its <code>Done:</code> lines and reports</span>
+            <span class="story-time">2026-11-01</span>
           </div>
           <p>
-            At the end of a session, <code>crew down --archive --close</code> sends <code>End:</code>
-            to <code>all</code>, waits for each member to write its report with
-            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, checks that nothing
-            unpushed or unclaimed is left, and saves <code>story.md</code> in the archive with
+            At the end, <code>crew down</code> sends <code>End:</code> to <code>all</code> (and by name
+            to a muted member), waits for each member to write its report with
+            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, says what is left, and
+            stops the watch and the board; <code>--archive</code> saves <code>story.md</code> with
             <code>## The reports</code> at the bottom:
           </p>
           <pre><code>sent End: to all; waiting up to 15 minutes for Done:
 waiting for: agy1 agy2 agy3 astra fable sonnet1 sonnet2 sonnet3
-agy1: Done: sent
 sonnet1: Done: sent
+sonnet2: Done: sent
 [...]
-nothing is left
+astra: Done: sent
+left:
+[...]
+stopped the watch in iterm:[...]
+stopped the board in iterm:[...]
 
 ## The reports
 
-### agy2
+### sonnet1
 
-# agy2 report
+sonnet1 report.
 
-## Landed
+Landed:
+- ea66932 Ship three presets, and refuse one whose agent is not installed (#52)
+- 6f669bd Seed a plan in a new crew, and tell an empty board what to run (#52)
+- 9202c70 End-to-end tmux test, sh test/run.sh e2e, plus e2e CI workflow (#39)
+- a4a264a Read a Done: again when a member is seen to have left (race found by the e2e test in crew down)
+[...]
+Nothing held, no files, no patch, tree clean.</code></pre>
+        </li>
+      </ol>
+    </section>
 
-- **#40** (`d89154f`): `crew down` checks git state of `.crew/clones/&lt;name&gt;` before removing (`lib/down.sh`, `lib/panes.sh`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0024`).
-- **#46** (`63b2926`): `crew spawn --clone` copies `--cache &lt;dir&gt;` directories and strips credentials from origin URL (`lib/clone.sh`, `lib/panes.sh`, `bin/crew`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0054`) and `astra` (`0185`).
-- **#41** (`684f166`): `crew spawn --clone` excludes `.crew` via `.git/info/exclude` inside member clones (`lib/clone.sh`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0096`).
-[...]</code></pre>
+    <section id="comparison" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">04</span>What it is not</span>
+        <h2>What <code>crew</code> is not</h2>
+        <p class="lede">
+          <code>crew</code> is not a cloud, not a framework, not a chat window, and not a dependency. It
+          runs the terminal agents you already pay for, on your machine, in your terminal, over your
+          local <code>git</code> checkout.
+        </p>
+      </header>
+      <div class="compare-grid">
+        <article class="compare-card">
+          <h3>Tabs or tmux by hand</h3>
+          <dl>
+            <dt class="dt-gives">What it gives you</dt>
+            <dd>Real terminal panes, local <code>git</code>, your own agents and keys.</dd>
+            <dt class="dt-missing">What is missing</dt>
+            <dd>No shared stream, no gate, no file claims, no push lock, no reviewer for each member.</dd>
+            <dt class="dt-crew">What <code>crew</code> keeps and adds</dt>
+            <dd>Keeps your panes and local <code>git</code>; adds the numbered stream, live board, gate, claims, lock, and <code>crew land</code>.</dd>
+          </dl>
+        </article>
+        <article class="compare-card">
+          <h3>Cloud or background agents</h3>
+          <dl>
+            <dt class="dt-gives">What it gives you</dt>
+            <dd>Parallel branches running on remote machines.</dd>
+            <dt class="dt-missing">What is missing</dt>
+            <dd>Hidden screens, nothing you can type into mid-turn, separate from your local tools and checkout.</dd>
+            <dt class="dt-crew">What <code>crew</code> keeps and adds</dt>
+            <dd>Keeps every member visible in a local pane you can watch, focus, and type into at any moment.</dd>
+          </dl>
+        </article>
+        <article class="compare-card">
+          <h3>In-process frameworks</h3>
+          <dl>
+            <dt class="dt-gives">What it gives you</dt>
+            <dd>One program holding multiple transcripts.</dd>
+            <dt class="dt-missing">What is missing</dt>
+            <dd>No terminals, no agent's own screen, transcripts kept in one process's context, extra dependencies.</dd>
+            <dt class="dt-crew">What <code>crew</code> keeps and adds</dt>
+            <dd>Runs each agent's own command in its own terminal pane and writes every message and status as plain Markdown in <code>.crew/</code>.</dd>
+          </dl>
+        </article>
+        <article class="compare-card">
+          <h3>Worktree spawners</h3>
+          <dl>
+            <dt class="dt-gives">What it gives you</dt>
+            <dd>Separate working trees so builds do not collide.</dd>
+            <dt class="dt-missing">What is missing</dt>
+            <dd>No message stream between members, no gate holding dangerous commands, no reviewer for each member.</dd>
+            <dt class="dt-crew">What <code>crew</code> keeps and adds</dt>
+            <dd>Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and a reviewer for each member.</dd>
+          </dl>
+        </article>
+      </div>
+    </section>
+
+    <section id="cost" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">05</span>Cost</span>
+        <h2>What it costs</h2>
+      </header>
+      <div class="cost-grid">
+        <div>
+          <p>
+            <code>crew</code> is released under the MIT License. <code>crew cost</code> reads the agents'
+            own logs on this machine (<code>~/.codex/sessions/</code>, <code>~/.claude/projects/</code>,
+            <code>~/.gemini/antigravity-cli/conversations/</code>) and sends nothing; what <code>crew</code>
+            sends over the network is <code>git</code>, for your clones and landings, and <code>gh</code>,
+            for CI on the board. It prints tokens in five columns, plus dollars where the rates price the
+            model.
+          </p>
+          <p>
+            Write prices in <code>.crew/rates</code> or <code>~/.config/crew/rates</code>, in dollars per
+            million tokens. Set <code>budget=&lt;dollars&gt;</code> on a member's line in the
+            <code>Crewfile</code>: <code>crew board</code> shows the percentage spent,
+            <code>crew doctor</code> warns if a budgeted member has no matching rate, and
+            <code>crew watch</code> notifies the owner at 80% and 100%, naming
+            <code>crew mute &lt;name&gt;</code>. <code>crew</code> never stops or kills an agent by itself.
+          </p>
+        </div>
+        <div class="code-window">
+          <div class="code-bar" aria-hidden="true"><span></span><span></span><span></span><em>crew cost</em></div>
+          <pre><code>codex    input 36031  cached 118315581  write 1647717  output 261595  reasoning 181012  $72.62
+agy      input 2730598  cached 28680398  write 0  output 300718  reasoning 159598  no rate for gemini-4-argon
+total    input 2766629  cached 146995979  write 1647717  output 562313  reasoning 340610  $72.62</code></pre>
         </div>
       </div>
     </section>
 
-    <section id="comparison">
-      <h2>What <code>crew</code> is not</h2>
-      <p>
-        <code>crew</code> is not a cloud, not a framework, not a chat window, and not a dependency. It
-        runs the terminal agents you already pay for, on your machine, in your terminal, over your
-        local <code>git</code> checkout.
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th>What it gives you</th>
-              <th>What is missing</th>
-              <th>What <code>crew</code> keeps and adds</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>Tabs or tmux by hand</strong></td>
-              <td data-label="What it gives you">Real terminal panes, local <code>git</code>, your own agents and keys.</td>
-              <td data-label="What is missing">No shared stream, no gate, no file claims, no push lock, no reviewer for each member.</td>
-              <td data-label="What crew keeps and adds">Keeps your panes and local <code>git</code>; adds the numbered stream, live board, gate, claims, lock, and <code>crew land</code>.</td>
-            </tr>
-            <tr>
-              <td><strong>Cloud or background agents</strong></td>
-              <td data-label="What it gives you">Parallel branches running on remote machines.</td>
-              <td data-label="What is missing">Hidden screens, nothing you can type into mid-turn, separate from your local tools and checkout.</td>
-              <td data-label="What crew keeps and adds">Keeps every member visible in a local pane you can watch, focus, and type into at any moment.</td>
-            </tr>
-            <tr>
-              <td><strong>In-process frameworks</strong></td>
-              <td data-label="What it gives you">One program holding multiple transcripts.</td>
-              <td data-label="What is missing">No terminals, no agent's own screen, transcripts kept in one process's context, extra dependencies.</td>
-              <td data-label="What crew keeps and adds">Runs each agent's own command in its own terminal pane and writes every message and status as plain Markdown in <code>.crew/</code>.</td>
-            </tr>
-            <tr>
-              <td><strong>Worktree spawners</strong></td>
-              <td data-label="What it gives you">Separate working trees so builds do not collide.</td>
-              <td data-label="What is missing">No message stream between members, no gate holding dangerous commands, no reviewer for each member.</td>
-              <td data-label="What crew keeps and adds">Supports per-member clones (<code>--clone</code> and <code>cache=</code>) while keeping one stream, one board, one gate, and a reviewer for each member.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section id="cost">
-      <h2>What it costs</h2>
-      <p>
-        <code>crew</code> is released under the MIT License. <code>crew cost</code> reads the agents'
-        own logs on this machine (<code>~/.codex/sessions/</code>, <code>~/.claude/projects/</code>,
-        <code>~/.gemini/antigravity-cli/conversations/</code>) and sends nothing; what <code>crew</code>
-        sends over the network is <code>git</code>, for your clones and landings, and <code>gh</code>,
-        for CI on the board. It prints tokens in five columns, plus dollars where the rates price the
-        model:
-      </p>
-      <pre><code>codex    input 36031  cached 118315581  write 1647717  output 261595  reasoning 181012  $72.62
-agy      input 2730598  cached 28680398  write 0  output 300718  reasoning 159598  no rate for gemini-4-argon
-total    input 2766629  cached 146995979  write 1647717  output 562313  reasoning 340610  $72.62</code></pre>
-      <p>
-        Write prices in <code>.crew/rates</code> or <code>~/.config/crew/rates</code>, in dollars per
-        million tokens. Set <code>budget=&lt;dollars&gt;</code> on a member's line in the
-        <code>Crewfile</code>: <code>crew board</code> shows the percentage spent,
-        <code>crew doctor</code> warns if a budgeted member has no matching rate, and
-        <code>crew watch</code> notifies the owner at 80% and 100%, naming
-        <code>crew mute &lt;name&gt;</code>. <code>crew</code> never stops or kills an agent by itself.
-      </p>
-    </section>
-
-    <section id="reference">
-      <h2>Reference</h2>
+    <section id="reference" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">06</span>Reference</span>
+        <h2>Reference</h2>
+      </header>
+      <nav class="ref-nav" aria-label="Reference sections">
+        <a href="#ref-commands">Commands</a>
+        <a href="#ref-crewfile">Crewfile</a>
+        <a href="#ref-dir">.crew/</a>
+        <a href="#ref-kinds">Kinds</a>
+        <a href="#ref-forbid">Gate rules</a>
+      </nav>
 
       <h3 id="ref-commands">Commands</h3>
       <p>
@@ -661,12 +745,14 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
         </table>
       </div>
 
-      <h3 id="ref-crewfile">The <code>Crewfile</code></h3>
-      <p>
-        <code>crew up</code> reads <code>.crew/Crewfile</code>, or copies a preset from
-        <code>~/.config/crew/presets/&lt;name&gt;</code> when the crew has no <code>Crewfile</code>:
-      </p>
-      <pre><code># Crewfile: tabs and members, in the order crew up places them.
+      <div class="ref-grid">
+        <div>
+          <h3 id="ref-crewfile">The <code>Crewfile</code></h3>
+          <p>
+            <code>crew up</code> reads <code>.crew/Crewfile</code>, or copies a preset from
+            <code>~/.config/crew/presets/&lt;name&gt;</code> when the crew has no <code>Crewfile</code>:
+          </p>
+          <pre><code># Crewfile: tabs and members, in the order crew up places them.
 tab main layout=main watch board
 tab proof layout=table
 member claude   reviewer=claude2 -- claude --model claude-opus-5-5 --effort high
@@ -674,9 +760,10 @@ member claude2  reviewer=claude clone cache=.lake -- claude --model claude-opus-
 tab runtime layout=grid
 member agy      reviewer=codex mute budget=20 -- agy
 member codex    reviewer=agy mute budget=60 -- codex</code></pre>
-
-      <h3 id="ref-dir">Inside <code>.crew/</code></h3>
-      <pre><code>README.md                  the plan for this session (optional)
+        </div>
+        <div>
+          <h3 id="ref-dir">Inside <code>.crew/</code></h3>
+          <pre><code>README.md                  the plan for this session (optional)
 Crewfile                   the crew's tabs and members, for crew up (optional)
 up/watch, up/board         the panes crew up opened for the watch and the board
 messages/NNNN-a-to-b-*.md  the stream
@@ -698,6 +785,8 @@ forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path
 relay.pid, relay.last      the relay's heartbeat and last number, while one runs</code></pre>
+        </div>
+      </div>
 
       <h3 id="ref-kinds">Kinds of agent (<code>share/kinds</code>)</h3>
       <div class="table-wrap">
@@ -756,19 +845,32 @@ relay.pid, relay.last      the relay's heartbeat and last number, while one runs
       </p>
     </section>
 
-    <section id="requirements">
-      <h2>Requirements</h2>
-      <ul>
-        <li><strong>macOS</strong> with iTerm2 3.5+ (using <code>osascript</code>) or <code>tmux</code> 3.1+, or <strong>Linux</strong> with <code>tmux</code> 3.1+.</li>
-        <li>POSIX <code>sh</code>, <code>awk</code>, <code>sed</code>, and the tools macOS and Linux ship, plus <code>git</code>.</li>
-        <li>One or more terminal coding agents on <code>PATH</code>: Claude Code (<code>claude</code>), Codex (<code>codex</code>), Antigravity (<code>agy</code>), or your own kind in <code>~/.config/crew/kinds</code>.</li>
-        <li>Optional: <code>gh</code> (for CI status on <code>crew board</code>), <code>sqlite3</code> (for Antigravity token counts in <code>crew cost</code>), and <code>notify-send</code> on Linux (for desktop notifications to <code>owner</code>).</li>
+    <section id="requirements" class="wrap">
+      <header class="sec-head">
+        <span class="kicker"><span class="kicker-num">07</span>Requirements</span>
+        <h2>Requirements</h2>
+      </header>
+      <ul class="req-grid">
+        <li><span class="req-title">Terminal</span><strong>macOS</strong> with iTerm2 3.5+ (using <code>osascript</code>) or <code>tmux</code> 3.1+, or <strong>Linux</strong> with <code>tmux</code> 3.1+.</li>
+        <li><span class="req-title">Shell</span>POSIX <code>sh</code>, <code>awk</code>, <code>sed</code>, and the tools macOS and Linux ship, plus <code>git</code>.</li>
+        <li><span class="req-title">Agents</span>One or more terminal coding agents on <code>PATH</code>: Claude Code (<code>claude</code>), Codex (<code>codex</code>), Antigravity (<code>agy</code>), or your own kind in <code>~/.config/crew/kinds</code>.</li>
+        <li><span class="req-title">Optional</span><code>gh</code> (for CI status on <code>crew board</code>), <code>sqlite3</code> (for Antigravity token counts in <code>crew cost</code>), and <code>notify-send</code> on Linux (for desktop notifications to <code>owner</code>).</li>
       </ul>
+    </section>
+
+    <section class="closing wrap" aria-label="Get started">
+      <h2>Bring your crew up.</h2>
+      <p class="lede">Your agents, your panes, your <code>git</code>. One stream to read, one gate to trust.</p>
+      <div class="hero-links">
+        <a class="btn btn-primary" href="#quickstart">Install in one line</a>
+        <a class="btn btn-ghost" href="https://github.com/mrfoxes/crew/releases/tag/v1.0.0">Release notes for v1.0.0</a>
+      </div>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap">
+    <div class="wrap footer-row">
+      <a class="brand" href="#top"><svg class="mark" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><rect x="1" y="3" width="6.4" height="18" rx="1.6" fill="#d97757"/><rect x="8.8" y="3" width="6.4" height="18" rx="1.6" fill="#10a37f"/><rect x="16.6" y="3" width="6.4" height="18" rx="1.6" fill="#4285f4"/></svg><span>crew</span></a>
       <p>
         <code>crew</code> is released under the MIT License.
         Read the <a href="https://github.com/mrfoxes/crew">source and README on GitHub</a>.
@@ -784,7 +886,8 @@ relay.pid, relay.last      the relay's heartbeat and last number, while one runs
       btn.addEventListener('click', function () {
         navigator.clipboard.writeText(cmd.textContent).then(function () {
           btn.textContent = 'Copied';
-          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+          btn.classList.add('copied');
+          setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
         });
       });
     })();
