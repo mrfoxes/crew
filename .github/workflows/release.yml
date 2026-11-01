@@ -16,6 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Syntax
         run: for f in bin/crew lib/*.sh test/*.sh install.sh .github/package.sh; do sh -n "$f"; done
       - name: ShellCheck
@@ -33,6 +35,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Package
         run: sh .github/package.sh "$GITHUB_REF_NAME" dist

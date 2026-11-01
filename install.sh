@@ -50,6 +50,10 @@ sha256() {
 # A version is a tag, vX.Y.Z and the like: it names a directory and a URL,
 # so nothing else gets through.
 checked_version() {
+    case "$1" in
+    *"
+"*) fail "a version holds no newline: nothing installed" ;;
+    esac
     printf '%s\n' "$1" | grep -Eq '^v[0-9][0-9A-Za-z.+_-]*$' || fail "'$1' is not a version like v1.0.0: nothing installed"
 }
 

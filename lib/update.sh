@@ -6,19 +6,23 @@ update_releases() {
     echo "${CREW_RELEASES:-https://github.com/mrfoxes/crew/releases}"
 }
 
-# Which crew this is: the tag of a release install (VERSION, which
-# install.sh's tarball holds), else the tag when the checkout has one, as
-# git describe writes it past it, else the commit, else the path.
+# Which crew this is: a checkout (.git under CREW_HOME, a directory or a
+# worktree's file) by its tag, as git describe writes it past it, else its
+# commit; a release install by VERSION, which install.sh's tarball holds;
+# else the path.
 crew_version() {
+    if [ -e "$CREW_HOME/.git" ]; then
+        if v=$(git -C "$CREW_HOME" describe --tags --match "v*" 2>/dev/null); then
+            echo "crew $v ($(git -C "$CREW_HOME" log -1 --format=%cs))"
+            return
+        fi
+        git -C "$CREW_HOME" log -1 --format='crew %h (%cs)' 2>/dev/null && return
+    fi
     if [ -s "$CREW_HOME/VERSION" ]; then
         echo "crew $(cat "$CREW_HOME/VERSION")"
         return
     fi
-    if v=$(git -C "$CREW_HOME" describe --tags --match "v*" 2>/dev/null); then
-        echo "crew $v ($(git -C "$CREW_HOME" log -1 --format=%cs))"
-        return
-    fi
-    git -C "$CREW_HOME" log -1 --format='crew %h (%cs)' 2>/dev/null || echo "crew at $CREW_HOME"
+    echo "crew at $CREW_HOME"
 }
 
 # Downloads <url> to <file>, with curl or wget.
@@ -40,6 +44,9 @@ update_sha256() {
         sha256sum "$1" | cut -d' ' -f1
     elif shasum -a 256 </dev/null >/dev/null 2>&1; then
         shasum -a 256 "$1" | cut -d' ' -f1
+    else
+        echo "crew: neither sha256sum nor shasum is here" >&2
+        return 1
     fi
 }
 
@@ -81,7 +88,7 @@ crew_update() {
         ;;
     esac
     [ "${1:-}" != --check ] || return 0
-    if [ ! -s "$CREW_HOME/VERSION" ]; then
+    if [ -e "$CREW_HOME/.git" ] || [ ! -s "$CREW_HOME/VERSION" ]; then
         echo "crew: $CREW_HOME is a checkout, not an install: update it with git pull" >&2
         return 1
     fi
@@ -102,7 +109,10 @@ crew_update() {
         return 1
     fi
     u_want=$(awk '$2 == "install.sh" { print $1; exit }' "$u_sums")
-    u_have=$(update_sha256 "$u_script")
+    if ! u_have=$(update_sha256 "$u_script"); then
+        rm -f "$u_script" "$u_sums"
+        return 1
+    fi
     rm -f "$u_sums"
     if [ -z "$u_want" ] || [ "$u_have" != "$u_want" ]; then
         rm -f "$u_script"

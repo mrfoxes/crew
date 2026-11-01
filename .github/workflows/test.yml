@@ -13,6 +13,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Syntax
         run: for f in bin/crew lib/*.sh test/*.sh install.sh .github/package.sh; do sh -n "$f"; done
       - name: ShellCheck

@@ -172,4 +172,14 @@ check "and says so" "1" "$(crew_update 2>&1 | grep -c "^crew: v1.1.0's install.s
 check "and the install stays" "v1.0.0" "$(readlink "$data/current")"
 CREW_HOME=$home_was
 
+
+# A checkout that holds a VERSION file is still a checkout: its .git says so,
+# crew version reads the tag from git, and crew update sends it to git pull.
+printf 'v1.0.0\n' >"$tmp/checkout/VERSION"
+CREW_HOME=$tmp/checkout
+check "a checkout with a VERSION file is a checkout to crew version" "1" "$(crew_version | grep -c '^crew v1.0.0 (20[0-9-]*)$')"
+check "and to crew update" "1" "$(crew_update >/dev/null 2>&1; echo $?)"
+check "which installs nothing" "v1.0.0" "$(readlink "$data/current")"
+CREW_HOME=$home_was
+
 finish
