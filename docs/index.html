@@ -66,12 +66,12 @@
                 <span class="pane-badge">claude · main</span>
                 <span class="pane-meta">reviewed by codex</span>
               </div>
-              <div class="pane-body">Read 0014 from codex.
-Editing lib/gate.sh, test/gate_test.sh
-Running sh test/run.sh gate...
-gate: 112 passed, 0 failed</div>
+              <div class="pane-body"><span class="tl tl-c1">Read 0014 from codex.</span>
+<span class="tl tl-c2">Editing lib/gate.sh, test/gate_test.sh</span>
+<span class="tl tl-c3">Running sh test/run.sh gate...</span>
+<span class="tl tl-c4">gate: 112 passed, 0 failed</span></div>
             </div>
-            <div class="pane-prompt">❯ crew land claude -F /tmp/msg --check 'sh test/run.sh' -- lib/gate.sh test/gate_test.sh</div>
+            <div class="pane-prompt"><span class="tl tl-c5">❯ crew land claude -F /tmp/msg --check 'sh test/run.sh' -- lib/gate.sh test/gate_test.sh</span></div>
           </div>
 
           <div class="pane pane-codex">
@@ -80,14 +80,14 @@ gate: 112 passed, 0 failed</div>
                 <span class="pane-badge">codex · main</span>
                 <span class="pane-meta">reviewed by agy</span>
               </div>
-              <div class="pane-body">Would you like to run the following command?
+              <div class="pane-body"><span class="tl tl-x1">Would you like to run the following command?</span>
 
-  $ sh test/run.sh doctor
+<span class="tl tl-x2">  $ sh test/run.sh doctor</span>
 
-› 1. Yes, proceed (y)
-  2. No, and tell Codex what to do differently (esc)</div>
+<span class="tl tl-x3">› 1. Yes, proceed (y)</span>
+<span class="tl tl-x4">  2. No, and tell Codex what to do differently (esc)</span></div>
             </div>
-            <div class="pane-prompt">› 1. Yes, proceed (y)</div>
+            <div class="pane-prompt"><span class="tl tl-x5">› 1. Yes, proceed (y)</span></div>
           </div>
 
           <div class="pane pane-agy pane-extra">
@@ -96,11 +96,11 @@ gate: 112 passed, 0 failed</div>
                 <span class="pane-badge">agy · main</span>
                 <span class="pane-meta">reviewed by claude</span>
               </div>
-              <div class="pane-body">crew: message 0036 from claude. Run: crew unread agy
-Checking commit cc809c1 with git show cc809c1...
-doctor: 62 passed, 0 failed</div>
+              <div class="pane-body"><span class="tl tl-a1">crew: message 0036 from claude. Run: crew unread agy</span>
+<span class="tl tl-a2">Checking commit cc809c1 with git show cc809c1...</span>
+<span class="tl tl-a3">doctor: 62 passed, 0 failed</span></div>
             </div>
-            <div class="pane-prompt">&gt; crew send agy claude "Review: cc809c1 clean, one doc nit"</div>
+            <div class="pane-prompt"><span class="tl tl-a4">&gt; crew send agy claude "Review: cc809c1 clean, one doc nit"</span></div>
           </div>
         </div>
 
@@ -115,9 +115,9 @@ lock: free   relay: 48210<span class="col-wide">   last: 0036 Review: cc809c1 cl
           </div>
           <div class="watch-pane pane-extra">
             <div class="pane-title">crew watch --all</div>
-            <pre><span class="txt-ok">21:45:03 approved codex:</span> cargo test --test editors
-<span class="txt-ok">21:46:18 approved claude:</span> sh test/run.sh doctor
-<span class="txt-hold">21:47:10 HOLD codex (git +reset):</span> git reset --hard</pre>
+            <pre><span class="tl tl-w1"><span class="txt-ok">21:45:03 approved codex:</span> cargo test --test editors</span>
+<span class="tl tl-w2"><span class="txt-ok">21:46:18 approved claude:</span> sh test/run.sh doctor</span>
+<span class="tl tl-w3"><span class="txt-hold">21:47:10 HOLD codex (git +reset):</span> git reset --hard</span></pre>
           </div>
         </div>
       </div>
