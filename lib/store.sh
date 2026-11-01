@@ -662,7 +662,7 @@ crew_reviews() {
                 tok = words[j]
                 if (tok ~ /^[0-9a-f]{7,}$/) {
                     for (i = 1; i <= np; i++) {
-                        if (!done[i] && p_to[i] == rev_from &&
+                        if (!done[i] && (p_to[i] == rev_from || p_to[i] == "all") &&
                             (index(p_hash[i], tok) == 1 || index(tok, p_hash[i]) == 1))
                             done[i] = 1
                     }

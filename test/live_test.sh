@@ -99,5 +99,8 @@ abcdef123456 third slice (agy to claude, 0 min ago)" "$(reviews)"
 echo "fedcba987 clean" | crew_send codex claude "Review: second slice" >/dev/null
 echo ok | crew_send claude agy "Review: abcdef1, clean" >/dev/null
 check "all pushes answered, no reviews section" "0" "$(crew_board 1 | grep -c '^== reviews')"
+echo stat | crew_send agy all "Pushed: abcdef7 broadcast" >/dev/null
+echo ok | crew_send claude agy "Review: abcdef7 clean" >/dev/null
+check "a broadcast push answered by any reviewer leaves the board" "0" "$(crew_board 1 | grep -c '^== reviews')"
 
 finish
