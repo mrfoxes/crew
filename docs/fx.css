@@ -1,0 +1,237 @@
+/* Atmosphere in CSS (#61): slow aurora glows in the kinds' colors behind the
+   hero, a perspective horizon grid running toward the reader, a faint scan
+   line sweeping down the terminal, and a shimmer along each section's kicker
+   line. Only transform and opacity animate; all motion stops under
+   prefers-reduced-motion: reduce. */
+
+.backdrop {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 68rem;
+  z-index: -2;
+  overflow: hidden;
+  background: var(--bg);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 72%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 72%, transparent 100%);
+}
+
+.backdrop::before {
+  content: "";
+  position: absolute;
+  inset: -12% -10% -8%;
+  pointer-events: none;
+  background:
+    radial-gradient(42rem 26rem at 12% 28%, rgba(217, 119, 87, 0.16), rgba(217, 119, 87, 0.04) 48%, transparent 70%),
+    radial-gradient(40rem 24rem at 50% 62%, rgba(16, 163, 127, 0.14), rgba(16, 163, 127, 0.04) 48%, transparent 70%),
+    radial-gradient(42rem 26rem at 88% 26%, rgba(66, 133, 244, 0.16), rgba(66, 133, 244, 0.04) 48%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 92% 78% at 50% 42%, #000 30%, transparent 82%);
+  mask-image: radial-gradient(ellipse 92% 78% at 50% 42%, #000 30%, transparent 82%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  animation: fx-aurora-back 20s ease-in-out infinite alternate;
+}
+
+.backdrop::after {
+  content: "";
+  position: absolute;
+  inset: -10% -8% -6%;
+  pointer-events: none;
+  background:
+    radial-gradient(36rem 22rem at 18% 54%, rgba(217, 119, 87, 0.12), rgba(217, 119, 87, 0.03) 46%, transparent 70%),
+    radial-gradient(32rem 18rem at 50% 18%, rgba(16, 163, 127, 0.08), rgba(16, 163, 127, 0.02) 46%, transparent 68%),
+    radial-gradient(36rem 22rem at 82% 52%, rgba(66, 133, 244, 0.12), rgba(66, 133, 244, 0.03) 46%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse 88% 74% at 50% 40%, #000 25%, transparent 80%);
+  mask-image: radial-gradient(ellipse 88% 74% at 50% 40%, #000 25%, transparent 80%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  animation: fx-aurora-hero 16s ease-in-out infinite alternate;
+}
+
+.hero {
+  position: relative;
+}
+
+/* Soft horizon glow behind the lower hero and perspective grid. */
+.hero::before {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 15rem;
+  height: 28rem;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 44% 38% at 28% 48%, rgba(217, 119, 87, 0.13), transparent 85%),
+    radial-gradient(ellipse 46% 40% at 50% 46%, rgba(16, 163, 127, 0.14), transparent 88%),
+    radial-gradient(ellipse 44% 38% at 72% 48%, rgba(66, 133, 244, 0.13), transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 25%, transparent 92%);
+  mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 25%, transparent 92%);
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+  animation: fx-aurora-hero 14s ease-in-out infinite alternate;
+}
+
+/* Perspective horizon grid under the hero running toward the reader. */
+.hero::after {
+  content: "";
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 14rem;
+  height: 36rem;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(66, 133, 244, 0.28) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 163, 127, 0.24) 1px, transparent 1px);
+  background-size: 56px 28px;
+  -webkit-mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 18%, rgba(0, 0, 0, 0.65) 54%, transparent 92%);
+  mask-image: radial-gradient(ellipse 46% 44% at 50% 50%, #000 18%, rgba(0, 0, 0, 0.65) 54%, transparent 92%);
+  transform-origin: 50% 38%;
+  transform: perspective(520px) rotateX(62deg) translate3d(0, 0, 0);
+  will-change: transform;
+  animation: fx-grid 2.8s linear infinite;
+}
+
+@keyframes fx-aurora-back {
+  0% {
+    transform: translate3d(-3%, -2%, 0) scale(1, 1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate3d(2%, 3%, 0) scale(1.04, 0.97);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(4%, -1%, 0) scale(0.98, 1.03);
+    opacity: 0.92;
+  }
+}
+
+@keyframes fx-aurora-hero {
+  0% {
+    transform: translate3d(3%, 2%, 0) scale(1.02, 0.98);
+    opacity: 0.88;
+  }
+  50% {
+    transform: translate3d(-2%, -2%, 0) scale(0.97, 1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(-3%, 1%, 0) scale(1.03, 0.99);
+    opacity: 0.9;
+  }
+}
+
+@keyframes fx-grid {
+  from {
+    transform: perspective(520px) rotateX(62deg) translate3d(0, 0, 0);
+  }
+  to {
+    transform: perspective(520px) rotateX(62deg) translate3d(0, 28px, 0);
+  }
+}
+
+/* Faint light sweeping down the terminal now and then. */
+.term-window::before {
+  inset: 0;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(66, 133, 244, 0.022) 42%,
+    rgba(16, 163, 127, 0.042) 49%,
+    rgba(233, 235, 242, 0.05) 50%,
+    rgba(217, 119, 87, 0.038) 51%,
+    transparent 58%
+  );
+  transform: translate3d(0, -100%, 0);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: fx-scan 9s ease-in-out -2.2s infinite;
+}
+
+@keyframes fx-scan {
+  0% {
+    transform: translate3d(0, -100%, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 1;
+  }
+  55%, 100% {
+    transform: translate3d(0, 100%, 0);
+    opacity: 0;
+  }
+}
+
+/* Shimmer along each section's kicker line. */
+.kicker {
+  position: relative;
+  padding-right: 4.2rem;
+  background-image: var(--kinds);
+  background-size: 3.5rem 1px;
+  background-repeat: no-repeat;
+  background-position: right 50%;
+}
+
+.kicker::after {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 1.6rem;
+  height: 2px;
+  margin-top: -1px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(217, 119, 87, 0.7),
+    rgba(255, 255, 255, 0.95),
+    rgba(66, 133, 244, 0.7),
+    transparent
+  );
+  transform: translate3d(-2.2rem, 0, 0) scaleX(0.5);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: fx-shimmer 4.5s ease-in-out -1.8s infinite;
+}
+
+@keyframes fx-shimmer {
+  0%, 15% {
+    transform: translate3d(-2.2rem, 0, 0) scaleX(0.5);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  65% {
+    transform: translate3d(0.1rem, 0, 0) scaleX(1);
+    opacity: 0.95;
+  }
+  80%, 100% {
+    transform: translate3d(0.2rem, 0, 0) scaleX(0.4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop::before,
+  .backdrop::after,
+  .hero::before,
+  .hero::after,
+  .term-window::before,
+  .kicker::after {
+    animation: none !important;
+  }
+
+  .term-window::before,
+  .kicker::after {
+    opacity: 0 !important;
+  }
+}
