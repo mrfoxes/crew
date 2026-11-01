@@ -61,12 +61,43 @@ gh() { return 1; }
 frame=$(live_frame "$dir")
 check "the frame's head" "member    kind    tab      state    issue                         age spent" "$(printf '%s\n' "$frame" | sed -n 1p)"
 check "a member's line" "codex     codex   proof    prompt   #187 step 3, the parser        0m 12.40" "$(printf '%s\n' "$frame" | sed -n 2p)"
+check "a member with unread has + on its state" "1" "$(printf '%s\n' "$frame" | grep -c '^claude .* working+')"
 check "a muted member's state" "1" "$(printf '%s\n' "$frame" | grep -c '^agy .* exited\*')"
 check "a member with no status" "tess      -       -        gone     -                               - -" "$(printf '%s\n' "$frame" | grep '^tess')"
 check "the lock" "1" "$(printf '%s\n' "$frame" | grep -cx 'lock: free')"
 check "the relay" "1" "$(printf '%s\n' "$frame" | grep -cx 'relay: off')"
 check "the last message" "1" "$(printf '%s\n' "$frame" | grep -c '^0001\. codex to claude: Review: the parser$')"
 check "the last commit" "1" "$(printf '%s\n' "$frame" | grep -c 'Start the project$')"
+(crew_unread claude >/dev/null)
+echo x | crew_send codex claude "Pushed: 1234567 the parser" >/dev/null
+check "a reviewer with a commit waiting has ? on its state" "1" "$(live_frame "$dir" | grep -c '^claude .* idle?+')"
+(crew_unread claude >/dev/null)
+check "reading clears + while ? stays" "1" "$(live_frame "$dir" | grep -c '^claude .* idle? ')"
+echo x | crew_send claude codex "Review: 1234567 looks good" >/dev/null
+check "an answered review clears ?" "1" "$(live_frame "$dir" | grep -c '^claude .* idle ')"
 check "live wants seconds" "2" "$(crew_board --live soon >/dev/null 2>&1; echo $?)"
+
+# The board's reviews section: a push waiting, one answered by its reviewer
+# with a prefix of 7 or more, one answered by the wrong member, and a short
+# hash that does not answer; and status with empty non-tty stdin.
+check "status with empty stdin prints and keeps the file" "$(printf 'Agent: codex\nIssue: #187 step 3, the parser')" "$(crew_status codex </dev/null)"
+reviews() { crew_board 1 | sed -n '/^== reviews/,/^$/p'; }
+check "no push, no reviews section" "0" "$(crew_board 1 | grep -c '^== reviews')"
+echo stat | crew_send agy claude "Pushed: 123456789abc first slice" >/dev/null
+echo stat | crew_send claude codex "Pushed: fedcba987654 second slice" >/dev/null
+echo stat | crew_send agy claude "Pushed: abcdef123456 third slice" >/dev/null
+check "waiting pushes on the board" "== reviews
+123456789abc first slice (agy to claude, 0 min ago)
+fedcba987654 second slice (claude to codex, 0 min ago)
+abcdef123456 third slice (agy to claude, 0 min ago)" "$(reviews)"
+echo ok | crew_send claude agy "Review: 1234567, looks good" >/dev/null
+echo wrong | crew_send agy claude "Review: fedcba987654, wrong reviewer" >/dev/null
+echo short | crew_send claude agy "Review: abcdef, hash too short" >/dev/null
+check "answered push leaves the board; wrong member and short hash stay" "== reviews
+fedcba987654 second slice (claude to codex, 0 min ago)
+abcdef123456 third slice (agy to claude, 0 min ago)" "$(reviews)"
+echo "fedcba987 clean" | crew_send codex claude "Review: second slice" >/dev/null
+echo ok | crew_send claude agy "Review: abcdef1, clean" >/dev/null
+check "all pushes answered, no reviews section" "0" "$(crew_board 1 | grep -c '^== reviews')"
 
 finish

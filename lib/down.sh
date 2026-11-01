@@ -153,7 +153,8 @@ down_tree() {
 
 # What is left in the crew <dir> of the project at <root>, a line each:
 # the members of <members> without a Done:, the unpushed work of the shared
-# tree and of each clone, the patches in reports/, and the lock.
+# tree and of each clone, the patches in reports/, the commits waiting for a
+# review, and the lock.
 down_left() {
     for dn_m in $3; do
         case "$dn_done" in *" $dn_m "*) continue ;; esac
@@ -170,6 +171,9 @@ down_left() {
     done
     for dn_f in "$1"/reports/*.patch; do
         [ ! -e "$dn_f" ] || echo "patch to apply: $dn_f"
+    done
+    crew_reviews "$1" | while IFS='	' read -r _ dn_from dn_to dn_hash dn_sub; do
+        echo "review waiting: $dn_hash${dn_sub:+ $dn_sub} ($dn_from to $dn_to)"
     done
     if [ -d "$1/lock" ]; then
         echo "the lock is held: $(cat "$1/lock/owner" 2>/dev/null || echo someone)"

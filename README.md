@@ -187,10 +187,12 @@ status when stdin is a terminal and no field is given. When the crew shares one
 tree, `crew status` warns, on stderr, of each path on the `Files:` line that
 another member's status lists (with who, and how many minutes ago) and writes
 the status anyway; a path ending in `/` claims every path under it. The board
-adds `== conflicts`, each path two members claim, and `== unclaimed`, each file
-changed in the tree that nobody claims, each only when it has a line. A member
-with a clone also has its changed files its own `Files:` line does not claim
-listed there, as `path (name's clone)`, and its header on the board adds
+adds `== conflicts`, each path two members claim, `== unclaimed`, each file
+changed in the tree that nobody claims, and `== reviews`, each `Pushed:` commit
+not yet answered by a `Review:` from its recipient naming the hash (a prefix of
+7 or more), each section only when it has a line. A member with a clone also
+has its changed files its own `Files:` line does not claim listed under
+`== unclaimed`, as `path (name's clone)`, and its header on the board adds
 `N unread` while messages wait for it (`+` marks it on the live board).
 
 ### Landing in one command
@@ -435,10 +437,10 @@ and neither does the coordinator's own pane. Only a `Done:` sent after the
 `End:` counts.
 
 Then it says what is left, and exits 1 when anything is: members without a
-`Done:`, unpushed commits and changed files in the shared tree and in each
-member's clone, patches in `reports/`, and the lock if held. It stops the
-watch and the board that `crew up` opened (ctrl-c, then it forgets
-`up/watch` and `up/board`) and kills nothing else.
+`Done:`, unpushed commits, changed files, and stashes in the shared tree and in
+each member's clone, patches in `reports/`, commits waiting for a review, and
+the lock if held. It stops the watch and the board that `crew up` opened
+(ctrl-c, then it forgets `up/watch` and `up/board`) and kills nothing else.
 
 `--archive` runs `crew archive` only when nothing is left, once the watch is
 off the relay. `--close` closes the panes of members whose agent has
@@ -639,7 +641,8 @@ agy       agy     runtime  exited*  -                             22m 9.40
 The state is what the member's pane shows now: `prompt` (a prompt waits
 for an answer), `working` (the agent says esc interrupts it, or its screen
 changed since the last frame), `idle`, `exited` (back to a shell), `gone`,
-or `none`; `*` marks a muted member. Then the `Issue:` line of its status,
+or `none`; `*` marks a muted member, `?` one with a commit waiting for its
+review, `+` one with unread messages. Then the `Issue:` line of its status,
 the status's age, and what it spent, dollars where the rates price its
 model, else tokens. Under the members: the lock, the relay, the last three
 messages, and the last commit with its CI. What it spent and the CI are

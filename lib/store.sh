@@ -455,10 +455,16 @@ crew_status() {
             return 0
         fi
         st_tmp=$(mktemp "$dir/tmp/status.XXXXXX")
-        cat >"$st_tmp" && mv "$st_tmp" "$file" || {
+        cat >"$st_tmp" || {
             rm -f "$st_tmp"
             return 1
         }
+        if [ ! -s "$st_tmp" ]; then
+            rm -f "$st_tmp"
+            [ ! -f "$file" ] || cat "$file"
+            return 0
+        fi
+        mv "$st_tmp" "$file"
     else
         st_in=/dev/null
         [ ! -f "$file" ] || st_in=$file
@@ -604,9 +610,83 @@ crew_unlock() {
     echo "lock released"
 }
 
-# The crew at a glance: statuses, files claimed twice or by nobody, the
-# lock, the latest messages, the latest commits with their CI, and what the
-# members spent.
+# Each Pushed: message in the crew <dir> not yet answered by a later Review:
+# from its recipient that names the hash (a prefix of 7 or more), as
+# "<number>\t<author>\t<reviewer>\t<hash>\t<subject>".
+crew_reviews() {
+    rv_dir=$1
+    # shellcheck disable=SC2046 # message numbers hold no space
+    set -- $(ls "$rv_dir/seq" 2>/dev/null | sort -n)
+    [ $# -gt 0 ] || return 0
+    (cd "$rv_dir/seq" && awk '
+        FNR == 1 {
+            in_rev = 0
+            if ($1 != "#" || $4 != "to") next
+            from = $3
+            to = $5
+            sub(/:$/, "", to)
+            rest = $0
+            sub(/^# [0-9]+\. [^:]+: /, "", rest)
+            if (rest ~ /^Pushed:[[:space:]]*/) {
+                sub(/^Pushed:[[:space:]]*/, "", rest)
+                hash = rest
+                sub(/[[:space:]].*/, "", hash)
+                csub = substr(rest, length(hash) + 1)
+                sub(/^[[:space:]]+/, "", csub)
+                sub(/[^[:alnum:]]+$/, "", hash)
+                if (tolower(hash) ~ /^[0-9a-f]{7,}$/) {
+                    np++
+                    p_n[np] = FILENAME
+                    p_from[np] = from
+                    p_to[np] = to
+                    p_hash[np] = tolower(hash)
+                    p_raw[np] = hash
+                    p_sub[np] = csub
+                }
+            } else if (rest ~ /^Review:[[:space:]]*/) {
+                in_rev = 1
+                rev_from = from
+                sub(/^Review:[[:space:]]*/, "", rest)
+                match_rev(rest)
+            }
+            next
+        }
+        in_rev && FNR > 6 {
+            match_rev($0)
+        }
+        function match_rev(line,    s, m, words, j, tok, i) {
+            s = tolower(line)
+            gsub(/[^[:alnum:]]+/, " ", s)
+            m = split(s, words, " ")
+            for (j = 1; j <= m; j++) {
+                tok = words[j]
+                if (tok ~ /^[0-9a-f]{7,}$/) {
+                    for (i = 1; i <= np; i++) {
+                        if (!done[i] && p_to[i] == rev_from &&
+                            (index(p_hash[i], tok) == 1 || index(tok, p_hash[i]) == 1))
+                            done[i] = 1
+                    }
+                }
+            }
+        }
+        END {
+            for (i = 1; i <= np; i++)
+                if (!done[i])
+                    printf "%s\t%s\t%s\t%s\t%s\n", p_n[i], p_from[i], p_to[i], p_raw[i], p_sub[i]
+        }
+    ' "$@")
+}
+
+# The board's reviews section, only when a commit waits for a review.
+reviews_board() {
+    crew_reviews "$1" | while IFS='	' read -r rv_n rv_from rv_to rv_hash rv_sub; do
+        echo "$rv_hash${rv_sub:+ $rv_sub} ($rv_from to $rv_to, $(crew_age "$1/seq/$rv_n") min ago)"
+    done | claims_section reviews
+}
+
+# The crew at a glance: statuses, files claimed twice or by nobody, commits
+# waiting for a review, the lock, the latest messages, the latest commits
+# with their CI, and what the members spent.
 crew_board() {
     if [ "${1:-}" = --live ]; then
         shift
@@ -640,6 +720,7 @@ crew_board() {
     done
     claims_board_conflicts "$dir"
     claims_board_unclaimed "$dir"
+    reviews_board "$dir"
     if [ -d "$dir/lock" ]; then
         echo "== lock: $(cat "$dir/lock/owner" 2>/dev/null || echo held)"
     else

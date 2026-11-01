@@ -94,6 +94,7 @@ live_git() {
 live_frame() {
     v_dir=$1
     v_costs=$(live_costs "$v_dir")
+    v_reviews=" $(crew_reviews "$v_dir" | cut -f3 | tr '\n' ' ')"
     printf '%-9s %-7s %-8s %-8s %-28s %4s %s\n' member kind tab state issue age spent
     for v_name in $(live_members "$v_dir"); do
         v_kind=$(kind_member "$v_dir" "$v_name")
@@ -107,6 +108,8 @@ live_frame() {
             v_age="$(crew_age "$v_status")m"
         fi
         [ -e "$v_dir/muted/$v_name" ] && v_state="$v_state*"
+        case "$v_reviews" in *" $v_name "*) v_state="$v_state?" ;; esac
+        [ "$(crew_unread_count "$v_dir" "$v_name")" = 0 ] || v_state="$v_state+"
         v_spent=$(printf '%s\n' "$v_costs" | awk -v n="$v_name" '$1 == n { print $2; exit }')
         v_budget=$(crewfile_get "$v_dir" "$v_name" budget)
         [ -z "$v_budget" ] || v_spent="${v_spent:--}/$v_budget"

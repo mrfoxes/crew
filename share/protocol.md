@@ -94,8 +94,8 @@ crew status <you> "Files: none" "Pushed: 1234567 ..." "Next: ..."
 
 `crew board` shows every status with its age, the paths two statuses claim
 (`conflicts`), the changed files nobody claims (`unclaimed`, a clone's too), the
-messages waiting for each member (`N unread`), the lock, the
-latest messages, and CI.
+commits waiting for a review (`reviews`), the messages waiting for each member
+(`N unread`), the lock, the latest messages, and CI.
 
 ## One working tree, many hands
 
@@ -192,9 +192,10 @@ moves under you. Commit your paths as in Landing, then, under the lock only,
 ## Reviews
 
 When the one you review sends `Pushed:`, read the commit with `git show
-<hash>` within 15 minutes: bugs first, then a missing test, then a document
-the change left untrue. Send `Review:` with each finding (file, line, problem,
-fix), or one line saying it is clean.
+<hash>` within 15 minutes (in a clone, run `crew sync <you>` or `git fetch
+origin` first): bugs first, then a missing test, then a document the change
+left untrue. Send `Review:` with the hash and each finding (file, line,
+problem, fix), or one line saying it is clean.
 
 ## The end
 

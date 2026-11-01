@@ -128,6 +128,9 @@ rm "$dir/panes/dead"
 
 # What is left made clean: pushed, put back, no patch, no lock. Then
 # --archive archives, after the watch let go of the relay.
+echo ok | crew_send ada bo "Pushed: 1234567 fix gate" >/dev/null
+check "a push waiting for review is listed among what is left" "1" "$(down_left "$dir" "$tmp/repo" "" tmux:%1 | grep -cx 'review waiting: 1234567 fix gate (ada to bo)')"
+echo ok | crew_send bo ada "Review: 1234567 looks good" >/dev/null
 git reset -q
 rm -f b.txt "$dir/reports/bo.patch"
 git push -q origin main
