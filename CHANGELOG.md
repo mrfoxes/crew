@@ -11,20 +11,17 @@ Before it, crew ran the owner's crews from a checkout without a tag; this
 milestone adds what a stranger needs to install it, trust it, and run a
 session with nobody at the keyboard.
 
-A line marked _not on main yet_ names an issue still open when this entry was
-checked against `git log`: the release drops it if it misses the tag.
-
 ### Install and documentation
 
 - A license, this changelog, `CONTRIBUTING.md`, `SECURITY.md` (which names
   what crew sends over the network), and a version read from the tag (#29).
-- An install in one line from a GitHub release, and `crew update` (#32)
-  _not on main yet_.
+- An install in one line from a GitHub release (checked against
+  `SHA256SUMS`), a release made by a pushed tag, and `crew update` (#32).
 - A portable install, a five-minute quickstart, and a table of contents in
   the README (#53).
 - The site on GitHub Pages (#56), with a design pass so that nothing is cut
   off at any width (#58).
-- A real session on the site, from `crew story` (#55) _not on main yet_.
+- A real session on the site, from `crew story` (#55).
 - The README prices a Claude Code member by its model's rate.
 
 ### Starting a crew
@@ -41,7 +38,7 @@ checked against `git log`: the release drops it if it misses the tag.
 - An exited agent brought back in its own pane, and in its own
   conversation (#46).
 - Only an agent is woken: a wake line is never typed into a shell or
-  another program (#38) _not on main yet_.
+  another program (#38).
 - A poke is typed as one line: no carriage return or control byte gets
   through (#35).
 - A clone's crew is found when `CREW_DIR` does not reach the agent's
@@ -52,18 +49,19 @@ checked against `git log`: the release drops it if it misses the tag.
 
 ### The stream and the board
 
-- `crew story`: the session as one document (#31) _not on main yet_.
+- `crew story`: the session as one document, and `crew down --archive` saves
+  it as `story.md` (#31).
 - Status one-liners, `crew status <name> "Field: value"`, and reading a
   status (#47).
 - The stream filtered: `crew log --from`, `--to`, `--grep`, `--oneline`,
   and `crew unread --peek` (#48).
 - A review queue: each `Pushed:` until its `Review:`, on the board and in
-  `crew down` (#49) _not on main yet_.
+  `crew down` (#49).
 - The board counts each member's unread messages and lists its clone's
-  unclaimed files (#50); the live board's mark for unread messages is
-  _not on main yet_.
-- `crew send -m` and `-F`, and a warning for a name crew does not know
-  (#51) _not on main yet_.
+  unclaimed files (#50); the live board marks unread messages with `+`.
+- `crew send --message` (`-m`) and `--file` (`-F`), and a warning for a
+  recipient crew does not know (#51).
+- Two archives made in the same second kept apart.
 - Statuses, reports, and cursors written atomically (#43).
 
 ### Landing
@@ -89,5 +87,4 @@ checked against `git log`: the release drops it if it misses the tag.
   (#34).
 - A zero interval refused, and counts read as decimal (#37).
 - ShellCheck is told where `count_n` comes from, and clean.
-- An end-to-end test in a private tmux server, with fake agents (#39)
-  _not on main yet_.
+- An end-to-end test in a private tmux server, with fake agents (#39).
