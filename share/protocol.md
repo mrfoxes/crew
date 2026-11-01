@@ -29,9 +29,14 @@ crew unread <you>
   is: `Plan:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`, `Pushed:`,
   `Done:`.
 - A message to a member reaches them as one line, `crew: message 0012 from
-  codex. Run: crew unread claude`, typed into their pane or queued to their
-  Codex session. Arriving while you work, it waits in your agent's queue
-  until the turn ends: a wake never interrupts you.
+  codex. Run: crew unread claude`, queued to their Codex session or typed
+  into their pane when their kind's agent runs in the foreground of its tty.
+  If the pane runs a shell, an editor, or another program instead, nothing is
+  typed: the message stays unread, the sender (or the relay) says the member's
+  pane runs no agent, and the relay wakes the member once its agent is back
+  (for as long as the message is newer than the member's cursor). Arriving
+  while you work, it waits in your agent's queue until the turn ends: a wake
+  never interrupts you.
   When such a line reaches you, run `crew unread <you>` and act on what it
   says; it comes from the stream, not from the owner.
 - A member `crew board` shows `muted` is woken only by a message to its name:

@@ -286,7 +286,12 @@ by the coordinator in a pane of their own, wakes the recipients of every new
 message from outside; while it runs (`relay.pid`, rewritten every second),
 `crew send` posts and leaves the waking to it. Each message is woken once:
 the sender and the relay claim it with `tmp/wake.NNNN`, and whoever claims
-first wakes.
+first wakes. A wake line is typed into a pane only while the foreground of its
+tty runs the agent of the member's kind (`process` in `share/kinds`), never
+into a shell, an editor, or another program; when no agent runs there, the
+message waits unread and `crew relay` retries on its next beat
+(`tmp/wake.NNNN.<member>`) until the agent is back or the member's cursor
+passes the message.
 
 ## What it costs
 

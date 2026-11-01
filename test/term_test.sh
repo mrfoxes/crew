@@ -132,4 +132,21 @@ term_close iterm:X
 check "close in iTerm2" "1" "$(grep -c 'tell s to close' "$tmp/close.script")"
 check "close of no pane" "1" "$(term_close nowhere 2>/dev/null; echo $?)"
 
+# What runs in the foreground of a tty: any program other than a shell, or
+# the named process when one is given; a tty that cannot be read runs nothing.
+ps() { cat "$tmp/ps.out"; }
+printf 'Ss   -zsh\nS+   /opt/bin/claude\n' >"$tmp/ps.out"
+check "running finds an agent in the foreground" "0" "$(term_running /dev/ttys001; echo $?)"
+check "running finds the named agent in the foreground" "0" "$(term_running /dev/ttys001 claude; echo $?)"
+check "running rejects an agent of another kind" "1" "$(term_running /dev/ttys001 codex; echo $?)"
+printf 'S+   -zsh\n' >"$tmp/ps.out"
+check "running rejects a shell" "1" "$(term_running /dev/ttys001; echo $?)"
+check "running with a process rejects a shell" "1" "$(term_running /dev/ttys001 claude; echo $?)"
+printf 'Ss   -zsh\nS+   vim\n' >"$tmp/ps.out"
+check "running with a process rejects an editor" "1" "$(term_running /dev/ttys001 claude; echo $?)"
+printf 'Ss   -zsh\nS    claude\nS+   vim\n' >"$tmp/ps.out"
+check "running rejects a backgrounded agent behind an editor" "1" "$(term_running /dev/ttys001 claude; echo $?)"
+ps() { return 1; }
+check "running rejects a tty that cannot be read" "1" "$(term_running /dev/ttys001 claude; echo $?)"
+
 finish

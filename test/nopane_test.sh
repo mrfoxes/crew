@@ -29,6 +29,8 @@ crew_join coord --no-pane >/dev/null
 # A message to it waits, and says so without reading as an error.
 check "wake names the member that reads on its own" "crew: coord reads the stream on its own; the message waits for its next 'crew unread coord'" "$(crew_wake "$dir" 3 codex coord "Question: when?" 2>&1)"
 check "wake types nothing for it" "0" "$(crew_wake "$dir" 3 codex coord "Question: when?" 2>/dev/null | grep -c '<-')"
+term_running() { return 0; }
+kind_record "$dir" claude claude
 check "a message to all passes it by" "" "$(crew_join claude >/dev/null; crew_wake "$dir" 4 codex all "Plan: go" 2>&1 >/dev/null)"
 check "and wakes the one with a pane" "tmux:%7 <- crew: message 0004 from codex. Run: crew unread claude" "$(crew_wake "$dir" 4 codex all "Plan: go" 2>/dev/null)"
 

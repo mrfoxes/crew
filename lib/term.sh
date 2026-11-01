@@ -122,15 +122,15 @@ term_tty() {
     echo "$tty"
 }
 
-# Whether something other than a shell runs in the foreground on <tty>: the
-# agent started there is up, so a line typed there reaches it, not the
-# shell.
+# Whether something other than a shell runs in the foreground on <tty> (or
+# the process <process>, when given): the agent started there is up, so a
+# line typed there reaches it, not the shell.
 term_running() {
-    ps -t "${1#/dev/}" -o stat=,comm= 2>/dev/null | awk '
+    ps -t "${1#/dev/}" -o stat=,comm= 2>/dev/null | awk -v n="$#" -v p="${2:-}" '
         $1 ~ /\+/ {
             sub(/.*\//, "", $2)
             sub(/^-/, "", $2)
-            if ($2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) up = 1
+            if (n > 1 ? (p != "" && $2 == p) : $2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) up = 1
         }
         END { exit !up }'
 }

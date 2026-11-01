@@ -161,6 +161,8 @@ check "subject on one line" "codex to agy: Heads-up: one two" "$(sed -n '1s/^# [
 
 # The wake line: number, sender, command; never the subject.
 term_poke() { echo "$1 <- $2"; }
+kind_record "$dir" claude claude
+ps() { printf 'S+   claude\nS+   codex\n'; }
 check "wake line" "tmux:%7 <- crew: message 0012 from codex. Run: crew unread claude" "$(crew_wake "$dir" 12 codex claude "Review: @nogc")"
 
 # The relay: while it runs (its pid file fresh), crew send leaves the waking
@@ -187,6 +189,46 @@ echo body | crew_send codex claude "Heads-up: silent" >/dev/null
 check "relay step leaves woken and silent messages alone" "" "$(crew_relay_step "$dir" "$tmp/relay.last")"
 check "relay step still moves on" "$((n + 2))" "$(cat "$tmp/relay.last")"
 rm -f "$dir/relay.pid"
+
+# Waking only an agent: a pane running a shell, an editor, an agent of
+# another kind, or a tty that cannot be read gets nothing typed into it, and
+# the relay delivers the message once the member's agent is back.
+ps() { printf 'Ss   -zsh\nS+   claude\n'; }
+check "wake types once into an agent of the member's kind" "tmux:%7 <- crew: message 0012 from codex. Run: crew unread claude" "$(crew_wake "$dir" 12 codex claude "x" 2>&1)"
+ps() { printf 'S+   -zsh\n'; }
+check "wake types nothing into a shell" "crew: claude's pane runs no agent; the message waits for 'crew unread claude'" "$(crew_wake "$dir" 12 codex claude "x" 2>&1)"
+ps() { printf 'Ss   -zsh\nS+   vim\n'; }
+check "wake types nothing into an editor" "crew: claude's pane runs no agent; the message waits for 'crew unread claude'" "$(crew_wake "$dir" 12 codex claude "x" 2>&1)"
+ps() { printf 'Ss   -zsh\nS+   codex\n'; }
+check "wake types nothing into an agent of another kind" "crew: claude's pane runs no agent; the message waits for 'crew unread claude'" "$(crew_wake "$dir" 12 codex claude "x" 2>&1)"
+ps() { return 1; }
+check "wake types nothing when the tty cannot be read" "crew: claude's pane runs no agent; the message waits for 'crew unread claude'" "$(crew_wake "$dir" 12 codex claude "x" 2>&1)"
+rm -f "$dir/tmp/wake.12.claude"
+echo 1 >"$dir/relay.pid"
+ps() { printf 'S+   -zsh\n'; }
+wf=$(CREW_WAKE=1; echo x | crew_send codex claude "Heads-up: wait for agent")
+wn=$(number "$wf")
+wnn=$(printf '%04d' "$wn")
+check "relay defers a wake when the pane runs a shell" "crew: claude's pane runs no agent; the message waits for 'crew unread claude'" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+ps() { printf 'Ss   -zsh\nS+   vim\n'; }
+check "relay keeps waiting while an editor runs" "" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+ps() { printf 'Ss   -zsh\nS+   codex\n'; }
+check "relay keeps waiting while another kind runs" "" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+ps() { return 1; }
+check "relay keeps waiting when the tty cannot be read" "" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+ps() { printf 'Ss   -zsh\nS+   claude\n'; }
+check "relay delivers the same message once the agent is back" "tmux:%7 <- crew: message $wnn from codex. Run: crew unread claude
+12:00:00 relay: $wnn from codex to claude" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+check "relay does not deliver the deferred message twice" "" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+ps() { printf 'S+   -zsh\n'; }
+(CREW_WAKE=1; echo x | crew_send codex claude "Heads-up: read before back" >/dev/null)
+(crew_relay_step "$dir" "$tmp/relay.last" >/dev/null 2>&1)
+(crew_unread claude >/dev/null)
+ps() { printf 'Ss   -zsh\nS+   claude\n'; }
+check "relay drops a deferred wake once the member read the message" "" "$(crew_relay_step "$dir" "$tmp/relay.last" 2>&1)"
+rm -f "$dir/relay.pid"
+ps() { printf 'S+   claude\nS+   codex\n'; }
+n=$((n + 2))
 
 # Reading the stream again: the last few, or one by number.
 check "log" "3" "$(crew_log 3 | grep -c '^# ')"
@@ -284,6 +326,7 @@ echo "tmux:%7" >"$dir/panes/codex"
 check "wake with the thread gone types into the pane" "tmux:%7 <- crew: message 0012 from claude. Run: crew unread codex" "$(crew_wake "$dir" 12 claude codex "x" 2>&1)"
 rm -f "$dir/panes/codex"
 codex() { echo "codex $*" >"$tmp/codex.args"; }
+kind_record "$dir" claude claude
 check "wake to all reaches a member with a thread only" "tmux:%7 <- crew: message 0012 from agy. Run: crew unread claude
 codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" 2>&1; cat "$tmp/codex.args")"
 # A muted member is woken by a message to its name, not by one to all, and
@@ -301,6 +344,7 @@ check "unmute" "codex is woken by messages to all again" "$(crew_unmute codex)"
 rm -f "$tmp/codex.args"
 check "wake to all reaches an unmuted member" "codex queue --thread abc-123 --message crew: message 0012 from agy. Run: crew unread codex" "$(crew_wake "$dir" 12 agy all "x" >/dev/null 2>&1; cat "$tmp/codex.args")"
 check "leave forgets the thread" "" "$(crew_leave codex >/dev/null; cat "$dir/threads/codex" 2>/dev/null)"
+rm -f "$dir/kind/claude"
 
 (crew_unread agy >/dev/null)
 (crew_unread claude >/dev/null)

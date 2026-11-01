@@ -111,7 +111,7 @@ crew_leave() {
     dir=$(crew_dir) || return 1
     pane=$(cat "$dir/panes/$1" 2>/dev/null) || pane=""
     [ -z "$pane" ] || term_gone "$pane" || crew_unlabel "$pane"
-    rm -f "$dir/panes/$1" "$dir/nopane/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1"
+    rm -f "$dir/panes/$1" "$dir/nopane/$1" "$dir/threads/$1" "$dir/sessions/$1" "$dir/kind/$1" "$dir"/tmp/wake.*."$1"
     tab_drop "$dir" "$1"
     echo "$1 has no pane now; messages to $1 wait for 'crew unread $1'"
     if [ "${2:-}" = --clone ]; then
@@ -480,13 +480,67 @@ shell_word() {
     esac
 }
 
+# Whether <name>'s pane <pane> in <dir> runs <name>'s kind's agent in the
+# foreground of its tty. A state that cannot be read counts as no agent.
+pane_agent() {
+    pa_kind=$(kind_member "$1" "$2")
+    pa_proc=$(kind_field "$pa_kind" process)
+    [ -n "$pa_proc" ] || return 1
+    pa_tty=$(term_tty "$3" 2>/dev/null) && [ -n "$pa_tty" ] || return 1
+    term_running "$pa_tty" "$pa_proc"
+}
+
+# Wakes one recipient <who> for message <n> from <from> in <dir>. When
+# <who>'s pane runs no agent, nothing is typed and tmp/wake.<n>.<who>
+# records <from> for the relay to try again once the agent is back; a fifth
+# argument (retry) keeps stderr quiet on a retry that still finds no agent.
+wake_one() {
+    w_dir=$1
+    w_n=$2
+    w_from=$3
+    w_who=$4
+    w_retry=${5:-}
+    w_line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$w_n" "$w_from" "$w_who")
+    # Codex takes the line through its daemon, which needs no terminal;
+    # its pane is the way when the thread is gone.
+    if [ -s "$w_dir/threads/$w_who" ] &&
+        codex queue --thread "$(cat "$w_dir/threads/$w_who")" --message "$w_line" >/dev/null 2>&1; then
+        rm -f "$w_dir/tmp/wake.$w_n.$w_who"
+        return 0
+    fi
+    if [ -e "$w_dir/nopane/$w_who" ]; then
+        rm -f "$w_dir/tmp/wake.$w_n.$w_who"
+        [ -n "$w_retry" ] || echo "crew: $w_who reads the stream on its own; the message waits for its next 'crew unread $w_who'" >&2
+        return 2
+    fi
+    if [ ! -s "$w_dir/panes/$w_who" ]; then
+        rm -f "$w_dir/tmp/wake.$w_n.$w_who"
+        [ -n "$w_retry" ] || echo "crew: $w_who has no pane; the message waits for 'crew unread $w_who'" >&2
+        return 2
+    fi
+    w_pane=$(cat "$w_dir/panes/$w_who")
+    if ! pane_agent "$w_dir" "$w_who" "$w_pane"; then
+        mkdir -p "$w_dir/tmp"
+        echo "$w_from" >"$w_dir/tmp/wake.$w_n.$w_who"
+        [ -n "$w_retry" ] || echo "crew: $w_who's pane runs no agent; the message waits for 'crew unread $w_who'" >&2
+        return 1
+    fi
+    if term_poke "$w_pane" "$w_line" 2>/dev/null; then
+        rm -f "$w_dir/tmp/wake.$w_n.$w_who"
+        return 0
+    fi
+    [ -n "$w_retry" ] || echo "crew: could not wake $w_who; the message waits in the stream" >&2
+    return 2
+}
+
 # Tells the recipients of message <n> that it is there: one line, queued to
-# a Codex member's thread or typed into the member's pane, a desktop
-# notification for the owner. The line holds the number, the sender, and
-# the command, never the subject: an agent may read a character of free
-# text (@, $) as a command of its own. A member that reads on its own
-# (--no-pane), one with no pane, or none at all, is named: the message
-# waits in the stream. So is a muted member, for a message to all.
+# a Codex member's thread or typed into the member's pane when its kind's
+# agent runs in the foreground, a desktop notification for the owner. The
+# line holds the number, the sender, and the command, never the subject: an
+# agent may read a character of free text (@, $) as a command of its own. A
+# member that reads on its own (--no-pane), one with no pane, one whose pane
+# runs no agent, or none at all, is named: the message waits in the stream.
+# So is a muted member, for a message to all.
 crew_wake() {
     dir=$1
     n=$2
@@ -508,23 +562,7 @@ crew_wake() {
             echo "crew: $who is muted; the message waits for 'crew unread $who'" >&2
             continue
         fi
-        line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$n" "$from" "$who")
-        # Codex takes the line through its daemon, which needs no terminal;
-        # its pane is the way when the thread is gone.
-        if [ -s "$dir/threads/$who" ] &&
-            codex queue --thread "$(cat "$dir/threads/$who")" --message "$line" >/dev/null 2>&1; then
-            continue
-        fi
-        if [ -e "$dir/nopane/$who" ]; then
-            echo "crew: $who reads the stream on its own; the message waits for its next 'crew unread $who'" >&2
-            continue
-        fi
-        if [ ! -s "$dir/panes/$who" ]; then
-            echo "crew: $who has no pane; the message waits for 'crew unread $who'" >&2
-            continue
-        fi
-        term_poke "$(cat "$dir/panes/$who")" "$line" 2>/dev/null ||
-            echo "crew: could not wake $who; the message waits in the stream" >&2
+        wake_one "$dir" "$n" "$from" "$who" || :
     done
 }
 
@@ -574,13 +612,30 @@ crew_relay_beat() {
     crew_relay_step "$1" "$1/relay.last"
 }
 
-# One step of the relay: wakes the recipients of every message past the
-# number in <last> that its sender did not wake (tmp/wake.<n> is the claim,
-# made by whoever wakes first), one line each, and writes the last number
-# seen there.
+# One step of the relay: retries any recipient whose pane ran no agent when
+# the message first arrived (tmp/wake.<n>.<who>) for as long as the message
+# is newer than the member's cursor, then wakes the recipients of every
+# message past the number in <last> that its sender did not wake
+# (tmp/wake.<n> is the claim, made by whoever wakes first), one line each,
+# and writes the last number seen there.
 crew_relay_step() {
     dir=$1
     lastfile=$2
+    for rs_wf in "$dir"/tmp/wake.*.*; do
+        [ -f "$rs_wf" ] || continue
+        rs_rest=${rs_wf#"$dir/tmp/wake."}
+        rs_n=${rs_rest%%.*}
+        rs_who=${rs_rest#*.}
+        rs_cursor=$(cat "$dir/cursors/$rs_who" 2>/dev/null) || rs_cursor=0
+        if [ "$rs_n" -le "${rs_cursor:-0}" ]; then
+            rm -f "$rs_wf"
+            continue
+        fi
+        rs_from=$(cat "$rs_wf")
+        if wake_one "$dir" "$rs_n" "$rs_from" "$rs_who" retry; then
+            printf '%s relay: %04d from %s to %s\n' "$(crew_stamp)" "$rs_n" "$rs_from" "$rs_who"
+        fi
+    done
     last=$(cat "$lastfile" 2>/dev/null)
     last=${last:-0}
     for n in $(ls "$dir/seq" | sort -n); do
@@ -591,7 +646,8 @@ crew_relay_step() {
         from=$(crew_field "$f" From)
         to=$(crew_field "$f" To)
         crew_wake "$dir" "$n" "$from" "$to" "$(sed -n "1s/^# [0-9]*\. $from to $to: //p" "$f")"
-        printf '%s relay: %04d from %s to %s\n' "$(crew_stamp)" "$n" "$from" "$to"
+        [ -e "$dir/tmp/wake.$n.$to" ] ||
+            printf '%s relay: %04d from %s to %s\n' "$(crew_stamp)" "$n" "$from" "$to"
     done
 }
 
