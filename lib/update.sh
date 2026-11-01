@@ -33,11 +33,28 @@ update_fetch() {
     fi
 }
 
-# The latest release's version, read from its SHA256SUMS, or nothing.
+# The SHA-256 of <file>, with sha256sum (Linux) or shasum (macOS); nothing
+# when neither is here.
+update_sha256() {
+    if sha256sum </dev/null >/dev/null 2>&1; then
+        sha256sum "$1" | cut -d' ' -f1
+    elif shasum -a 256 </dev/null >/dev/null 2>&1; then
+        shasum -a 256 "$1" | cut -d' ' -f1
+    fi
+}
+
+# Whether <version> is a tag like v1.0.0: it names a URL and a directory.
+update_version_ok() {
+    printf '%s\n' "$1" | grep -Eq '^v[0-9][0-9A-Za-z.+_-]*$'
+}
+
+# The latest release's version, read from its SHA256SUMS, or nothing; a
+# name that is not a version is nothing too.
 update_latest() {
     u_sums=$(mktemp)
     if update_fetch "$(update_releases)/latest/download/SHA256SUMS" "$u_sums" 2>/dev/null; then
-        sed -n 's/^[0-9a-f]*  *crew-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p' "$u_sums" | head -n 1
+        u_v=$(sed -n 's/^[0-9a-f]*  *crew-\(v[0-9][^ ]*\)\.tar\.gz$/\1/p' "$u_sums" | head -n 1)
+        ! update_version_ok "$u_v" || echo "$u_v"
     fi
     rm -f "$u_sums"
 }
@@ -74,6 +91,22 @@ crew_update() {
     if ! update_fetch "$(update_releases)/download/$u_latest/install.sh" "$u_script"; then
         rm -f "$u_script"
         echo "crew: could not download $u_latest's install.sh" >&2
+        return 1
+    fi
+    # The script is the release's own: its SHA256SUMS names install.sh, and a
+    # download cut short, or another script, is not run.
+    u_sums=$(mktemp)
+    if ! update_fetch "$(update_releases)/download/$u_latest/SHA256SUMS" "$u_sums"; then
+        rm -f "$u_script" "$u_sums"
+        echo "crew: could not download $u_latest's SHA256SUMS" >&2
+        return 1
+    fi
+    u_want=$(awk '$2 == "install.sh" { print $1; exit }' "$u_sums")
+    u_have=$(update_sha256 "$u_script")
+    rm -f "$u_sums"
+    if [ -z "$u_want" ] || [ "$u_have" != "$u_want" ]; then
+        rm -f "$u_script"
+        echo "crew: $u_latest's install.sh does not match its SHA256SUMS: not run" >&2
         return 1
     fi
     sh "$u_script" --version "$u_latest" --prefix "$u_prefix"

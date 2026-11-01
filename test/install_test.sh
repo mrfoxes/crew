@@ -124,4 +124,52 @@ CREW_HOME=$home_was
 printf '#!/bin/sh\nexit 22\n' >"$tmp/bin/curl"
 check "update with no release to read" "1" "$(crew_update --check >/dev/null 2>&1; echo $?)"
 
+
+# What a stranger's machine needs: a crew of someone else at the prefix is
+# left alone, a version that is not one is refused before any download, a
+# download cut short runs nothing, and crew update runs only the release's
+# own install.sh.
+install --uninstall >/dev/null
+ln -s /usr/bin/true "$HOME/.local/bin/crew"
+check "another crew at the prefix stops the install" "1" "$(install)"
+check "and is named, with --prefix as the way out" "1" "$(grep -c "^install: $HOME/.local/bin/crew is there already and is not this install's link (it is /usr/bin/true): --prefix <dir> links elsewhere; nothing installed$" "$tmp/install.out")"
+check "and nothing is downloaded or installed" "0" "$([ -e "$data" ] && echo 1 || echo 0)"
+check "and the other crew stays" "/usr/bin/true" "$(readlink "$HOME/.local/bin/crew")"
+rm "$HOME/.local/bin/crew"
+: >"$tmp/fetched"
+cat >"$tmp/bin/curl" <<EOF
+#!/bin/sh
+out=""
+url=""
+while [ \$# -gt 0 ]; do
+    case "\$1" in
+    -o) out=\$2; shift ;;
+    -*) ;;
+    *) url=\$1 ;;
+    esac
+    shift
+done
+echo "\$url" >>"$tmp/fetched"
+cp "$fake/\${url#$CREW_RELEASES/}" "\$out"
+EOF
+check "a version with a slash is refused" "1" "$(install --version 'v1/../x')"
+check "a version with a space is refused" "1" "$(install --version 'v1 x')"
+check "a version that is not one is refused" "1" "$(install --version 1.0.0)"
+check "before any download" "0" "$(wc -l <"$tmp/fetched" | tr -d ' ')"
+check "and the message says what a version is" "1" "$(grep -c "^install: '1.0.0' is not a version like v1.0.0: nothing installed$" "$tmp/install.out")"
+cp "$fake/latest/download/SHA256SUMS" "$tmp/sums.good"
+sed 's/crew-v1\.1\.0\.tar\.gz/crew-v1.1.0\/..\/x.tar.gz/' "$tmp/sums.good" >"$fake/latest/download/SHA256SUMS"
+check "a SHA256SUMS naming no version installs nothing" "1" "$(install)"
+check "and update reads no latest from it" "1" "$(crew_update --check >/dev/null 2>&1; echo $?)"
+cp "$tmp/sums.good" "$fake/latest/download/SHA256SUMS"
+check "a script cut short runs nothing" "0" "$(sed '$d' "$CREW_HOME/install.sh" | sh >/dev/null 2>&1; echo $?)"
+check "and installs nothing" "0" "$([ -e "$data" ] && echo 1 || echo 0)"
+install --version v1.0.0 >/dev/null
+CREW_HOME=$data/v1.0.0
+printf '#!/bin/sh\necho tampered\n' >"$fake/download/v1.1.0/install.sh"
+check "update refuses an install.sh that is not the release's" "1" "$(crew_update >/dev/null 2>&1; echo $?)"
+check "and says so" "1" "$(crew_update 2>&1 | grep -c "^crew: v1.1.0's install.sh does not match its SHA256SUMS: not run$")"
+check "and the install stays" "v1.0.0" "$(readlink "$data/current")"
+CREW_HOME=$home_was
+
 finish
