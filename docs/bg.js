@@ -136,9 +136,10 @@
   function tick(now) {
     rafId = 0;
     if (!active()) return;
-    if (!lastT) lastT = now;
-    step(Math.min((now - lastT) / 1000, 0.1));
-    lastT = now; draw();
+    if (!lastT || now - lastT >= 32) {
+      step(lastT ? Math.min((now - lastT) / 1000, 0.1) : 0);
+      lastT = now; draw();
+    }
     rafId = window.requestAnimationFrame(tick);
   }
   function syncLoop() {
