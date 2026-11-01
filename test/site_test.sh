@@ -85,5 +85,25 @@ for bad in orchestration swarm autonomous ai agentic; do
 done
 check "no em dash on the site" "" "$(grep -E '—|&mdash;' "$html" || :)"
 check "no local /Users/ path on the site" "" "$(grep '/Users/' "$html" || :)"
+check "no email on the site" "" "$(grep -E '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' "$html" || :)"
+
+# The real session from crew story (#55): six moments, crew story headings,
+# Cuts marked [...], and message links resolving to # NNNN. headers.
+for m in moment-crewfile moment-plan moment-gate moment-land moment-review moment-down; do
+    check "session moment #$m exists" "1" \
+        "$(grep -q "id=\"$m\"" "$html" && echo 1 || echo 0)"
+done
+for h in "# The crew of crew" "## The Crewfile" "## The members" "## The stream" "## The commits" "## The reports"; do
+    check "session includes crew story heading '$h'" "1" \
+        "$(grep -Fq "$h" "$html" && echo 1 || echo 0)"
+done
+for n in 0001 0009 0010 0034 0036; do
+    check "session links to #msg-$n" "1" \
+        "$(grep -q "href=\"#msg-$n\"" "$html" && echo 1 || echo 0)"
+    check "session defines #msg-$n on message $n" "1" \
+        "$(grep -q "id=\"msg-$n\"># $n\\." "$html" && echo 1 || echo 0)"
+done
+check "session marks cuts with [...]" "1" \
+    "$(grep -Fq '[...]' "$html" && echo 1 || echo 0)"
 
 finish

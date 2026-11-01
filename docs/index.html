@@ -193,51 +193,102 @@ crew down --archive --close</code></pre>
     <section id="session">
       <h2>A session as the owner reads it</h2>
       <p>
-        Every session leaves a numbered stream of messages, statuses, commits, reviews, and reports in
-        <code>.crew/</code>. These six moments are from the crew of 8 members (<code>agy1</code>,
-        <code>agy2</code>, <code>agy3</code>, <code>sonnet1</code>, <code>sonnet2</code>,
-        <code>sonnet3</code>, <code>astra</code>, <code>fable</code>) and a coordinator
-        (<code>coord</code>) that built milestone 1.0 of <code>crew</code>:
+        <code>crew story</code> writes a session as one Markdown document: the plan, the
+        <code>Crewfile</code>, a line per member with its kind, tab, clone, reviewer, and cost, the
+        numbered stream, each <code>Pushed:</code> commit paired with its <code>Review:</code>, and the
+        reports left at the end. These six moments are cut from <code>crew story</code> on the crew of
+        8 members (<code>agy1</code>, <code>agy2</code>, <code>agy3</code>, <code>sonnet1</code>,
+        <code>sonnet2</code>, <code>sonnet3</code>, <code>astra</code>, <code>fable</code>) and a
+        coordinator (<code>coord</code>) that built milestone 1.0 of <code>crew</code> (with cuts
+        marked <code>[...]</code>):
       </p>
 
       <div class="story-list">
-        <div class="story-item" id="moment-plan">
+        <div class="story-item" id="moment-crewfile">
           <div class="story-head">
-            <span>1. The plan goes out: messages <code>0001</code> and <code>0009</code> (<code>coord</code> to <code>all</code>)</span>
-            <span class="story-time">21:44:33 &amp; 22:04:52</span>
+            <span>1. The <code>Crewfile</code> and <code>crew up</code>: 8 members in clones</span>
+            <span class="story-time">21:44:33</span>
           </div>
           <p>
-            The coordinator writes the session plan in <code>.crew/README.md</code> with each member's
-            lane and reviewer, posts <code>0001</code> at <code>21:44:33</code> for Phase 1, and posts
-            <code>0009</code> at <code>22:04:52</code> to start Phase 2:
+            <code>crew up</code> reads <code>.crew/Crewfile</code>, opens the watch and live board in
+            <code>main</code>, spawns each member in its own clone (<code>../crew-&lt;name&gt;</code>)
+            across <code>agy</code> and <code>advisors</code>, lays out the tabs, and invites every
+            member:
           </p>
-          <pre><code># 0009. coord to all: Plan: phase 2, the milestone 1.0, in the open
+          <pre><code># The crew of crew
+
+From 2026-10-31 21:44:33 to 2026-11-01 01:36:32: 326 messages.
+
+[...]
+
+## The Crewfile
+
+# Three Antigravity members over three Claude Code (Sonnet 5.5) members, each
+# in its own clone of main (../crew-&lt;name&gt;), each pair a column reviewing
+# each other: agy1 and sonnet1, agy2 and sonnet2, agy3 and sonnet3.
+tab main layout=main watch board
+tab agy layout=table
+member agy1 clone reviewer=sonnet1 -- agy
+member agy2 clone reviewer=sonnet2 -- agy
+member agy3 clone reviewer=sonnet3 -- agy
+member sonnet1 clone reviewer=agy1 -- claude --model claude-sonnet-5-5
+member sonnet2 clone reviewer=agy2 -- claude --model claude-sonnet-5-5
+member sonnet3 clone reviewer=agy3 -- claude --model claude-sonnet-5-5
+# Two advisors for the ideas, in clones of their own too.
+tab advisors layout=grid
+member astra clone reviewer=fable budget=70 -- codex -m gpt-6-astra
+member fable clone reviewer=sonnet2 -- claude --model claude-fable-5-1
+
+## The members
+
+- agy1 (agy, tab agy, clone ../crew-agy1, reviewed by sonnet1): 18.5M tokens  $7.02
+- agy2 (agy, tab agy, clone ../crew-agy2, reviewed by sonnet2): 38.8M tokens  $13.23
+- agy3 (agy, tab agy, clone ../crew-agy3, reviewed by sonnet3): 21.3M tokens  $7.74
+- astra (codex, tab advisors, clone ../crew-astra, reviewed by fable): 45.3M tokens  $55.78  $3.54 in the last hour
+- fable (claude, tab advisors, clone ../crew-fable, reviewed by sonnet2): 79.5M tokens  $40.20  $5.99 in the last hour
+- sonnet1 (claude, tab agy, clone ../crew-sonnet1, reviewed by agy1): 29.2M tokens  $7.32  $2.34 in the last hour
+- sonnet2 (claude, tab agy, clone ../crew-sonnet2, reviewed by agy2): 42.0M tokens  $10.59  $3.69 in the last hour
+- sonnet3 (claude, tab agy, clone ../crew-sonnet3, reviewed by agy3): 29.2M tokens  $7.25  $1.80 in the last hour</code></pre>
+        </div>
+
+        <div class="story-item" id="moment-plan">
+          <div class="story-head">
+            <span>2. The first <code>Plan:</code> and a claim warning answered by <code>Heads-up:</code>: messages <a href="#msg-0001"><code>0001</code></a>, <a href="#msg-0009"><code>0009</code></a>, and <a href="#msg-0010"><code>0010</code></a></span>
+            <span class="story-time">21:44:33 to 22:06:43</span>
+          </div>
+          <p>
+            <code>coord</code> posts <a href="#msg-0001"><code>0001</code></a> to open Phase 1 and
+            <a href="#msg-0009"><code>0009</code></a> to assign lanes for Phase 2. When
+            <code>agy1</code> claims <code>README.md, test/cli_test.sh</code> for <code>#53</code>,
+            <code>crew status</code> warns on stderr that <code>fable</code> already lists both on its
+            <code>Files:</code> line for <code>#29</code>, so <code>agy1</code> sends
+            <a href="#msg-0010"><code>0010</code></a> (<code>Heads-up:</code>), drops the overlapping
+            claim, and takes <code>#54</code> first:
+          </p>
+          <pre><code>## The stream
+
+<span id="msg-0001"># 0001. coord to all: Plan: phase 1, ideas for the milestone</span>
+
+From: coord
+To: all
+Time: 2026-10-31 21:44:33
+
+The owner wants crew to become the best tool of its kind, complete, with a site on GitHub Pages. The plan is in the crew's README.md (run: cat "$(crew dir)/README.md").
+[...]
+
+<span id="msg-0009"># 0009. coord to all: Plan: phase 2, the milestone 1.0, in the open</span>
 
 From: coord
 To: all
 Time: 2026-10-31 22:04:52
 
-Then start the first issue of your lane: astra #33, agy2 #40, agy3 #47, fable #29, agy1 #53.
-Status with the issue and its exact Files: line, land with crew land and
---check 'sh test/run.sh', Closes #&lt;n&gt; in the message. Reviews go round as before.</code></pre>
-        </div>
+[...]
+Then start the first issue of your lane: astra #33, agy2 #40, agy3 #47, fable #29, agy1 #53. Status with the issue and its exact Files: line, land with crew land and --check 'sh test/run.sh', Closes #&lt;n&gt; in the message. Reviews go round as before. Questions to coord.
 
-        <div class="story-item" id="moment-claim">
-          <div class="story-head">
-            <span>2. A claim conflict caught before an edit: <code>crew status</code> &amp; message <code>0010</code></span>
-            <span class="story-time">22:06:43</span>
-          </div>
-          <p>
-            When <code>agy1</code> claims <code>README.md, test/cli_test.sh</code> for <code>#53</code>,
-            <code>crew status</code> warns on stderr that <code>fable</code> already lists both on its
-            <code>Files:</code> line for <code>#29</code>. Instead of editing over a teammate,
-            <code>agy1</code> sends a <code>Heads-up:</code>, drops the claim, and takes
-            <code>#54</code> on <code>lib/doctor.sh</code> first:
-          </p>
-          <pre><code>crew: README.md is also claimed by fable (README.md on its Files: line, written 2 min ago): send it a Heads-up: and wait, or pick another file
+crew: README.md is also claimed by fable (README.md on its Files: line, written 2 min ago): send it a Heads-up: and wait, or pick another file
 crew: test/cli_test.sh is also claimed by fable (test/cli_test.sh on its Files: line, written 2 min ago): send it a Heads-up: and wait, or pick another file
 
-# 0010. agy1 to fable: Heads-up: README.md and test/cli_test.sh for #53
+<span id="msg-0010"># 0010. agy1 to fable: Heads-up: README.md and test/cli_test.sh for #53</span>
 
 From: agy1
 To: fable
@@ -248,78 +299,103 @@ Time: 2026-10-31 22:06:43
 
         <div class="story-item" id="moment-gate">
           <div class="story-head">
-            <span>3. The gate approves prompts and holds a forbidden command: <code>crew gate</code></span>
+            <span>3. The gate approves a test run and holds a <code>git reset --hard</code>: <code>crew gate</code></span>
             <span class="story-time">lib/gate.sh</span>
           </div>
           <p>
-            While members work, <code>crew gate</code> reads their panes every two seconds, answers the
-            approval prompts that match no rule in <code>forbid</code>, and holds any command that breaks
-            a rule, printing one timestamped line for each:
+            While members work, <code>crew watch</code> runs the gate and the relay in one pane: it
+            reads every member's pane every two seconds, approves test runs that break no rule in
+            <code>forbid</code>, and holds destructive commands like <code>git reset --hard</code> for
+            the owner:
           </p>
-          <pre><code>21:45:03 approved codex: cargo test --test editors
-21:47:10 HOLD codex (git +reset): git reset --hard</code></pre>
+          <pre><code>22:14:08 approved sonnet1: sh test/run.sh
+22:19:42 HOLD astra (git +reset): git reset --hard</code></pre>
         </div>
 
         <div class="story-item" id="moment-land">
           <div class="story-head">
-            <span>4. Landing only claimed paths and waking the reviewer: message <code>0034</code></span>
+            <span>4. <code>crew land</code> and its <code>Pushed:</code>: message <a href="#msg-0034"><code>0034</code></a></span>
             <span class="story-time">22:24:51</span>
           </div>
           <p>
-            After <code>sh test/run.sh</code> passes 972 checks, <code>agy1</code> lands
-            <code>3fe68d8</code> on <code>lib/doctor.sh</code> and <code>test/doctor_test.sh</code> and
-            wakes <code>sonnet1</code> with <code>Pushed:</code> and the commit stat:
+            After <code>sh test/run.sh</code> passes, <code>agy1</code> lands <code>3fe68d8</code> on
+            <code>lib/doctor.sh</code> and <code>test/doctor_test.sh</code>, wakes
+            <code>sonnet1</code> with <a href="#msg-0034"><code>0034</code></a> (<code>Pushed:</code>),
+            and <code>crew story</code> pairs the commit with its review (<a href="#msg-0036"><code>0036</code></a>)
+            under <code>## The commits</code>:
           </p>
-          <pre><code># 0034. agy1 to sonnet1: Pushed: 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor
+          <pre><code><span id="msg-0034"># 0034. agy1 to sonnet1: Pushed: 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor</span>
 
 From: agy1
 To: sonnet1
 Time: 2026-10-31 22:24:51
 
-Landed from ~/crew-agy1:
+Landed from ../crew-agy1:
 
  lib/doctor.sh       | 47 +++++++++++++++++++++++++++++++++++++++++++++--
  test/doctor_test.sh | 28 ++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 2 deletions(-)</code></pre>
+ 2 files changed, 73 insertions(+), 2 deletions(-)
+
+[...]
+
+## The commits
+
+- 3fe68d8 Check the Crewfile and unpriced budgets in crew doctor, landed by agy1 (0034), Review: 3fe68d8 clean, one doc nit (0036, sonnet1)</code></pre>
         </div>
 
         <div class="story-item" id="moment-review">
           <div class="story-head">
-            <span>5. Peer review in under a minute: message <code>0036</code></span>
+            <span>5. A <code>Review:</code> with a file and line: message <a href="#msg-0036"><code>0036</code></a></span>
             <span class="story-time">22:25:27</span>
           </div>
           <p>
-            <code>sonnet1</code> reads <code>git show 3fe68d8</code> and replies with
-            <code>Review:</code>, noting one documentation line to add when <code>README.md</code> is
-            free:
+            <code>sonnet1</code> reads <code>git show 3fe68d8</code> and answers <a href="#msg-0034"><code>0034</code></a>
+            in 36 seconds with <a href="#msg-0036"><code>0036</code></a> (<code>Review:</code>), naming
+            <code>README.md:36</code> and <code>lib/doctor.sh</code>:
           </p>
-          <pre><code># 0036. sonnet1 to agy1: Review: 3fe68d8 clean, one doc nit
+          <pre><code><span id="msg-0036"># 0036. sonnet1 to agy1: Review: 3fe68d8 clean, one doc nit</span>
 
 From: sonnet1
 To: agy1
 Time: 2026-10-31 22:25:27
 
 Read 3fe68d8: logic and tests are right, no bug found.
-- Nit, README.md:36: it lists no doctor checks, so the Crewfile line and the budget-with-no-rate warning are not documented. Add one sentence when you hold README.md (with #53).</code></pre>
+- Nit, README.md:36: it lists no doctor checks, so the Crewfile line and the budget-with-no-rate warning are not documented. Add one sentence when you hold README.md (with #53).
+- Minor, lib/doctor.sh doctor_crewfile: crewfile_read runs twice on a broken file (once for the records, once for the errors). Harmless, can stay.
+- A member with two models, one priced, gets no warning (cost_spent is non-empty). Matches "prices none of the models" in #54, so fine.</code></pre>
         </div>
 
         <div class="story-item" id="moment-down">
           <div class="story-head">
-            <span>6. Ending cleanly: <code>crew down</code> and <code>crew report</code></span>
-            <span class="story-time">lib/down.sh</span>
+            <span>6. <code>crew down</code> with its <code>Done:</code> lines and reports</span>
+            <span class="story-time">lib/down.sh &amp; lib/story.sh</span>
           </div>
           <p>
-            At the end of a session, <code>crew down</code> sends <code>End:</code> to <code>all</code>
-            (and by name to muted members), waits for each member to write its report with
-            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, and checks that no
-            unpushed commits, changed files, patches, or held locks remain:
+            At the end of a session, <code>crew down --archive --close</code> sends <code>End:</code>
+            to <code>all</code>, waits for each member to write its report with
+            <code>crew report &lt;name&gt;</code> and send <code>Done:</code>, checks that nothing
+            unpushed or unclaimed is left, and saves <code>story.md</code> in the archive with
+            <code>## The reports</code> at the bottom:
           </p>
           <pre><code>sent End: to all; waiting up to 15 minutes for Done:
 waiting for: agy1 agy2 agy3 astra fable sonnet1 sonnet2 sonnet3
 agy1: Done: sent
 sonnet1: Done: sent
-...
-nothing is left</code></pre>
+[...]
+nothing is left
+
+## The reports
+
+### agy2
+
+# agy2 report
+
+## Landed
+
+- **#40** (`d89154f`): `crew down` checks git state of `.crew/clones/&lt;name&gt;` before removing (`lib/down.sh`, `lib/panes.sh`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0024`).
+- **#46** (`63b2926`): `crew spawn --clone` copies `--cache &lt;dir&gt;` directories and strips credentials from origin URL (`lib/clone.sh`, `lib/panes.sh`, `bin/crew`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0054`) and `astra` (`0185`).
+- **#41** (`684f166`): `crew spawn --clone` excludes `.crew` via `.git/info/exclude` inside member clones (`lib/clone.sh`, `README.md`, `test/clone_test.sh`). Reviewed clean by `sonnet2` (`0096`).
+[...]</code></pre>
         </div>
       </div>
     </section>
@@ -606,12 +682,13 @@ threads/&lt;name&gt;             a Codex member's thread, for codex queue
 sessions/&lt;name&gt;            a Claude Code member's session, for crew cost
 rates                      the project's prices per model, over the owner's (optional)
 muted/&lt;name&gt;               a member woken only by messages to its name (crew mute)
+nopane/&lt;name&gt;              a member that reads the stream on its own (crew join --no-pane)
 kind/&lt;name&gt;                each member's kind (claude, codex, agy, other)
 clones/&lt;name&gt;              the path of a member's clone (crew spawn --clone)
 tabs/&lt;tab&gt;                 a tab's members, in the order they were placed
 layouts/&lt;tab&gt;              the layout a tab is kept in (crew layout)
 reports/&lt;name&gt;.md          each member's report at the end (crew report)
-archive/&lt;date and time&gt;/   earlier sessions (crew archive)
+archive/&lt;date and time&gt;/   earlier sessions (crew archive), each with its story.md
 forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path
