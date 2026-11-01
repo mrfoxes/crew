@@ -188,7 +188,8 @@ shell_only() {
         $1 ~ /\+/ { sub(/.*\//, "", $2); sub(/^-/, "", $2); if ($2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) busy = 1 }
         END { exit busy }'
 }
-check "only a shell is left in ada's pane" "0" "$(wait_for 20 shell_only; echo $?)"
+# On a failure, what holds the foreground goes to stderr, for CI's log.
+check "only a shell is left in ada's pane" "0" "$(wait_for 20 shell_only && echo 0 || { ps -t "${ada_tty#/dev/}" -o pid=,ppid=,stat=,comm=,args= >&2; echo 1; })"
 crew send bob all "Done: nothing left" >/dev/null <<'EOT'
 Done.
 EOT
