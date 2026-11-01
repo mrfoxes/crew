@@ -230,6 +230,16 @@ forgets a pane you closed; `crew version` says which crew this is: the tag
 when the checkout has one (`crew v1.0.0 (2026-11-02)`, and
 `crew v1.0.0-3-g17aac8d (2026-11-05)` three commits past it), else the commit.
 
+`crew story` writes the session as one Markdown document on stdout: the
+plan and the Crewfile whole, a line a member with its kind, tab, clone,
+reviewer, and what it spent, every message in order, each `Pushed:` with
+who landed it and the `Review:` that answered it (or whose review it
+still waits for), and the reports with the patches left. `crew story
+<time>` reads an archive `crew archive` made (or a path to one), and
+`crew down --archive` saves the story it archives as
+`archive/<time>/story.md`: a session you can read whole, and hand to
+someone.
+
 The body of a message is read from stdin (a heredoc), or given on the line
 with `-m <text>` (`--message`) or `-F <file>` (`--file`, `-` for stdin), one
 of the three. A recipient the crew does not know (no pane, thread, session,
@@ -713,6 +723,7 @@ lib/live.sh         crew board --live: a line a member, redrawn
 lib/down.sh         crew down: End: sent, Done: waited for, what is left said, panes stopped and closed
 lib/clones.sh       a member's clone: made, reused, synced, shown on the board, removed
 lib/land.sh         crew land: check, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
+lib/story.sh        crew story: the session as one document, from the crew or an archive
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
@@ -754,7 +765,7 @@ clones/<name>              the path of a member's clone (crew spawn --clone)
 tabs/<tab>                 a tab's members, in the order they were placed
 layouts/<tab>              the layout a tab is kept in (crew layout)
 reports/<name>.md          each member's report at the end (crew report)
-archive/<date and time>/   earlier sessions (crew archive)
+archive/<date and time>/   earlier sessions (crew archive), each with its story.md
 forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path

@@ -29,6 +29,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/up.sh"
 . "$CREW_HOME/lib/live.sh"
 . "$CREW_HOME/lib/down.sh"
+. "$CREW_HOME/lib/story.sh"
 
 usage() {
     cat <<'EOF'
@@ -113,6 +114,8 @@ For the coordinator
   relay                         wake recipients for every sender, from this pane
   watch <name>... [--all] [--dry]
                                 gate and relay in one pane
+  story [<archive>]             the session as one document: plan, Crewfile,
+                                members, stream, commits with reviews, reports
   archive                       put the session's stream and files aside, start over
   version                       which crew this is
 
@@ -168,6 +171,7 @@ key) crew_key "$@" ;;
 gate) crew_gate "$@" ;;
 relay) crew_relay "$@" ;;
 watch) crew_watch "$@" ;;
+story) crew_story "$@" ;;
 archive) crew_archive "$@" ;;
 version | --version) version ;;
 -h | --help | usage) usage ;;

@@ -298,7 +298,14 @@ crew_down() {
             echo "not archived: something is left"
         else
             down_relay_off "$dir"
-            crew_archive || dn_status=1
+            if dn_to=$(crew_archive); then
+                echo "$dn_to"
+                case "$dn_to" in
+                */*) crew_story "$dn_to" >"$dn_to/story.md" ;;
+                esac
+            else
+                dn_status=1
+            fi
         fi
     fi
     if [ -n "$dn_closing" ]; then
