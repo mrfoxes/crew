@@ -179,6 +179,16 @@ tm send-keys -t "${ada#tmux:}" -l '!exit'
 tm send-keys -t "${ada#tmux:}" Enter
 agent_left() { [ "$(tm display-message -p -t "${ada#tmux:}" '#{pane_current_command}')" != claude ]; }
 check "ada's agent left its pane" "0" "$(wait_for 20 agent_left; echo $?)"
+# crew down closes a pane once ps shows only a shell in its foreground, as
+# term_running reads it; tmux's pane_current_command can turn first, with a
+# child of the agent still in the foreground for a moment (macOS CI saw it).
+ada_tty=$(tm display-message -p -t "${ada#tmux:}" '#{pane_tty}')
+shell_only() {
+    ps -t "${ada_tty#/dev/}" -o stat=,comm= | awk '
+        $1 ~ /\+/ { sub(/.*\//, "", $2); sub(/^-/, "", $2); if ($2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) busy = 1 }
+        END { exit busy }'
+}
+check "only a shell is left in ada's pane" "0" "$(wait_for 20 shell_only; echo $?)"
 crew send bob all "Done: nothing left" >/dev/null <<'EOT'
 Done.
 EOT
