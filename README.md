@@ -508,7 +508,11 @@ a pane still open.
 `../<project dir name>-<name>`, instead of the project's: its builds,
 index, and commits touch nobody else's, and it lands through `origin`.
 `<cmd>` runs there with `CREW_DIR` set to the crew's directory, so the
-member joins the same crew.
+member joins the same crew. A clone also records its crew in its local git
+config, `crew.dir`, so `crew` finds it there when `CREW_DIR` does not reach
+the agent's commands; `crew dir` looks at `CREW_DIR`, then the nearest
+`.crew` at or above the working directory, then `crew.dir`, then the main
+checkout's root and home.
 
 ```
 crew spawn lean --clone --cache .lake claude    # ../proj-lean, with the project's .lake copied
@@ -734,6 +738,7 @@ share/kinds         the kinds of agent crew knows
 share/presets/      the Crewfiles crew up starts from: solo, pair, ring
 share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
+docs/               the site on GitHub Pages: index.html and style.css, written by hand
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
 .github/workflows/  the tests on Ubuntu and macOS, at every push
