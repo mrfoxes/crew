@@ -146,6 +146,10 @@ printf 'Ss   -zsh\nS+   vim\n' >"$tmp/ps.out"
 check "running with a process rejects an editor" "1" "$(term_running /dev/ttys001 claude; echo $?)"
 printf 'Ss   -zsh\nS    claude\nS+   vim\n' >"$tmp/ps.out"
 check "running rejects a backgrounded agent behind an editor" "1" "$(term_running /dev/ttys001 claude; echo $?)"
+printf 'Ss   /usr/bin/login\nS    -fish\nS+   claude\nS+   caffeinate\n' >"$tmp/ps.out"
+check "running accepts a Claude pane keeping awake with caffeinate" "0" "$(term_running /dev/ttys001 claude; echo $?)"
+printf 'Ss   -zsh\nS+   claude\nS+   vim\n' >"$tmp/ps.out"
+check "running rejects an agent sharing the foreground with an editor" "1" "$(term_running /dev/ttys001 claude; echo $?)"
 ps() { return 1; }
 check "running rejects a tty that cannot be read" "1" "$(term_running /dev/ttys001 claude; echo $?)"
 

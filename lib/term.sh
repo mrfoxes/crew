@@ -123,16 +123,22 @@ term_tty() {
 }
 
 # Whether something other than a shell runs in the foreground on <tty> (or
-# the process <process>, when given): the agent started there is up, so a
-# line typed there reaches it, not the shell.
+# <process> without another foreground program, beyond a keepawake helper like
+# caffeinate, when <process> is given): the agent started there is up, so a
+# line typed there reaches it, not the shell or a child editor.
 term_running() {
     ps -t "${1#/dev/}" -o stat=,comm= 2>/dev/null | awk -v n="$#" -v p="${2:-}" '
         $1 ~ /\+/ {
             sub(/.*\//, "", $2)
             sub(/^-/, "", $2)
-            if (n > 1 ? (p != "" && $2 == p) : $2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login)$/) up = 1
+            if (n > 1) {
+                if (p != "" && $2 == p) up = 1
+                else if ($2 != "caffeinate") other = 1
+            } else if ($2 !~ /^(sh|bash|zsh|fish|dash|ksh|tcsh|login|caffeinate)$/) {
+                up = 1
+            }
         }
-        END { exit !up }'
+        END { exit !(up && !other) }'
 }
 
 # What the pane shows now.
@@ -233,7 +239,7 @@ term_poke() {
         echo "crew: poke refuses control bytes; use 'crew key' to press keys" >&2
         return 2
     fi
-    term_type "$1" "$poke_line" || return
+    term_type "$1" "$poke_line" || return 1
     sleep 0.5
-    term_key "$1" enter
+    term_key "$1" enter || return 3
 }

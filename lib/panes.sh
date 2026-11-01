@@ -528,6 +528,14 @@ wake_one() {
     if term_poke "$w_pane" "$w_line" 2>/dev/null; then
         rm -f "$w_dir/tmp/wake.$w_n.$w_who"
         return 0
+    else
+        w_rc=$?
+    fi
+    if [ "$w_rc" -eq 1 ]; then
+        mkdir -p "$w_dir/tmp"
+        echo "$w_from" >"$w_dir/tmp/wake.$w_n.$w_who"
+    else
+        rm -f "$w_dir/tmp/wake.$w_n.$w_who"
     fi
     [ -n "$w_retry" ] || echo "crew: could not wake $w_who; the message waits in the stream" >&2
     return 2
@@ -628,6 +636,11 @@ crew_relay_step() {
         rs_who=${rs_rest#*.}
         rs_cursor=$(cat "$dir/cursors/$rs_who" 2>/dev/null) || rs_cursor=0
         if [ "$rs_n" -le "${rs_cursor:-0}" ]; then
+            rm -f "$rs_wf"
+            continue
+        fi
+        if [ -e "$dir/muted/$rs_who" ] &&
+            [ "$(crew_field "$dir/seq/$rs_n" To 2>/dev/null)" = all ]; then
             rm -f "$rs_wf"
             continue
         fi
