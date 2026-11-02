@@ -4,6 +4,12 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.0.2
+
+- Taking an iTerm2 pane's color off (`crew leave`, or a kind with no
+  color) puts its background back. It tinted it an eighth toward black
+  instead: the empty color reached AppleScript as 0.
+
 ## 1.0.1
 
 - Inside tmux, crew no longer asks iTerm2 for its sessions. Every command

@@ -116,7 +116,12 @@ osascript() { shift; echo "$*" >"$tmp/osascript.args"; }
 term_color iterm:X '#d97757'
 check "color in iTerm2" "X 217 119 87" "$(cat "$tmp/osascript.args")"
 term_color iterm:X
-check "color off in iTerm2" "X" "$(cat "$tmp/osascript.args" | sed 's/ *$//')"
+check "color off in iTerm2" "X" "$(cat "$tmp/osascript.args")"
+# An empty color goes as no argument: AppleScript reads "" as 0, and would
+# tint the session toward black instead of putting its background back.
+osascript() { shift; echo "$#" >"$tmp/osascript.args"; }
+term_color iterm:X ""
+check "color off in iTerm2 passes no color" "1" "$(cat "$tmp/osascript.args")"
 # A session crew never tinted gives missing value for the variable, not "".
 osascript() { cat >"$tmp/osascript.in"; }
 term_color iterm:X '#d97757'

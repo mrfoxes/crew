@@ -95,14 +95,19 @@ iterm_name() {
 # Tints session <id>'s background an eighth of the way toward <color>
 # (#rrggbb), from the background it had before crew first tinted it, which
 # the session keeps in its variable user.crew_background; no color puts
-# that one back.
+# that one back. The red, green, and blue go as items 2 to 4 of argv, and
+# no color as none at all: osascript passes an empty argument on, which
+# AppleScript would read as 0, a tint toward black.
 iterm_color() {
-    if [ -n "$2" ]; then
-        set -- "$1" "$(printf '%d' "0x$(printf '%s' "$2" | cut -c2-3)")" \
+    ic_id=$1
+    if [ -n "${2:-}" ]; then
+        set -- "$(printf '%d' "0x$(printf '%s' "$2" | cut -c2-3)")" \
             "$(printf '%d' "0x$(printf '%s' "$2" | cut -c4-5)")" \
             "$(printf '%d' "0x$(printf '%s' "$2" | cut -c6-7)")"
+    else
+        set --
     fi
-    iterm_with "$1" 'set saved to ""
+    iterm_with "$ic_id" 'set saved to ""
                         try
                             set saved to (variable named "user.crew_background") of s
                         end try
@@ -129,7 +134,7 @@ iterm_color() {
                             set end of tint to (b + ((k - b) / 8)) as integer
                         end repeat
                         set background color of s to tint
-                        return' "${2:-}" "${3:-}" "${4:-}" >/dev/null
+                        return' "$@" >/dev/null
 }
 
 # Names the tab of session <id>: iTerm2's AppleScript sets no tab's title
