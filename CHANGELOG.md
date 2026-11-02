@@ -4,6 +4,15 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.0.1
+
+- Inside tmux, crew no longer asks iTerm2 for its sessions. Every command
+  that listed panes (`join`, `panes`, `board`, `invite`, a pane's tty, a
+  gone pane) asked it through AppleScript, and an iTerm2 that did not
+  answer, with tmux running in its window, held each one for AppleScript's
+  two-minute timeout. Outside tmux, the listing gives up after 5 seconds and
+  says so.
+
 ## 1.0.0
 
 The first release: crew in the open, under the MIT license, with a site.

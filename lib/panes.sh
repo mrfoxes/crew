@@ -179,7 +179,12 @@ crew_unlabel() {
 # tab, the members of a tab together, in the order they were placed.
 crew_panes() {
     dir=$(crew_dir 2>/dev/null) || dir=""
-    term_list | while IFS='	' read -r pane tty title; do
+    # Inside tmux, iTerm2's sessions only when a member's pane is one.
+    cp_iterm=""
+    if [ -n "${TMUX:-}" ] && [ -n "$dir" ] && cat "$dir"/panes/* 2>/dev/null | grep -q '^iterm:'; then
+        cp_iterm=1
+    fi
+    { term_list; [ -z "$cp_iterm" ] || term_list iterm; } | while IFS='	' read -r pane tty title; do
         who=-
         kind=-
         tab=-

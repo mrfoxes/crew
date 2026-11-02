@@ -153,4 +153,44 @@ check "running rejects an agent sharing the foreground with an editor" "1" "$(te
 ps() { return 1; }
 check "running rejects a tty that cannot be read" "1" "$(term_running /dev/ttys001 claude; echo $?)"
 
+# Listing panes: inside tmux iTerm2 is not asked, as it is only the window
+# tmux runs in, unless a pane of its own is; outside tmux both are. osascript
+# records each call, says iTerm2 runs, and lists one session. The terminal
+# functions faked above come back first.
+. "$CREW_HOME/lib/term.sh"
+osascript() {
+    echo "osascript $*" >>"$tmp/list.calls"
+    case "$*" in
+    *'is running'*) echo true ;;
+    *)
+        cat >"$tmp/list.script"
+        printf 'iterm:A\t/dev/ttys009\tone\n'
+        ;;
+    esac
+}
+tmux() { printf 'tmux:%%1\t/dev/ttys001\tmain:0.0 sh\n'; }
+: >"$tmp/list.calls"
+check "list inside tmux" "tmux:%1" "$(TMUX=1 term_list | cut -f1)"
+check "list inside tmux asks iTerm2 nothing" "" "$(cat "$tmp/list.calls")"
+check "a tmux pane gone, inside tmux, asks iTerm2 nothing" "1 0" "$(TMUX=1 term_gone tmux:%1; echo $?) $(wc -l <"$tmp/list.calls" | tr -d ' ')"
+check "tty of a tmux pane outside tmux asks iTerm2 nothing" "/dev/ttys001 0" "$(TMUX='' term_tty tmux:%1) $(wc -l <"$tmp/list.calls" | tr -d ' ')"
+check "tty of an iTerm2 pane inside tmux asks iTerm2" "/dev/ttys009" "$(TMUX=1 term_tty iterm:A)"
+check "list outside tmux takes both" "iterm:A tmux:%1" "$(TMUX='' term_list | cut -f1 | tr '\n' ' ' | sed 's/ $//')"
+check "list iTerm2 within a timeout" "osascript - 5" "$(grep -v 'is running' "$tmp/list.calls" | tail -n 1)"
+check "list iTerm2 with AppleScript's timeout around the tell" "1" "$(grep -c 'with timeout of (item 1 of argv as integer) seconds' "$tmp/list.script")"
+# An iTerm2 that does not answer in time lists nothing and says so.
+osascript() {
+    case "$*" in
+    *'is running'*) echo true ;;
+    *)
+        cat >/dev/null
+        return 1
+        ;;
+    esac
+}
+check "an iTerm2 that does not answer lists nothing" "0 " "$(iterm_list 2>/dev/null; echo "$? $(iterm_list 2>/dev/null)")"
+check "an iTerm2 that does not answer says so" "crew: iTerm2 did not list its sessions within 5 seconds" "$(iterm_list 2>&1 >/dev/null)"
+check "list outside tmux goes on with tmux when iTerm2 does not answer" "tmux:%1" "$(TMUX='' term_list 2>/dev/null | cut -f1)"
+unset -f osascript tmux
+
 finish

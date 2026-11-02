@@ -63,10 +63,20 @@ term_of() {
     esac
 }
 
-# One line a pane, tab-separated: the pane, its tty, its title.
+# One line a pane, tab-separated: the pane, its tty, its title; with
+# <terminal> (iterm or tmux), that terminal's alone. Inside tmux, iTerm2 is
+# not asked: when it runs, it is the window tmux runs in, its sessions none
+# of the crew's, and asking it costs an AppleScript call that a busy iTerm2
+# holds for its timeout.
 term_list() {
-    iterm_list
-    tmux_list
+    case "${1:-}" in
+    iterm) iterm_list ;;
+    tmux) tmux_list ;;
+    *)
+        [ -n "${TMUX:-}" ] || iterm_list
+        tmux_list
+        ;;
+    esac
 }
 
 # The pane this command runs in: tmux's and iTerm2's variables first, then,
@@ -107,14 +117,16 @@ term_self() {
 # Whether <pane> is gone: its terminal lists its panes and it is not among
 # them. A terminal that cannot be asked, from a sandbox, says nothing.
 term_gone() {
-    panes=$(term_list 2>/dev/null) || panes=""
+    term=$(term_of "$1") || return 1
+    panes=$(term_list "$term" 2>/dev/null) || panes=""
     printf '%s\n' "$panes" | grep -q "^${1%%:*}:" &&
         ! printf '%s\n' "$panes" | grep -q "^$1	"
 }
 
 # The tty of a pane, from the list.
 term_tty() {
-    tty=$(term_list | awk -F '\t' -v p="$1" '$1 == p { print $2; exit }')
+    term=$(term_of "$1") || return 1
+    tty=$(term_list "$term" | awk -F '\t' -v p="$1" '$1 == p { print $2; exit }')
     [ -n "$tty" ] || {
         echo "crew: no pane $1" >&2
         return 1

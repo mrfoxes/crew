@@ -27,23 +27,41 @@ EOF
 }
 
 # One line a session: the pane, its tty, its title. Asking AppleScript does
-# not launch iTerm2; pgrep does not always see it.
+# not launch iTerm2; pgrep does not always see it. An iTerm2 that does not
+# answer within ITERM_TIMEOUT seconds (a modal dialog, a stuck window) lists
+# nothing and says so, instead of holding the caller for AppleScript's own
+# two minutes.
+ITERM_TIMEOUT=5
 iterm_list() {
     [ "$(osascript -e 'application "iTerm2" is running' 2>/dev/null)" = true ] || return 0
-    osascript <<'EOS' | grep -v '^$'
--- Inside the tell, "tab" is iTerm2's tab: name the character before it.
-set sep to ASCII character 9
-tell application "iTerm2"
-    set out to ""
-    repeat with w in windows
-        repeat with t in tabs of w
-            repeat with s in sessions of t
-                set out to out & "iterm:" & (unique id of s) & sep & (tty of s) & sep & (name of s) & linefeed
+    il_out=$(iterm_sessions 2>/dev/null) || {
+        echo "crew: iTerm2 did not list its sessions within $ITERM_TIMEOUT seconds" >&2
+        return 0
+    }
+    printf '%s\n' "$il_out" | grep -v '^$' || :
+}
+
+# Every session of iTerm2, a line each, failing when iTerm2 does not answer
+# within ITERM_TIMEOUT seconds.
+iterm_sessions() {
+    osascript - "$ITERM_TIMEOUT" <<'EOS'
+on run argv
+    -- Inside the tell, "tab" is iTerm2's tab: name the character before it.
+    set sep to ASCII character 9
+    with timeout of (item 1 of argv as integer) seconds
+        tell application "iTerm2"
+            set out to ""
+            repeat with w in windows
+                repeat with t in tabs of w
+                    repeat with s in sessions of t
+                        set out to out & "iterm:" & (unique id of s) & sep & (tty of s) & sep & (name of s) & linefeed
+                    end repeat
+                end repeat
             end repeat
-        end repeat
-    end repeat
-    return out
-end tell
+            return out
+        end tell
+    end timeout
+end run
 EOS
 }
 
