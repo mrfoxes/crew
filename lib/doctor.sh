@@ -287,6 +287,7 @@ doctor_crew() {
     else
         doctor_say ok "relay: not running (a member in a sandbox needs one to wake anyone)"
     fi
+    term_hold_dir "$d_dir/panes"
     for d_f in "$d_dir"/panes/*; do
         [ -e "$d_f" ] || continue
         d_name=$(basename "$d_f")
@@ -299,6 +300,7 @@ doctor_crew() {
             doctor_say ok "member $d_name: pane $d_pane"
         fi
     done
+    term_free
 }
 
 crew_doctor() {

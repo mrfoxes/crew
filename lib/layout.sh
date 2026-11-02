@@ -87,11 +87,17 @@ tab_drop() {
 # new member of the tab is placed next to; nothing when the tab is gone.
 tab_anchor() {
     t_anchor=""
+    t_panes=""
     for t_member in $(tab_members "$1" "$2"); do
         t_pane=$(tab_pane "$1" "$t_member")
-        [ -n "$t_pane" ] || continue
+        [ -z "$t_pane" ] || t_panes="$t_panes $t_pane"
+    done
+    # shellcheck disable=SC2086 # a pane is one word
+    term_hold $t_panes 2>/dev/null
+    for t_pane in $t_panes; do
         term_gone "$t_pane" || t_anchor=$t_pane
     done
+    term_free
     echo "$t_anchor"
 }
 
@@ -214,10 +220,20 @@ layout_apply() {
     [ -n "$l_layout" ] || l_layout=$(cat "$l_dir/layouts/$l_tab" 2>/dev/null) || l_layout=""
     [ -n "$l_layout" ] || return 0
     l_entries=""
+    l_pairs=""
+    l_panes=""
     for l_entry in $(tab_members "$l_dir" "$l_tab"); do
         l_pane=$(tab_pane "$l_dir" "$l_entry")
-        [ -n "$l_pane" ] && ! term_gone "$l_pane" && l_entries="$l_entries $l_entry"
+        [ -n "$l_pane" ] || continue
+        l_pairs="$l_pairs $l_entry=$l_pane"
+        l_panes="$l_panes $l_pane"
     done
+    # shellcheck disable=SC2086 # a pane is one word
+    term_hold $l_panes 2>/dev/null
+    for l_pair in $l_pairs; do
+        term_gone "${l_pair#*=}" || l_entries="$l_entries ${l_pair%%=*}"
+    done
+    term_free
     # shellcheck disable=SC2086 # the entries are names and panes, one a word
     l_rows=$(layout_rows "$l_dir" "$l_layout" $l_entries)
     l_status=0

@@ -6,6 +6,15 @@ milestone of the version, on GitHub.
 
 ## 1.0.2
 
+- Every call to iTerm2 waits 5 seconds at most for each answer, not only
+  the listing of 1.0.1: a read, a key, a spawn, a focus, a close, a color,
+  and a move. A read that timed out is not tried again. An iTerm2 that did
+  not answer held the gate for up to four minutes a member, each round.
+- A round over the crew lists each terminal once, not once or twice a
+  member: the gate's round, the board and the live board, `crew doctor`,
+  `crew down`'s wait and what it says is left, a wake of all, the relay's
+  retries, and a layout. Four iTerm2 panes, looked at for their tty and
+  whether they are gone, took 2.2 seconds and take 0.3.
 - Taking an iTerm2 pane's color off (`crew leave`, or a kind with no
   color) puts its background back. It tinted it an eighth toward black
   instead: the empty color reached AppleScript as 0.

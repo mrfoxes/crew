@@ -142,9 +142,12 @@ expression`: iTerm2 3.5 or later, with no Python API to enable.
 
 Inside tmux, crew asks iTerm2 nothing: when it runs, it is the window tmux
 runs in, and its sessions are none of the crew's (unless a member's pane is
-one, which `crew panes` then lists too). Outside tmux, an iTerm2 that does
-not answer within 5 seconds lists no session, and crew says so, instead of
-waiting out AppleScript's two minutes on every command.
+one, which `crew panes` then lists too). Outside tmux, every call to iTerm2
+(a listing, a read, a key, a spawn, a move) waits 5 seconds at most for an
+answer, not AppleScript's two minutes: an iTerm2 that does not answer lists
+no session and fails the rest, and crew says so. A round over the crew (the
+gate's, the board's, `crew doctor`'s, `crew down`'s wait, a wake of all)
+lists each terminal once, not once a member.
 
 Then tell each agent to join, with `--join` on the spawn, with `crew invite`
 once it is up, or by typing in its pane:

@@ -284,18 +284,20 @@ gate_dirs() {
 }
 
 # One look at every pane the gate watches, and a check that its member is
-# still there.
+# still there, from one listing of their terminals a round.
 gate_round() {
     gate_clock=""
     if [ -n "$(gate_idle_minutes)" ]; then
         gate_clock=$(gate_now)
     fi
     gate_members
+    term_hold_dir "$gate_state/pane" 2>/dev/null
     for name in $names; do
         pane=$(cat "$gate_state/pane/$name")
         gate_look "$name" "$pane"
         gate_tend "$name" "$pane"
     done
+    term_free
     gate_budgets
 }
 

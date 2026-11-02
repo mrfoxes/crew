@@ -2,6 +2,12 @@
 # listed, read, typed into, opened, and moved, through osascript. <id> is a
 # session's unique id. Sourced by lib/term.sh.
 
+# Every call to iTerm2 waits ITERM_TIMEOUT seconds at most for each answer,
+# not AppleScript's own two minutes: an iTerm2 that does not answer (a modal
+# dialog, a stuck window) fails the call, which says so, instead of holding
+# a gate round, a board, or a wake that long.
+ITERM_TIMEOUT=5
+
 # Runs <body> on the iTerm2 session <id>, bound to `s` in the window `w`. The
 # body ends with `return`; arguments after it are items 2... of argv.
 iterm_with() {
@@ -10,17 +16,19 @@ iterm_with() {
     shift 2
     osascript - "$id" "$@" <<EOF
 on run argv
-    tell application "iTerm2"
-        repeat with w in windows
-            repeat with t in tabs of w
-                repeat with s in sessions of t
-                    if unique id of s is item 1 of argv then
-                        $body
-                    end if
+    with timeout of $ITERM_TIMEOUT seconds
+        tell application "iTerm2"
+            repeat with w in windows
+                repeat with t in tabs of w
+                    repeat with s in sessions of t
+                        if unique id of s is item 1 of argv then
+                            $body
+                        end if
+                    end repeat
                 end repeat
             end repeat
-        end repeat
-    end tell
+        end tell
+    end timeout
     error "no iTerm2 session " & item 1 of argv
 end run
 EOF
@@ -28,10 +36,7 @@ EOF
 
 # One line a session: the pane, its tty, its title. Asking AppleScript does
 # not launch iTerm2; pgrep does not always see it. An iTerm2 that does not
-# answer within ITERM_TIMEOUT seconds (a modal dialog, a stuck window) lists
-# nothing and says so, instead of holding the caller for AppleScript's own
-# two minutes.
-ITERM_TIMEOUT=5
+# answer in time lists nothing and says so.
 iterm_list() {
     [ "$(osascript -e 'application "iTerm2" is running' 2>/dev/null)" = true ] || return 0
     il_out=$(iterm_sessions 2>/dev/null) || {
@@ -66,12 +71,18 @@ EOS
 }
 
 # iTerm2 fails a read now and then while a tab closes ("Invalid index"):
-# once more before giving up.
+# once more before giving up. A read that timed out (-1712) is not tried
+# again: an iTerm2 that did not answer would hold the caller twice as long.
 iterm_read() {
-    iterm_with "$1" 'return contents of s' 2>/dev/null || {
-        sleep 0.3
-        iterm_with "$1" 'return contents of s'
-    }
+    { ir_err=$(iterm_with "$1" 'return contents of s' 2>&1 >&3 3>&-); } 3>&1 && return 0
+    case "$ir_err" in
+    *-1712*)
+        printf '%s\n' "$ir_err" >&2
+        return 1
+        ;;
+    esac
+    sleep 0.3
+    iterm_with "$1" 'return contents of s'
 }
 
 iterm_type() {
@@ -308,10 +319,10 @@ iterm_move() {
 }
 
 # Moves the iTerm2 session <session> next to <anchor>: argv <session>
-# <anchor> <vertical> <side> <before> <before>, as term_move says. Prints
-# placed, unchanged, or elsewhere.
+# <anchor> <vertical> <side> <before> <before>, as term_move says, then
+# ITERM_TIMEOUT. Prints placed, unchanged, or elsewhere.
 iterm_move_session() {
-    osascript - "$@" <<'EOF'
+    osascript - "$@" "$ITERM_TIMEOUT" <<'EOF'
 -- AppleScript shows no pane's position, only the order of a tab's panes
 -- and their sizes. A move counts once the anchor's tab has changed and the
 -- pane sits next to the anchor on the side asked: a refused move changes
@@ -320,7 +331,10 @@ iterm_move_session() {
 -- tabs, and sessions are walked by index and matched by unique id: a
 -- loop's references cannot be read back in iTerm2's dictionary, where
 -- contents names a session's screen, and a move renumbers tabs.
+property limit : 5
+
 on run argv
+    set limit to (item 7 of argv) as integer
     set src to item 1 of argv
     set dst to item 2 of argv
     -- A pane opened a moment ago may still be taking its size.
@@ -339,7 +353,9 @@ on run argv
     try
         repeat with i from 1 to 2
             set was to item 1 of r
-            tell application "iTerm2" to invoke API expression "iterm2.move_session(session: \"" & src & "\", destination: \"" & dst & "\", vertical: " & (item 3 of argv) & ", before: " & (item (4 + i) of argv) & ")"
+            with timeout of limit seconds
+                tell application "iTerm2" to invoke API expression "iterm2.move_session(session: \"" & src & "\", destination: \"" & dst & "\", vertical: " & (item 3 of argv) & ", before: " & (item (4 + i) of argv) & ")"
+            end timeout
             -- The splits change at once, the sizes a moment later.
             repeat 10 times
                 delay 0.2
@@ -371,62 +387,68 @@ end run
 -- (before, after, or apart); the tab's current pane; and the current pane
 -- of its window's current tab.
 on look(src, dst)
-    tell application "iTerm2"
-        repeat with i from 1 to count of windows
-            repeat with j from 1 to count of tabs of window i
-                set out to ""
-                set dk to 0
-                set sk to 0
-                repeat with k from 1 to count of sessions of tab j of window i
-                    set x to session k of tab j of window i
-                    set u to unique id of x
-                    if u is dst then set dk to k
-                    if u is src then set sk to k
-                    set out to out & u & " " & (columns of x) & "x" & (rows of x) & linefeed
+    with timeout of limit seconds
+        tell application "iTerm2"
+            repeat with i from 1 to count of windows
+                repeat with j from 1 to count of tabs of window i
+                    set out to ""
+                    set dk to 0
+                    set sk to 0
+                    repeat with k from 1 to count of sessions of tab j of window i
+                        set x to session k of tab j of window i
+                        set u to unique id of x
+                        if u is dst then set dk to k
+                        if u is src then set sk to k
+                        set out to out & u & " " & (columns of x) & "x" & (rows of x) & linefeed
+                    end repeat
+                    if dk > 0 then
+                        set side to "apart"
+                        if sk > 0 and sk = dk - 1 then set side to "before"
+                        if sk > 0 and sk = dk + 1 then set side to "after"
+                        return {out, side, unique id of current session of tab j of window i, unique id of current session of current tab of window i}
+                    end if
                 end repeat
-                if dk > 0 then
-                    set side to "apart"
-                    if sk > 0 and sk = dk - 1 then set side to "before"
-                    if sk > 0 and sk = dk + 1 then set side to "after"
-                    return {out, side, unique id of current session of tab j of window i, unique id of current session of current tab of window i}
-                end if
             end repeat
-        end repeat
-    end tell
+        end tell
+    end timeout
     error "no iTerm2 session " & dst
 end look
 
 -- Makes the session <u> the current one of its tab again, wherever it is.
 on pick(u)
-    tell application "iTerm2"
-        repeat with i from 1 to count of windows
-            repeat with j from 1 to count of tabs of window i
-                repeat with k from 1 to count of sessions of tab j of window i
-                    if unique id of session k of tab j of window i is u then
-                        tell session k of tab j of window i to select
-                        return
-                    end if
+    with timeout of limit seconds
+        tell application "iTerm2"
+            repeat with i from 1 to count of windows
+                repeat with j from 1 to count of tabs of window i
+                    repeat with k from 1 to count of sessions of tab j of window i
+                        if unique id of session k of tab j of window i is u then
+                            tell session k of tab j of window i to select
+                            return
+                        end if
+                    end repeat
                 end repeat
             end repeat
-        end repeat
-    end tell
+        end tell
+    end timeout
 end pick
 
 -- Makes the session <u> the current one of its window: its tab, then it.
 on show(u)
-    tell application "iTerm2"
-        repeat with i from 1 to count of windows
-            repeat with j from 1 to count of tabs of window i
-                repeat with k from 1 to count of sessions of tab j of window i
-                    if unique id of session k of tab j of window i is u then
-                        tell tab j of window i to select
-                        tell session k of tab j of window i to select
-                        return
-                    end if
+    with timeout of limit seconds
+        tell application "iTerm2"
+            repeat with i from 1 to count of windows
+                repeat with j from 1 to count of tabs of window i
+                    repeat with k from 1 to count of sessions of tab j of window i
+                        if unique id of session k of tab j of window i is u then
+                            tell tab j of window i to select
+                            tell session k of tab j of window i to select
+                            return
+                        end if
+                    end repeat
                 end repeat
             end repeat
-        end repeat
-    end tell
+        end tell
+    end timeout
 end show
 EOF
 }

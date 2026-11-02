@@ -99,6 +99,7 @@ down_wait() {
     dn_last=""
     while :; do
         dn_left=""
+        term_hold_dir "$1/panes" 2>/dev/null
         for dn_m in $3; do
             case "$dn_done$dn_free" in *" $dn_m "*) continue ;; esac
             if down_done "$1" "$dn_m" "$5"; then
@@ -129,6 +130,7 @@ down_wait() {
             echo "$dn_m: $dn_why: the wait does not hold for it"
             dn_free="$dn_free$dn_m "
         done
+        term_free
         [ -n "$dn_left" ] || return 0
         [ "$dn_left" = "$dn_last" ] || echo "waiting for:$dn_left"
         dn_last=$dn_left
@@ -166,13 +168,19 @@ down_tree() {
 # tree and of each clone, the patches in reports/, the commits waiting for a
 # review, and the lock.
 down_left() {
+    dn_held=""
     for dn_m in $3; do
         case "$dn_done" in *" $dn_m "*) continue ;; esac
+        [ -n "$dn_held" ] || {
+            term_hold_dir "$1/panes" 2>/dev/null
+            dn_held=1
+        }
         dn_st=$(down_state "$1" "$dn_m" "$4")
         # The coordinator never sends a Done: to itself.
         [ "$dn_st" != self ] || continue
         echo "no Done: from $dn_m ($(printf '%s' "$dn_st" | sed 's/^none$/no pane/'))"
     done
+    term_free
     down_tree "the shared tree" "$2"
     for dn_f in "$1"/clones/*; do
         [ -f "$dn_f" ] || continue

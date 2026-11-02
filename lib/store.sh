@@ -707,6 +707,7 @@ crew_board() {
     if [ -z "$(ls "$dir/status" 2>/dev/null)$(ls "$dir/panes" 2>/dev/null)" ]; then
         echo "no members yet: run 'crew up <preset>' or 'crew spawn <name> --join <command>'"
     fi
+    term_hold_dir "$dir/panes"
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue
         who=$(basename "$f" .md)
@@ -726,6 +727,7 @@ crew_board() {
         cat "$f"
         echo
     done
+    term_free
     claims_board_conflicts "$dir"
     claims_board_unclaimed "$dir"
     reviews_board "$dir"

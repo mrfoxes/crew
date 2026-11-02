@@ -67,16 +67,62 @@ term_of() {
 # <terminal> (iterm or tmux), that terminal's alone. Inside tmux, iTerm2 is
 # not asked: when it runs, it is the window tmux runs in, its sessions none
 # of the crew's, and asking it costs an AppleScript call that a busy iTerm2
-# holds for its timeout.
+# holds for its timeout. A terminal term_hold listed answers from that list.
 term_list() {
     case "${1:-}" in
-    iterm) iterm_list ;;
-    tmux) tmux_list ;;
+    iterm | tmux)
+        case "$term_held_terms" in
+        *" $1 "*) printf '%s' "$term_held" | grep "^$1:" || : ;;
+        *) "${1}_list" ;;
+        esac
+        ;;
     *)
-        [ -n "${TMUX:-}" ] || iterm_list
-        tmux_list
+        [ -n "${TMUX:-}" ] || term_list iterm
+        term_list tmux
         ;;
     esac
+}
+
+# Lists, once, the terminals that <pane>... are in, for the term_list,
+# term_tty, and term_gone calls that follow in this shell and its
+# subshells, until term_free: a round over many members asks each terminal
+# once, not once a member, and an iTerm2 that does not answer holds it
+# once. iTerm2 is asked only for an iTerm2 pane. A round that opens or
+# closes a pane does not hold: the list would not show it.
+term_held=""
+term_held_terms=""
+term_hold() {
+    term_free
+    th_terms=" "
+    for th_pane in "$@"; do
+        case "$th_pane" in
+        iterm:* | tmux:*) ;;
+        *) continue ;;
+        esac
+        case "$th_terms" in
+        *" ${th_pane%%:*} "*) ;;
+        *) th_terms="$th_terms${th_pane%%:*} " ;;
+        esac
+    done
+    th_list=""
+    for th_term in $th_terms; do
+        th_list="$th_list$(term_list "$th_term")
+"
+    done
+    term_held=$th_list
+    term_held_terms=$th_terms
+}
+
+# term_hold for the panes kept one a file in <dir>, as a crew's panes/.
+term_hold_dir() {
+    # shellcheck disable=SC2046 # a pane is one word
+    term_hold $(cat "$1"/* 2>/dev/null)
+}
+
+# Lets go of what term_hold listed: the terminals are asked again.
+term_free() {
+    term_held=""
+    term_held_terms=""
 }
 
 # The pane this command runs in: tmux's and iTerm2's variables first, then,

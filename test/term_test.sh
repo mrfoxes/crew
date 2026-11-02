@@ -198,4 +198,91 @@ check "an iTerm2 that does not answer says so" "crew: iTerm2 did not list its se
 check "list outside tmux goes on with tmux when iTerm2 does not answer" "tmux:%1" "$(TMUX='' term_list 2>/dev/null | cut -f1)"
 unset -f osascript tmux
 
+# Every call to iTerm2 waits ITERM_TIMEOUT seconds for each answer, not
+# AppleScript's two minutes: a read, a key, a close, and a move alike.
+osascript() { cat >"$tmp/with.script"; }
+term_close iterm:X
+check "a call to iTerm2 waits 5 seconds at most" "1" "$(grep -c 'with timeout of 5 seconds' "$tmp/with.script")"
+osascript() {
+    echo "osascript $*" >"$tmp/move.calls"
+    cat >"$tmp/move.script"
+    echo placed
+}
+term_move iterm:A beside iterm:B
+check "a move in iTerm2 passes the timeout last" "osascript - A B true after false true 5" "$(cat "$tmp/move.calls")"
+check "a move in iTerm2 waits that long on each call" "4" "$(grep -c 'with timeout of limit seconds' "$tmp/move.script")"
+
+# A read iTerm2 fails is tried once more ("Invalid index" while a tab
+# closes); one it did not answer in time is not, and says why.
+sleep() { :; }
+osascript() {
+    echo x >>"$tmp/read.calls"
+    cat >/dev/null
+    echo "execution error: iTerm2 got an error: $read_error" >&2
+    return 1
+}
+: >"$tmp/read.calls"
+read_error="AppleEvent timed out. (-1712)"
+check "a read iTerm2 did not answer fails" "1" "$(term_read iterm:X 2>/dev/null; echo $?)"
+check "and is not tried again" "1" "$(wc -l <"$tmp/read.calls" | tr -d ' ')"
+check "and says why" "execution error: iTerm2 got an error: AppleEvent timed out. (-1712)" "$(term_read iterm:X 2>&1 >/dev/null)"
+: >"$tmp/read.calls"
+read_error="Invalid index. (-1719)"
+term_read iterm:X >/dev/null 2>&1
+check "a read that failed otherwise is tried once more" "2" "$(wc -l <"$tmp/read.calls" | tr -d ' ')"
+osascript() {
+    cat >/dev/null
+    echo screen
+}
+check "a read prints the screen" "screen" "$(term_read iterm:X)"
+unset -f osascript sleep
+
+# Holding the list: the terminals of the panes given are listed once, and
+# term_list, term_tty, and term_gone answer from it, in subshells too, until
+# term_free. iTerm2 is asked only for an iTerm2 pane.
+tmux_list() {
+    echo tmux >>"$tmp/hold.calls"
+    printf 'tmux:%%1\t/dev/ttys001\ta\ntmux:%%2\t/dev/ttys002\tb\n'
+}
+iterm_list() {
+    echo iterm >>"$tmp/hold.calls"
+    printf 'iterm:A\t/dev/ttys009\tc\n'
+}
+: >"$tmp/hold.calls"
+term_hold tmux:%1 tmux:%2 tmux:%3 tmux:%2
+check "a hold lists each terminal once" "tmux" "$(cat "$tmp/hold.calls")"
+check "a hold answers ttys and gone panes" "/dev/ttys001 /dev/ttys002 0 1" \
+    "$(term_tty tmux:%1) $(term_tty tmux:%2) $(term_gone tmux:%3; echo $?) $(term_gone tmux:%1; echo $?)"
+check "and lists its terminal" "tmux:%1 tmux:%2" "$(term_list tmux | cut -f1 | tr '\n' ' ' | sed 's/ $//')"
+check "from that one listing" "tmux" "$(cat "$tmp/hold.calls")"
+check "a pane of another terminal is asked for" "/dev/ttys009" "$(term_tty iterm:A)"
+term_free
+: >"$tmp/hold.calls"
+term_tty tmux:%1 >/dev/null
+check "term_free lets go of the list" "tmux" "$(cat "$tmp/hold.calls")"
+: >"$tmp/hold.calls"
+term_hold tmux:%1 iterm:A nowhere
+check "a hold of both terminals lists both" "iterm tmux" "$(sort "$tmp/hold.calls" | tr '\n' ' ' | sed 's/ $//')"
+term_hold
+: >"$tmp/hold.calls"
+term_tty tmux:%1 >/dev/null
+check "a hold of no pane holds nothing" "tmux" "$(cat "$tmp/hold.calls")"
+# An iTerm2 that does not answer is waited for once a hold, which can tell
+# neither a tty nor a gone pane.
+iterm_list() {
+    echo iterm >>"$tmp/hold.calls"
+    echo "crew: iTerm2 did not list its sessions within 5 seconds" >&2
+}
+: >"$tmp/hold.calls"
+term_hold iterm:A 2>"$tmp/hold.err"
+check "a hold says once that iTerm2 did not answer" "1" "$(wc -l <"$tmp/hold.err" | tr -d ' ')"
+term_tty iterm:A >/dev/null 2>&1
+tty_status=$?
+term_gone iterm:A
+gone_status=$?
+check "and then nobody waits for it" "iterm" "$(cat "$tmp/hold.calls")"
+check "its pane has no tty to tell" "1" "$tty_status"
+check "and is not taken for gone" "1" "$gone_status"
+term_free
+
 finish

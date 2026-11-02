@@ -569,6 +569,8 @@ crew_wake() {
     all) members=$( (ls "$dir/panes" && ls "$dir/threads" 2>/dev/null) | sort -u) ;;
     *) members=$to ;;
     esac
+    # A message to all looks at every pane: their terminals are listed once.
+    [ "$to" != all ] || term_hold_dir "$dir/panes" 2>/dev/null
     for who in $members; do
         [ "$who" != "$from" ] || continue
         if [ "$to" = all ] && [ -e "$dir/muted/$who" ]; then
@@ -577,6 +579,7 @@ crew_wake() {
         fi
         wake_one "$dir" "$n" "$from" "$who" || :
     done
+    term_free
 }
 
 # A desktop notification for the owner: macOS through osascript, Linux
@@ -634,6 +637,9 @@ crew_relay_beat() {
 crew_relay_step() {
     dir=$1
     lastfile=$2
+    # The retries of a beat list the terminals once, and only when there is
+    # one: the relay beats every second or two.
+    rs_held=""
     for rs_wf in "$dir"/tmp/wake.*.*; do
         [ -f "$rs_wf" ] || continue
         rs_rest=${rs_wf#"$dir/tmp/wake."}
@@ -650,10 +656,15 @@ crew_relay_step() {
             continue
         fi
         rs_from=$(cat "$rs_wf")
+        [ -n "$rs_held" ] || {
+            term_hold_dir "$dir/panes" 2>/dev/null
+            rs_held=1
+        }
         if wake_one "$dir" "$rs_n" "$rs_from" "$rs_who" retry; then
             printf '%s relay: %04d from %s to %s\n' "$(crew_stamp)" "$rs_n" "$rs_from" "$rs_who"
         fi
     done
+    term_free
     last=$(cat "$lastfile" 2>/dev/null)
     last=${last:-0}
     for n in $(ls "$dir/seq" | sort -n); do

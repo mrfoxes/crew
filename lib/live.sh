@@ -96,6 +96,7 @@ live_frame() {
     v_costs=$(live_costs "$v_dir")
     v_reviews=" $(crew_reviews "$v_dir" | cut -f3 | tr '\n' ' ')"
     printf '%-9s %-7s %-8s %-8s %-28s %4s %s\n' member kind tab state issue age spent
+    term_hold_dir "$v_dir/panes" 2>/dev/null
     for v_name in $(live_members "$v_dir"); do
         v_kind=$(kind_member "$v_dir" "$v_name")
         v_tab=$(tab_of "$v_dir" "$v_name")
@@ -115,6 +116,7 @@ live_frame() {
         [ -z "$v_budget" ] || v_spent="${v_spent:--}/$v_budget"
         printf '%-9s %-7s %-8s %-8s %-28.28s %4s %s\n' "$v_name" "${v_kind:--}" "${v_tab:--}" "$v_state" "${v_issue:--}" "$v_age" "${v_spent:--}"
     done
+    term_free
     echo
     if [ -d "$v_dir/lock" ]; then
         echo "lock: held by $(cat "$v_dir/lock/owner" 2>/dev/null || echo someone), $(crew_age "$v_dir/lock") min"

@@ -220,4 +220,26 @@ show codex-run
 check "gate holds a kind with no key" "12:00:00 HOLD codex (no key approves a codex prompt): cargo test --test editors" "$(gate_look codex tmux:%1)"
 rm -r "$XDG_CONFIG_HOME/crew"
 
+# A round lists the terminals of the panes it looks at once, not once a
+# member: an iTerm2 that does not answer holds a round once, not a member
+# at a time.
+dir=$tmp/round-crew
+mkdir -p "$dir"
+# shellcheck disable=SC2034 # read by the library under test
+names="ada bo cy"
+for m in ada:1 bo:2 cy:3; do echo "tmux:%${m#*:}" >"$gate_state/pane/${m%:*}"; done
+tmux_list() {
+    echo listed >>"$tmp/round.calls"
+    printf 'tmux:%%1\t/dev/ttys001\ta\ntmux:%%2\t/dev/ttys002\tb\ntmux:%%3\t/dev/ttys003\tc\n'
+}
+term_running() { return 1; }
+show codex-idle
+: >"$tmp/round.calls"
+gate_round >/dev/null
+check "a round of three members lists their terminal once" "listed" "$(cat "$tmp/round.calls")"
+: >"$tmp/round.calls"
+term_tty tmux:%1 >/dev/null
+check "and lets go of the list after it" "listed" "$(cat "$tmp/round.calls")"
+unset dir
+
 finish
