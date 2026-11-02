@@ -1,0 +1,51 @@
+name: pages
+
+# The site, from docs/ with the latest release named in it: deployed when
+# the site changes on main, and after each release, so that the page says
+# which release is out without asking GitHub from the browser.
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/site.sh', '.github/workflows/pages.yml']
+  workflow_run:
+    workflows: [release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName) || {
+            echo "::warning::no release found: the site names none"
+            tag=""
+          }
+          sh .github/site.sh "$tag" _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -16,10 +16,10 @@ jobs:
         with:
           persist-credentials: false
       - name: Syntax
-        run: for f in bin/crew lib/*.sh test/*.sh install.sh .github/package.sh; do sh -n "$f"; done
+        run: for f in bin/crew lib/*.sh test/*.sh install.sh .github/package.sh .github/site.sh; do sh -n "$f"; done
       - name: ShellCheck
         run: |
           command -v shellcheck >/dev/null || brew install shellcheck
-          shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh install.sh .github/package.sh
+          shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh install.sh .github/package.sh .github/site.sh
       - name: Tests
         run: sh test/run.sh

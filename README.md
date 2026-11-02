@@ -762,10 +762,11 @@ share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
 install.sh          the one-line install from a release: download, check, unpack, link
 .github/package.sh  what a release holds: the tarball with VERSION, install.sh, SHA256SUMS, the notes
+.github/site.sh     the site as deployed: docs/ with the latest release named in it
 docs/               the site on GitHub Pages: index.html and style.css, written by hand
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
-.github/workflows/  the tests on Ubuntu and macOS at every push; a release at every tag v*
+.github/workflows/  the tests on Ubuntu and macOS at every push; a release at every tag v*; the site at each change and release
 LICENSE             MIT
 CHANGELOG.md        what each version adds, by area, with its issues
 CONTRIBUTING.md     the rules a change follows, and the checks before a push

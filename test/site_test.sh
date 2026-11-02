@@ -181,4 +181,25 @@ done
 check "session marks cuts with [...]" "1" \
     "$(grep -Fq '[...]' "$html" && echo 1 || echo 0)"
 
+# The release the site names comes from the deploy (.github/site.sh, run by
+# .github/workflows/pages.yml), never from the page asking GitHub: docs/
+# names no fixed version, and its words read right without a build.
+check "the site names no fixed version" "" "$(grep -E 'v[0-9]+\.[0-9]+\.[0-9]+' "$html" || :)"
+check "the release spots read right without a build" "The latest release
+the latest release" "$(sed -n 's|.*<span data-release>\([^<]*\)</span>.*|\1|p' "$html")"
+check "each release spot links to the releases on GitHub" "2" \
+    "$(grep 'data-release' "$html" | grep -c 'href="https://github.com/mrfoxes/crew/releases"')"
+site=$CREW_HOME/.github/site.sh
+sh "$site" v9.8.7 "$tmp/site" >/dev/null
+check "the build names the release in each spot" "2" \
+    "$(grep -o '<span data-release>v9.8.7</span>' "$tmp/site/index.html" | wc -l | tr -d ' ')"
+check "and changes nothing else" "" \
+    "$(diff "$html" "$tmp/site/index.html" | grep '^[<>]' | grep -v 'data-release' || :)"
+check "and copies the rest of docs/" "" \
+    "$(cd "$CREW_HOME/docs" && for f in .nojekyll *.css *.js; do cmp -s "$f" "$tmp/site/$f" || echo "$f"; done)"
+sh "$site" "" "$tmp/site-none" >/dev/null
+check "with no release, the build leaves the words" "" "$(diff "$html" "$tmp/site-none/index.html")"
+check "the build refuses a tag that is not vX.Y.Z" "2 2 2" \
+    "$(for t in 1.0.2 v1.0 'v1.0.2|x'; do sh "$site" "$t" "$tmp/site-bad" 2>/dev/null; printf '%s ' "$?"; done | sed 's/ $//')"
+
 finish
