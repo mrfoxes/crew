@@ -162,6 +162,19 @@ check "no em dash on the site" "" "$(grep -E '—|&mdash;' "$html" || :)"
 check "no local /Users/ path on the site" "" "$(grep '/Users/' "$html" || :)"
 check "no email on the site" "" "$(grep -E '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}' "$html" || :)"
 
+# The link preview: a feed fetches the page alone, so og:image names
+# docs/og.png by its absolute URL, and the image is 1200x630, the size the
+# feeds crop to. .github/og.html is its source.
+og=https://mrfoxes.github.io/crew/og.png
+check "og:image is the absolute URL of docs/og.png" "1" \
+    "$(grep -c "<meta property=\"og:image\" content=\"$og\">" "$html")"
+check "twitter:image is the same image" "1" \
+    "$(grep -c "<meta name=\"twitter:image\" content=\"$og\">" "$html")"
+check "docs/og.png exists" "1" "$([ -f "$CREW_HOME/docs/og.png" ] && echo 1 || echo 0)"
+check "docs/og.png is 1200x630" "1200 630" \
+    "$(od -An -tu1 -j16 -N8 "$CREW_HOME/docs/og.png" |
+        awk 'NF == 8 { print $1 * 16777216 + $2 * 65536 + $3 * 256 + $4, $5 * 16777216 + $6 * 65536 + $7 * 256 + $8 }')"
+
 # The real session from crew story (#55): six moments, crew story headings,
 # Cuts marked [...], and message links resolving to # NNNN. headers.
 for m in moment-crewfile moment-plan moment-gate moment-land moment-review moment-down; do
@@ -196,7 +209,7 @@ check "the build names the release in each spot" "2" \
 check "and changes nothing else" "" \
     "$(diff "$html" "$tmp/site/index.html" | grep '^[<>]' | grep -v 'data-release' || :)"
 check "and copies the rest of docs/" "" \
-    "$(cd "$CREW_HOME/docs" && for f in .nojekyll *.css *.js; do cmp -s "$f" "$tmp/site/$f" || echo "$f"; done)"
+    "$(cd "$CREW_HOME/docs" && for f in .nojekyll *.css *.js *.png; do cmp -s "$f" "$tmp/site/$f" || echo "$f"; done)"
 sh "$site" "" "$tmp/site-none" >/dev/null
 check "with no release, the build leaves the words" "" "$(diff "$html" "$tmp/site-none/index.html")"
 check "the build refuses a tag that is not vX.Y.Z" "2 2 2" \

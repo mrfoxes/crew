@@ -1,0 +1,153 @@
+<!doctype html>
+<!--
+  The source of docs/og.png, the 1200x630 image that link previews show
+  (og:image in docs/index.html). Not part of the site. After a change,
+  render it again from the repository's root with Chrome:
+
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+      --headless --hide-scrollbars --force-device-scale-factor=1 \
+      --window-size=1200,630 --virtual-time-budget=5000 \
+      --screenshot="$PWD/docs/og.png" "file://$PWD/.github/og.html"
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>crew: link preview</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&amp;family=Space+Grotesk:wght@500;700&amp;display=block">
+  <style>
+    :root {
+      --bg: #05060a;
+      --term: #07080d;
+      --line: rgba(255, 255, 255, 0.08);
+      --fg: #e9ebf2;
+      --muted: #b8c0d0;
+      --faint: #9fa8bc;
+      --claude: #d97757;
+      --codex: #10a37f;
+      --agy: #4285f4;
+      --ok: #3ddc84;
+      --warn: #f5b74a;
+      --sans: "Space Grotesk", sans-serif;
+      --mono: "JetBrains Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+    body {
+      position: relative;
+      color: var(--fg);
+      font-family: var(--sans);
+      background:
+        radial-gradient(560px 400px at 10% -8%, rgba(217, 119, 87, 0.22), transparent 70%),
+        radial-gradient(520px 360px at 52% 0%, rgba(16, 163, 127, 0.14), transparent 70%),
+        radial-gradient(580px 420px at 92% -8%, rgba(66, 133, 244, 0.22), transparent 70%),
+        var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, #000 20%, transparent 75%);
+    }
+    .card { position: relative; padding: 46px 64px 0; text-align: center; }
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--mono);
+      font-weight: 700;
+      font-size: 30px;
+      letter-spacing: -0.02em;
+    }
+    .brand svg { filter: drop-shadow(0 0 12px rgba(66, 133, 244, 0.4)); }
+    h1 {
+      margin: 22px 0 0;
+      font-size: 64px;
+      font-weight: 700;
+      letter-spacing: -0.045em;
+      line-height: 1.04;
+      background: linear-gradient(180deg, #ffffff 30%, rgba(233, 235, 242, 0.7));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .sub {
+      margin: 18px 0 0;
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .term {
+      margin: 34px auto 0;
+      width: 1000px;
+      text-align: left;
+      background: var(--term);
+      border-radius: 14px 14px 0 0;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 40px 120px -30px rgba(66, 133, 244, 0.55),
+        0 30px 90px -40px rgba(217, 119, 87, 0.6);
+      overflow: hidden;
+    }
+    .tabs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--line);
+      font-family: var(--mono);
+      font-size: 15px;
+      color: var(--faint);
+    }
+    .dots { display: flex; gap: 7px; margin-right: 10px; }
+    .dots span { width: 12px; height: 12px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); }
+    .tab { padding: 3px 12px; border-radius: 7px; }
+    .tab.on { color: var(--fg); background: rgba(255, 255, 255, 0.07); }
+    .board { padding: 16px 26px 80px; }
+    .title {
+      margin-bottom: 8px;
+      font-family: var(--mono);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--faint);
+    }
+    pre {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 20px;
+      line-height: 1.6;
+      color: var(--fg);
+    }
+    .head, .foot { color: var(--faint); }
+    .c { color: var(--claude); }
+    .x { color: var(--codex); }
+    .a { color: var(--agy); }
+    .work { color: var(--ok); }
+    .prompt { color: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><rect x="1" y="3" width="6.4" height="18" rx="1.6" fill="#d97757"/><rect x="8.8" y="3" width="6.4" height="18" rx="1.6" fill="#10a37f"/><rect x="16.6" y="3" width="6.4" height="18" rx="1.6" fill="#4285f4"/></svg><span>crew</span></div>
+    <h1>Coding agents side by side,<br>in panes you can see.</h1>
+    <p class="sub">A few POSIX shell scripts for iTerm2 and tmux. No daemon, no service, no extension.</p>
+    <div class="term">
+      <div class="tabs"><div class="dots"><span></span><span></span><span></span></div><div class="tab on">main · crew</div><div class="tab">agy · 6 panes</div><div class="tab">advisors · 2 panes</div></div>
+      <div class="board">
+        <div class="title">crew board --live</div>
+<pre><span class="head">member   state    issue                        age  spent</span>
+<span class="c">claude</span>   <span class="work">working</span>  #42 gate global flags         1m  1.84
+<span class="x">codex</span>    <span class="prompt">prompt </span>  #33 test harness isolation    2m  3.10
+<span class="a">agy</span>      <span class="work">working</span>  #54 doctor checks Crewfile    1m  0.92
+<span class="foot">lock: free   last: 0036 Review: cc809c1 clean   CI: ✓ main</span></pre>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

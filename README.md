@@ -763,7 +763,8 @@ share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (ba
 install.sh          the one-line install from a release: download, check, unpack, link
 .github/package.sh  what a release holds: the tarball with VERSION, install.sh, SHA256SUMS, the notes
 .github/site.sh     the site as deployed: docs/ with the latest release named in it
-docs/               the site on GitHub Pages: index.html and style.css, written by hand
+.github/og.html     the source of docs/og.png, the image of a link preview, and how to render it
+docs/               the site on GitHub Pages: index.html and style.css, written by hand, and og.png
 test/               sh test/run.sh, an area a file (<area>_test.sh), with screens captured from real prompts
 test/fixtures/VERSIONS  the agent and version each screen was captured from
 .github/workflows/  the tests on Ubuntu and macOS at every push; a release at every tag v*; the site at each change and release
