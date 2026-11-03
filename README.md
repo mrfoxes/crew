@@ -365,15 +365,17 @@ subscription bills. A member who joined before crew recorded a session shows
 that, not a number. `CREW_CODEX_HOME`, `CREW_AGY_HOME`, and
 `CREW_CLAUDE_HOME` move the three roots.
 
-crew ships no prices. `rates` in the crew's directory, then
-`${XDG_CONFIG_HOME:-~/.config}/crew/rates` (the owner's, for every project),
-list the models, a line each, in dollars per million tokens; a line in the
-crew's replaces the owner's for that model, and `-` is no price:
+crew ships the prices of Anthropic's models in `share/rates`, the API's
+list prices on the date the file gives, so a Claude Code member is priced
+with no setup. `${XDG_CONFIG_HOME:-~/.config}/crew/rates` (the owner's, for
+every project), then `rates` in the crew's directory, add models or replace
+those, a line each, in dollars per million tokens; a later line for a model
+replaces an earlier one, and `-` is no price. Codex's and Antigravity's
+models have no line in crew's, so write theirs:
 
 ```
 # model            input  cached  write  output  reasoning   (an example: write your own prices)
 gpt-6-astra          5.00    0.50      -   30.00      30.00
-claude-opus-5-5     15.00    1.50  18.75   75.00      75.00
 ```
 
 A model with no line shows its tokens and `no rate for <model>`. The last
@@ -763,6 +765,7 @@ lib/cost.sh         crew cost: what the members spent, from the agents' logs and
 share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
+share/rates         the prices of Anthropic's models, for crew cost
 share/presets/      the Crewfiles crew up starts from: solo, pair, ring
 share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
@@ -794,7 +797,7 @@ status/<name>.md           what each member is doing now (crew status)
 panes/<name>               each member's pane
 threads/<name>             a Codex member's thread, for codex queue
 sessions/<name>            a Claude Code member's session, for crew cost
-rates                      the project's prices per model, over the owner's (optional)
+rates                      the project's prices per model, over the owner's and crew's (optional)
 muted/<name>               a member woken only by messages to its name (crew mute)
 nopane/<name>              a member that reads the stream on its own (crew join --no-pane)
 kind/<name>                each member's kind (claude, codex, agy, other)

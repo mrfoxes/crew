@@ -1,0 +1,33 @@
+# The prices crew ships, in dollars per million tokens: Anthropic's API list
+# prices, as of 2026-10-06. Fields are split by spaces, and - is no price:
+#
+#   model      the model's name, as the agent's log writes it
+#   input      new input
+#   cached     cache reads
+#   write      cache writes: Claude Code writes the one-hour cache, which
+#              costs twice the input
+#   output     output
+#   reasoning  thinking, billed as output
+#
+# The owner's ${XDG_CONFIG_HOME:-~/.config}/crew/rates, then a crew's own
+# rates, add models or replace these, a line for a model replacing the one
+# before it. A Claude Code member on a subscription is priced as its tokens
+# would cost through the API, not as the subscription bills. Claude Haiku
+# 5.5 costs five times as much (0.50 in, 2.50 out) for a prompt over 100K
+# tokens; crew prices every prompt at the lower rate. Codex's and
+# Antigravity's models have no line here: put their prices in the owner's
+# rates.
+#
+# model              input  cached   write  output  reasoning
+claude-fable-5-1     10.00    0.25   20.00   50.00      50.00
+claude-fable-5       10.00    1.00   20.00   50.00      50.00
+claude-opus-5-5       4.00    0.20    8.00   20.00      20.00
+claude-opus-5         5.00    0.50   10.00   25.00      25.00
+claude-opus-4-8       5.00    0.50   10.00   25.00      25.00
+claude-opus-4-7       5.00    0.50   10.00   25.00      25.00
+claude-opus-4-6       5.00    0.50   10.00   25.00      25.00
+claude-sonnet-5-5     2.00    0.20    4.00   10.00      10.00
+claude-sonnet-5       2.00    0.20    4.00   10.00      10.00
+claude-sonnet-4-6     3.00    0.30    6.00   15.00      15.00
+claude-haiku-5-5      0.10    0.01    0.20    0.50       0.50
+claude-haiku-4-5      1.00    0.10    2.00    5.00       5.00

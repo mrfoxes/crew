@@ -12,11 +12,12 @@
 # Sourced by bin/crew.
 
 # The rates: a line for each model, dollars per million tokens, from the
-# owner's ${XDG_CONFIG_HOME:-~/.config}/crew/rates and then the crew's own
-# rates, a later line for a model replacing an earlier one. crew ships none.
+# ones crew ships (share/rates, Anthropic's models), the owner's
+# ${XDG_CONFIG_HOME:-~/.config}/crew/rates, and then the crew's own rates, a
+# later line for a model replacing an earlier one.
 cost_rates() {
     c_rdir=$(crew_dir 2>/dev/null) || c_rdir=""
-    for c_rfile in "${XDG_CONFIG_HOME:-$HOME/.config}/crew/rates" ${c_rdir:+"$c_rdir/rates"}; do
+    for c_rfile in "$CREW_HOME/share/rates" "${XDG_CONFIG_HOME:-$HOME/.config}/crew/rates" ${c_rdir:+"$c_rdir/rates"}; do
         [ ! -f "$c_rfile" ] || cat "$c_rfile"
     done | awk '!/^[[:space:]]*(#|$)/ && NF >= 6 { print "rate", $1, $2, $3, $4, $5, $6 }'
 }

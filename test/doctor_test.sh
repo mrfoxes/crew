@@ -219,8 +219,7 @@ member agy reviewer=claude -- agy
 EOF
 report
 check "a good Crewfile is ok" "1" "$(has '^ok    Crewfile: 2 tabs, 3 members$')"
-check "a budget with no rates warns" "1" "$(has '^warn  budget codex: \$60, but no rates$')"
-check "it names the rates file to write" "1" "$(has "write prices in $dir/rates")"
+check "a budget of a member with no log yet does not warn" "0" "$(has '^warn  budget codex:')"
 printf 'gpt-6-other 5.00 0.50 - 30.00 30.00\n' >"$dir/rates"
 export CREW_CODEX_HOME="$here/fixtures/cost/codex"
 echo 00000000-0000-4000-8000-000000000001 >"$dir/threads/codex"

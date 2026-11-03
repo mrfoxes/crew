@@ -60,22 +60,28 @@ check "members" "cc
 cx
 idle" "$(cost_members "$dir")"
 
-# No rates: tokens, and a word for each model without a price.
-want="cc       input 6  cached 194015  write 24778  output 1039  reasoning 318  no rate for claude-opus-5-5
+# The rates crew ships price Anthropic's models, and no other: tokens, and a
+# word for each model without a price. Opus 5.5 at 4, 0.20, 8, 20, and 20:
+# 24 + 38803 + 198224 + 20780 + 6360 millionths of a dollar.
+want="cc       input 6  cached 194015  write 24778  output 1039  reasoning 318  \$0.26
 cx       input 180  cached 5816568  write 479235  output 13549  reasoning 11778  no rate for gpt-6-astra
 idle     no thread recorded: it has not joined from Codex
-total    input 186  cached 6010583  write 504013  output 14588  reasoning 12096"
-check "cost without rates" "$want" "$(crew_cost)"
+total    input 186  cached 6010583  write 504013  output 14588  reasoning 12096  \$0.26"
+check "cost with crew's own rates" "$want" "$(crew_cost)"
 check "cost of one member" "cx       input 180  cached 5816568  write 479235  output 13549  reasoning 11778  no rate for gpt-6-astra
 total    input 180  cached 5816568  write 479235  output 13549  reasoning 11778" "$(crew_cost cx)"
+check "crew's rates are numbers" "" "$(awk '!/^#/ && NF && (NF != 6 || $2 !~ /^[0-9.]+$/ || $3 !~ /^[0-9.]+$/ || $4 !~ /^[0-9.]+$/ || $5 !~ /^[0-9.]+$/ || $6 !~ /^[0-9.]+$/)' "$CREW_HOME/share/rates")"
 check "cost of a name that is not one" "2" "$(crew_cost 'A b' >/dev/null 2>&1; echo $?)"
 
-# The owner's rates price one model; the other has none. A - is no price.
+# The owner's rates add a model, and replace crew's. A - is no price.
 mkdir -p "$XDG_CONFIG_HOME/crew"
 printf '# dollars per million tokens\n# model input cached write output reasoning\ngpt-6-astra 1 1 1 1 1\n' >"$XDG_CONFIG_HOME/crew/rates"
-check "the owner's rates price a model, not another" "cc       input 6  cached 194015  write 24778  output 1039  reasoning 318  no rate for claude-opus-5-5
+check "the owner's rates add a model" "cc       input 6  cached 194015  write 24778  output 1039  reasoning 318  \$0.26
 cx       input 180  cached 5816568  write 479235  output 13549  reasoning 11778  \$6.32" "$(crew_cost cc cx | sed -n 1,2p)"
-check "the total prices what has a rate" "total    input 186  cached 6010583  write 504013  output 14588  reasoning 12096  \$6.32" "$(crew_cost | tail -n 1)"
+check "the total prices both" "total    input 186  cached 6010583  write 504013  output 14588  reasoning 12096  \$6.59" "$(crew_cost | tail -n 1)"
+printf 'claude-opus-5-5 - - - - -\n' >>"$XDG_CONFIG_HOME/crew/rates"
+check "the owner's rates replace crew's" "\$0.00" "$(crew_cost cc | sed -n 1p | sed 's/.*  //')"
+printf 'gpt-6-astra 1 1 1 1 1\n' >"$XDG_CONFIG_HOME/crew/rates"
 printf 'gpt-6-astra 2 0.2 - 8 8\nclaude-opus-5-5 15 1.5 18.75 75 75\n' >"$dir/rates"
 check "the crew's rates replace the owner's" "1.37" "$(crew_cost cx | sed -n 1p | sed 's/.*\$//')"
 check "and add to them" "0.86" "$(crew_cost cc | sed -n 1p | sed 's/.*\$//')"

@@ -220,7 +220,7 @@ doctor_tools() {
 }
 
 # The crew's Crewfile, when it has one, and each member with a budget=
-# against the rates (the crew's rates, then the owner's) and the models its
+# against the rates (crew's, the owner's, the crew's) and the models its
 # logs show.
 doctor_crewfile() {
     d_cfile=$(crewfile_path "$1")
@@ -240,15 +240,9 @@ EOR
         $1 == "member" { m++ }
         END { printf "%d tabs, %d members\n", t + 0, m + 0 }')
     doctor_say ok "Crewfile: $d_counts"
-    d_rates=$(cost_rates)
     d_rfiles="$1/rates or ${XDG_CONFIG_HOME:-$HOME/.config}/crew/rates"
     while IFS='	' read -r d_what _ d_name _ _ _ _ _ _ d_budget _ <&3; do
         if [ "$d_what" != member ] || [ "${d_budget:--}" = - ]; then
-            continue
-        fi
-        if [ -z "$d_rates" ]; then
-            doctor_say warn "budget $d_name: \$$d_budget, but no rates" \
-                "write prices in $d_rfiles"
             continue
         fi
         d_models=$(cost_member "$1" "$d_name" | awk '$1 == "row" && !seen[$4]++ { m = m (m ? ", " : "") $4 } END { print m }')

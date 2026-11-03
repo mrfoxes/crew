@@ -19,6 +19,9 @@ milestone of the version, on GitHub.
   project or the member's clone, and say so; for any other folder they
   print the dialog for `crew key`, as before. Claude Code 2.1.317 puts its
   cursor on "No, exit": invite moves it to "Yes, I trust this folder" first.
+- crew ships the prices of Anthropic's models, in `share/rates`: `crew cost`
+  and the board price a Claude Code member with no rates written. The
+  owner's and the crew's rates replace a line or add one.
 
 ## 1.0.2
 
