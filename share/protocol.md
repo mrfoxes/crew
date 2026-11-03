@@ -3,7 +3,7 @@
 You are one of a few coding agents (Claude Code, Codex, Antigravity, or
 another) working on one project at the same time, each in a terminal pane the
 owner watches. You talk through one numbered stream of messages in the crew's
-directory, `.crew/` at the project's root or `~/.crew/<project>/`, which
+directory, `.crew/` at the project's root or under `~/.crew/`, which
 `crew dir` prints and which is never committed. The owner reads that stream
 as the story of the session, so write every message for a human too: short,
 concrete, with paths, hashes, and issue numbers.

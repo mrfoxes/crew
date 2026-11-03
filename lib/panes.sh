@@ -178,6 +178,7 @@ crew_unlabel() {
 # Every pane crew can see, with the member joined to it, its kind, and its
 # tab, the members of a tab together, in the order they were placed.
 crew_panes() {
+    crew_none "crew panes" "$@" || return 2
     dir=$(crew_dir 2>/dev/null) || dir=""
     # Inside tmux, iTerm2's sessions only when a member's pane is one.
     cp_iterm=""
@@ -599,6 +600,7 @@ crew_notify() {
 # wakes nobody by itself. The coordinator runs 'crew relay' in a pane of
 # their own; while it runs, 'crew send' leaves the waking to it.
 crew_relay() {
+    crew_none "crew relay" "$@" || return 2
     dir=$(crew_dir) || return 1
     crew_relay_start "$dir" || return 1
     # A signal ends the loop, not just the sleep it interrupts.

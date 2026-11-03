@@ -4,6 +4,17 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.1.0
+
+- `crew <command> --help` prints that command's entry of the usage and
+  runs nothing. `crew init --help` made a crew where it stood, and
+  `crew archive --help` archived the stream. `init` refuses any word but
+  `--home`, and `dir`, `panes`, `relay`, `archive`, and `version`, which
+  take none, refuse one.
+- The usage says what `crew init --home` names the directory:
+  `~/.crew/-home-me-app` for `/home/me/app`, the root's path, so two
+  projects of one name keep two crews.
+
 ## 1.0.2
 
 - Every call to iTerm2 waits 5 seconds at most for each answer, not only

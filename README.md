@@ -121,7 +121,7 @@ coordinator's pane:
 
 ```
 crew init                                   # .crew/ at the root, kept out of git, with a plan to fill in
-crew init --home                            # or under ~/.crew, tree untouched
+crew init --home                            # or ~/.crew/-home-me-app for /home/me/app, tree untouched
 $EDITOR "$(crew dir)/README.md"             # the plan: goal, lanes, reviewers, end time
 crew spawn claude claude                    # a pane beside this one, running claude
 crew spawn codex codex
@@ -774,8 +774,8 @@ CONTRIBUTING.md     the rules a change follows, and the checks before a push
 SECURITY.md         what the gate is and is not, and how to report a vulnerability
 ```
 
-In a project, `.crew/` at its root, or `~/.crew/<project>/` after `crew init
---home` (the path with every character but a letter or digit as `-`, the way
+In a project, `.crew/` at its root, or `~/.crew/<the root's path>/` after
+`crew init --home` (every character but a letter or digit as `-`, the way
 Claude Code names its project directories); `crew dir` prints it, and
 `CREW_DIR` names another one for one command:
 

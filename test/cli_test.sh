@@ -71,6 +71,22 @@ check "version past a tag" "crew v1.0.0-1-g$hash ($day)" "$(sh "$tmp/home/bin/cr
 check "version" "0" "$(crew version >/dev/null; echo $?)"
 check "an unknown command" "2" "$(crew nosuch >/dev/null 2>&1; echo $?)"
 
+# A command's --help prints its entry of the usage and runs nothing: no
+# crew made, no stream archived. A word a command does not take is refused.
+mkdir "$tmp/bare"
+check "init --help prints its entry" "  init [--home]                 make .crew/ at the root; with --home, a" "$(cd "$tmp/bare" && crew init --help | sed -n 1p)"
+check "init --help makes nothing" "0 none" "$(cd "$tmp/bare" && crew init --help >/dev/null; echo "$? $(ls -A "$tmp/bare" | wc -l | tr -d ' ' | sed 's/^0$/none/')")"
+check "init -h too" "0" "$(cd "$tmp/bare" && crew init -h >/dev/null; echo $?)"
+check "init refuses another word" "2 none" "$(cd "$tmp/bare" && crew init --hme >/dev/null 2>&1; echo "$? $(ls -A "$tmp/bare" | wc -l | tr -d ' ' | sed 's/^0$/none/')")"
+check "init --home --help is refused, not run" "2" "$(cd "$tmp/bare" && HOME="$tmp/bare" crew init --home --help >/dev/null 2>&1; echo $?)"
+echo x | crew send tess all "Heads-up: kept" >/dev/null
+check "archive --help archives nothing" "1" "$(crew archive --help >/dev/null; ls "$dir/messages" | grep -c 'tess-to-all-heads-up-kept')"
+check "spawn --help prints every line of its entry" "9" "$(crew spawn --help | wc -l | tr -d ' ')"
+check "an unknown command's --help is the usage, refused" "2" "$(crew nosuch --help >/dev/null 2>&1; echo $?)"
+for c in dir panes relay archive version; do
+    check "$c refuses a word" "2" "$(crew "$c" extra >/dev/null 2>&1; echo $?)"
+done
+
 # Counts and intervals are decimal: a leading zero is dropped (08 is 8, not an
 # octal error), 0 is a count but not an interval, and a
 # negative, a word, and a number too long for arithmetic are refused.

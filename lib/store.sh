@@ -20,7 +20,9 @@ crew_root() {
 # (crew init --home). A crew's directory holds
 # the stream's numbers in seq/: ~/.crew itself, which holds the crews kept at
 # home, is not one.
+# shellcheck disable=SC2120 # bin/crew passes the command line; crew's own calls pass none
 crew_dir() {
+    crew_none "crew dir" "$@" || return 2
     if [ -n "${CREW_DIR:-}" ]; then
         echo "$CREW_DIR"
         return
@@ -68,8 +70,16 @@ crew_project() {
 
 # Makes the crew's directory for the project and prints it: .crew/ at the
 # main checkout's root, kept out of commits; with --home the one under
-# ~/.crew, which leaves the tree untouched.
+# ~/.crew, which leaves the tree untouched. Any other word is refused before
+# anything is made.
 crew_init() {
+    case "$#:${1:-}" in
+    0: | 1:--home) ;;
+    *)
+        echo "usage: crew init [--home]" >&2
+        return 2
+        ;;
+    esac
     root=$(crew_root)
     if [ "${1:-}" = --home ]; then
         dir=$(crew_home_dir "$root")
@@ -88,6 +98,14 @@ crew_init() {
     echo "$root" >"$dir/project"
     [ -e "$dir/README.md" ] || cp "$CREW_HOME/share/plan.md" "$dir/README.md"
     echo "$dir"
+}
+
+# A command that takes no argument refuses one with its usage, <usage>: a
+# word meant as a flag, --help say, is never ignored while the command runs.
+crew_none() {
+    [ $# -gt 1 ] || return 0
+    echo "usage: $1" >&2
+    return 2
 }
 
 # A count of lines, messages, seconds, or minutes is digits, or the command
@@ -536,6 +554,7 @@ crew_write() {
 # plan, the rules, the project, the lock, the panes, the threads, and the
 # mutes. Not under a relay, whose count would go on from the old stream.
 crew_archive() {
+    crew_none "crew archive" "$@" || return 2
     dir=$(crew_dir) || return 1
     if crew_relay_alive "$dir"; then
         echo "crew: a relay runs; stop it before the archive" >&2

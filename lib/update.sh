@@ -10,7 +10,9 @@ update_releases() {
 # worktree's file) by its tag, as git describe writes it past it, else its
 # commit; a release install by VERSION, which install.sh's tarball holds;
 # else the path.
+# shellcheck disable=SC2120 # bin/crew passes the command line; crew update passes none
 crew_version() {
+    crew_none "crew version" "$@" || return 2
     if [ -e "$CREW_HOME/.git" ]; then
         if v=$(git -C "$CREW_HOME" describe --tags --match "v*" 2>/dev/null); then
             echo "crew $v ($(git -C "$CREW_HOME" log -1 --format=%cs))"

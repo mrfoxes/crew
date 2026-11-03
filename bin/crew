@@ -71,7 +71,10 @@ For everyone
                                 with Pushed:
 
 For the coordinator
-  init [--home]                 make .crew/ at the root, or ~/.crew/<project>/
+  init [--home]                 make .crew/ at the root; with --home, a
+                                directory under ~/.crew named after the
+                                root's path: ~/.crew/-home-me-app for
+                                /home/me/app
   up [<preset>] [--fresh] [--dry]
                                 bring the crew of the Crewfile up, or back:
                                 tabs, members, invites, layouts; an agent
@@ -127,12 +130,31 @@ For the coordinator
 
 <name> is lower-case letters, digits, and dashes; peek, poke, key, move,
 and spawn's --beside, --below, and --above also take a pane (iterm:<id>,
-tmux:<id>) from 'crew panes'.
+tmux:<id>) from 'crew panes'. 'crew <command> --help' prints that
+command's entry and runs nothing.
 EOF
+}
+
+# The entry of <command> in the usage: its line and the lines under it.
+usage_of() {
+    usage | awk -v c="$1" '
+        /^  [^ ]/ { on = ($1 == c) }
+        /^[^ ]/ || /^$/ { on = 0 }
+        on { print }'
 }
 
 cmd=${1:-help}
 [ $# -eq 0 ] || shift
+# A command's --help says what it does and does nothing else.
+case "${1:-}" in
+-h | --help)
+    entry=$(usage_of "$cmd")
+    if [ -n "$entry" ]; then
+        printf '%s\n' "$entry"
+        exit 0
+    fi
+    ;;
+esac
 case "$cmd" in
 help) cat "$CREW_HOME/share/protocol.md" ;;
 init) crew_init "$@" ;;
@@ -171,7 +193,7 @@ watch) crew_watch "$@" ;;
 story) crew_story "$@" ;;
 archive) crew_archive "$@" ;;
 update) crew_update "$@" ;;
-version | --version) crew_version ;;
+version | --version) crew_version "$@" ;;
 -h | --help | usage) usage ;;
 *)
     usage >&2
