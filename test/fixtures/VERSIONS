@@ -18,6 +18,7 @@ claude-requires-approval   claude  2.1.314
 claude-run                 claude  2.1.314
 claude-idle                claude  2.1.316
 claude-idle-notice         claude  2.1.316
+claude-trust               claude  2.1.317
 codex-idle                 codex   0.166.0
 codex-queued               codex   0.166.0
 codex-run                  codex   0.166.0

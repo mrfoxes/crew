@@ -199,6 +199,21 @@ term_running() {
         END { exit !(up && !other) }'
 }
 
+# The working directory of the program in the foreground of <tty>, as the
+# system has it, links resolved: /proc on Linux, lsof on macOS. Fails when
+# there is none or it cannot be read.
+term_cwd() {
+    tc_pid=$(ps -t "${1#/dev/}" -o pid=,stat= 2>/dev/null | awk '$2 ~ /\+/ { print $1; exit }')
+    [ -n "$tc_pid" ] || return 1
+    if [ -d "/proc/$tc_pid" ]; then
+        tc_cwd=$(readlink "/proc/$tc_pid/cwd" 2>/dev/null) || tc_cwd=""
+    else
+        tc_cwd=$(lsof -a -p "$tc_pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p' | head -n 1)
+    fi
+    [ -n "$tc_cwd" ] || return 1
+    echo "$tc_cwd"
+}
+
 # What the pane shows now.
 term_read() {
     backend=$(term_of "$1") || return

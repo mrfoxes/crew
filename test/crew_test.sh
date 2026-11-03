@@ -387,8 +387,36 @@ term_running() { return 0; }
 show codex-idle
 check "invite" 'tmux:%7 <- Run: crew join claude. Then follow the protocol it prints. Work in caveman mode ($caveman) from now on.
 claude invited' "$(crew_invite claude 5)"
+# A trust dialog is answered when the agent runs in the crew's project, at
+# its root or under it, or in the member's clone, and left for crew key
+# anywhere else: printed, with nothing pressed.
+term_key() { echo "key $1 $2"; }
 show codex-trust
-check "invite finds a prompt waiting" "crew: claude waits on a prompt: Trust this folder? Codex can read, edit, and run files here, subject to your permission settings. Folder settings can run code automatically, even without a model request. Continue only if you trust these files. Your trust decision will be saved. › 1. Trust and continue 2. Back to Agent Command Center enter continue · esc back" "$(crew_invite claude 5 2>&1 >/dev/null | sed -n 1p)"
+term_cwd() { echo /elsewhere; }
+check "invite leaves a trust dialog for another folder" "crew: claude's agent asks to trust /elsewhere, which is not the crew's project: not answered
+crew: claude waits on a prompt: Trust this folder? Codex can read, edit, and run files here, subject to your permission settings. Folder settings can run code automatically, even without a model request. Continue only if you trust these files. Your trust decision will be saved. › 1. Trust and continue 2. Back to Agent Command Center enter continue · esc back" "$(crew_invite claude 5 2>&1 >/dev/null | sed -n 1,2p)"
+check "and presses nothing" "" "$(crew_invite claude 5 2>/dev/null | grep '^key ')"
+root=$(cd "$(crew_project "$dir")" && pwd -P)
+term_cwd() { echo "$root/sub"; }
+show codex-trust codex-trust codex-idle
+check "invite trusts the crew's project, then invites" "key tmux:%7 enter
+claude: trusted $root/sub for its agent, the crew's project
+tmux:%7 <- Run: crew join claude. Then follow the protocol it prints. Work in caveman mode (\$caveman) from now on.
+claude invited" "$(crew_invite claude 5)"
+show claude-trust claude-trust codex-idle
+check "invite moves to the choice that trusts" "key tmux:%7 down
+key tmux:%7 enter" "$(crew_invite claude 5 | grep '^key ')"
+term_cwd() { echo "$root-claude"; }
+mkdir -p "$dir/clones" "$root-claude"
+echo "$root-claude" >"$dir/clones/claude"
+show codex-trust codex-trust codex-idle
+check "invite trusts the member's clone" "claude: trusted $root-claude for its agent, the crew's project" "$(crew_invite claude 5 | grep trusted)"
+rm -r "$dir/clones" "$root-claude"
+# Trusted once: a dialog that comes back is printed, not answered again.
+term_cwd() { echo "$root"; }
+show codex-trust
+check "invite answers a trust dialog once" "1" "$(crew_invite claude 5 2>&1 >/dev/null | sed -n 1p | grep -c '^crew: claude waits on a prompt: Trust this folder?')"
+check "and presses once" "key tmux:%7 enter" "$(crew_invite claude 5 2>/dev/null | grep '^key ')"
 term_running() { return 1; }
 show codex-idle
 check "invite gives up on a shell" "crew: nothing but a shell in claude's pane after 1 seconds" "$(crew_invite claude 1 2>&1 >/dev/null)"

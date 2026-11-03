@@ -14,6 +14,11 @@ milestone of the version, on GitHub.
 - The usage says what `crew init --home` names the directory:
   `~/.crew/-home-me-app` for `/home/me/app`, the root's path, so two
   projects of one name keep two crews.
+- `crew invite`, and so `crew spawn --join` and `crew up`, answer the
+  agent's trust dialog when the folder the agent runs in is the crew's
+  project or the member's clone, and say so; for any other folder they
+  print the dialog for `crew key`, as before. Claude Code 2.1.317 puts its
+  cursor on "No, exit": invite moves it to "Yes, I trust this folder" first.
 
 ## 1.0.2
 

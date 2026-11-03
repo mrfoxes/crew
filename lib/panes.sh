@@ -414,10 +414,11 @@ crew_move() {
 # something other than a shell in the foreground of the pane's tty; ready
 # is its kind's input line drawn on two reads in a row (share/kinds), or
 # two reads alike: an idle agent may redraw a hint or a notice every few
-# seconds. A prompt waiting there (a trust dialog) is printed instead:
-# answer it with crew key, then invite again. A line typed before the agent
-# is up would go to the shell. Giving up, it says which of the two never
-# came.
+# seconds. The agent's trust dialog is answered once, when the folder the
+# agent runs in is the crew's project or the member's clone; any other
+# prompt waiting there is printed instead: answer it with crew key, then
+# invite again. A line typed before the agent is up would go to the shell.
+# Giving up, it says which of the two never came.
 crew_invite() {
     if [ $# -lt 1 ]; then
         echo "usage: crew invite <name> [seconds]" >&2
@@ -432,6 +433,7 @@ crew_invite() {
     before=""
     drawn=""
     up=""
+    trusted=""
     i=0
     while :; do
         screen=$(term_read "$pane" 2>/dev/null) || screen=""
@@ -452,6 +454,14 @@ crew_invite() {
         [ -z "$drawn" ] || [ -z "$was" ] || ready=1
         if [ -n "$ready" ]; then
             prompt=$(printf '%s\n' "$screen" | gate_prompt | cut -f2)
+            # Trusted once: the screen after it is read again from the start.
+            if [ -n "$prompt" ] && [ -z "$trusted" ] && invite_trust "$name" "$pane" "$tty" "$screen"; then
+                trusted=1
+                before=""
+                drawn=""
+                sleep 1
+                continue
+            fi
             if [ -n "$prompt" ]; then
                 echo "crew: $name waits on a prompt: $prompt" >&2
                 echo "crew: answer it with 'crew key $name ...', then 'crew invite $name'" >&2
@@ -474,6 +484,41 @@ crew_invite() {
         fi
         sleep 1
     done
+}
+
+# Answers the trust dialog on <screen>, in <name>'s pane <pane> whose agent
+# runs on <tty>, when the folder that agent runs in is the crew's project, at
+# its root or under it, or <name>'s own clone: crew init made the crew there
+# and spawn started the agent there, so the dialog asks what the owner has
+# answered already. Says what it trusted. On any other screen it presses
+# nothing and fails; on another folder it says so, too.
+invite_trust() {
+    it_steps=$(printf '%s\n' "$4" | gate_trust)
+    [ -n "$it_steps" ] || return 1
+    it_cwd=$(term_cwd "$3") || return 1
+    it_dir=$(crew_dir) || return 1
+    it_ok=""
+    for it_root in "$(crew_project "$it_dir")" "$(clone_of "$it_dir" "$1")"; do
+        [ -n "$it_root" ] || continue
+        it_root=$(cd "$it_root" 2>/dev/null && pwd -P) || continue
+        case "$it_cwd/" in "$it_root"/*) it_ok=1 ;; esac
+    done
+    if [ -z "$it_ok" ]; then
+        echo "crew: $1's agent asks to trust $it_cwd, which is not the crew's project: not answered" >&2
+        return 1
+    fi
+    it_key=down
+    if [ "$it_steps" -lt 0 ]; then
+        it_key=up
+        it_steps=$((0 - it_steps))
+    fi
+    while [ "$it_steps" -gt 0 ]; do
+        term_key "$2" "$it_key" || return 1
+        it_steps=$((it_steps - 1))
+        sleep 0.2
+    done
+    term_key "$2" enter || return 1
+    echo "$1: trusted $it_cwd for its agent, the crew's project"
 }
 
 # <word> as the owner's shell reads it back whole: bare when it holds nothing

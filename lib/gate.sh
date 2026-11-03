@@ -84,6 +84,38 @@ gate_prompt() {
         }'
 }
 
+# Reads a screen on stdin and, when the menu at its bottom asks to trust the
+# folder the agent runs in, prints how many lines the choice that trusts it
+# stands below the cursor (above it when negative); prints nothing for any
+# other screen. The choices, as the agents draw them:
+#
+#   claude  "Yes, I trust this folder", under the cursor on "No, exit"
+#   codex   "1. Trust and continue", the cursor on it
+#   agy     "Yes, I trust this folder", the cursor on it
+gate_trust() {
+    awk '
+        {
+            gsub(/│|┃|╭|╮|╰|╯|─/, "")
+            sub(/^[ \t]+/, "")
+            sub(/[ \t]+$/, "")
+            if ($0 != "") line[++n] = $0
+        }
+        END {
+            for (c = n; c > 0 && c > n - 8 && line[c] !~ /^(❯|›|>) +[^ ]/; c--) ;
+            if (c <= 0 || c <= n - 8) exit
+            # The menu: the choices around the cursor, up to a hint (a line
+            # with a ·) or a question.
+            for (i = c - 3; i <= c + 3; i++) {
+                if (i < 1 || i > n) continue
+                if (i > c && line[i] ~ /·|\?$/) break
+                l = line[i]
+                sub(/^(❯|›|>) +/, "", l)
+                sub(/^[0-9]+\. +/, "", l)
+                if (l ~ /^(Yes, I trust this folder|Trust and continue)$/) { print i - c; exit }
+            }
+        }'
+}
+
 # Prints the first rule of the file <rules> that <command> breaks, and fails
 # when it breaks none. Lines starting with ! are exceptions, cut out of the
 # command before the rules are tried.

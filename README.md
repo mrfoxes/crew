@@ -296,8 +296,14 @@ tool call`, Antigravity 1.4.11 `alt+m to send immediately`; each then runs
 `crew unread`. A line typed into a pane before its agent is up goes to the
 shell instead: `crew spawn codex --join codex` waits until something other
 than the shell runs there and the agent is ready, then types the join
-line; `crew invite codex` does the same for a pane spawned without it, and
-prints the prompt (a trust dialog) it finds waiting instead, for `crew key`.
+line; `crew invite codex` does the same for a pane spawned without it.
+The agent's trust dialog on a folder it has not seen ("Yes, I trust this
+folder", "Trust and continue") is answered on the way, once, when the folder
+the agent runs in is the crew's project or the member's clone: `crew init`
+made the crew there, so the owner has answered it already. invite says what
+it trusted; for any other folder, and for any other prompt, it prints the
+prompt it finds waiting instead, for `crew key`. The gate never answers a
+trust dialog.
 Ready is the kind's input line (`idle` in `share/kinds`) drawn on two reads
 in a row, or two reads alike: an idle Claude Code redraws its hint and its
 notices every few seconds. Giving up, invite says which never came: an

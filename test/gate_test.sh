@@ -30,6 +30,22 @@ check "claude command needing approval" "crew unread codex" "$(field claude-requ
 check "agy trust is held" "other" "$(field agy-trust 1)"
 check "agy trust text" "Do you trust the contents of this project? Antigravity CLI requires permission to read, edit, and execute files here. > Yes, I trust this folder No, exit ↑/↓ Navigate · enter Confirm" "$(field agy-trust 2)"
 check "codex trust is held" "other" "$(field codex-trust 1)"
+check "claude trust is held" "other" "$(field claude-trust 1)"
+check "claude trust text" "Quick safety check: Is this a project you created or one you trust? (Like your own code, a well-known open source project, or work from your team). If not, take a moment to review what's in this folder first. Claude Code'll be able to read, edit, and execute files here. Security guide ❯ No, exit Yes, I trust this folder Enter to confirm · Esc to cancel" "$(field claude-trust 2)"
+# A trust dialog is held by the gate; invite answers it, reading where the
+# choice that trusts stands from the cursor.
+trust() { gate_trust <"$here/fixtures/$1.txt"; }
+check "claude trust: one line under the cursor" "1" "$(trust claude-trust)"
+check "codex trust: on the cursor" "0" "$(trust codex-trust)"
+check "agy trust: on the cursor" "0" "$(trust agy-trust)"
+# The cursor moved: on the choice, or under it.
+menu() { head -n 8 "$here/fixtures/claude-trust.txt"; printf '%s
+' "$@" " Enter to confirm · Esc to cancel"; }
+check "claude trust with the cursor on it" "0" "$(menu "   No, exit" " ❯ Yes, I trust this folder" | gate_trust)"
+check "claude trust with the cursor under it" "-1" "$(menu "   Yes, I trust this folder" " ❯ No, exit" | gate_trust)"
+for f in claude-run claude-fetch claude-edit codex-run codex-idle claude-idle other; do
+    check "no trust on $f" "" "$(trust "$f")"
+done
 check "codex working with a queued line" "" "$(prompt codex-queued)"
 check "a question with no choices under it" "" "$(prompt claude-asks)"
 check "a question below a Bash prompt is the one waiting" "other" "$(stacked claude-run other 1)"
