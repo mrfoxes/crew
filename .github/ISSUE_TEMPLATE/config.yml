@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Idea
+    url: https://github.com/mrfoxes/crew/discussions/categories/ideas
+    about: Something crew could do. Talked through first, opened as an issue once it has a shape.
+  - name: Question
+    url: https://github.com/mrfoxes/crew/discussions/categories/q-a
+    about: How to do something with crew.
+  - name: Vulnerability
+    url: https://github.com/mrfoxes/crew/security/advisories/new
+    about: Reported privately, as SECURITY.md says.

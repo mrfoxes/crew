@@ -1,0 +1,11 @@
+# crew has no package dependency: the actions its workflows use are all
+# that can go out of date.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
