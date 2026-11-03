@@ -466,7 +466,8 @@ crew down --close           # close the panes whose agent exited
 ```
 
 `crew down` sends `all` an `End:` from `owner` that points to "The end" in
-the protocol (land or save a patch, write the report, send `Done:`), and
+the protocol (land or save a patch, write the report, send `owner` a
+`Done:`, which wakes no member), and
 a muted member gets one by name, since a message to `all` does not wake it.
 It polls the stream every five seconds, printing each member as its
 `Done:` comes, and who is left when that changes. A member counts when it

@@ -69,8 +69,9 @@ down_say_end() {
     crew_send owner "$1" "$2" <<'EOT'
 The owner is ending the crew. Do what "The end" in the protocol says (crew
 help): land your work, or save a patch in reports/ and put your files back;
-write your report with crew report; then send all Done:, even if you sent one
-before. If you are blocked, say what blocks you in the Done:.
+write your report with crew report; then send owner your Done:, even if you
+sent one before (one line and its number, when nothing changed since). If you
+are blocked, say what blocks you in the Done:.
 EOT
 }
 

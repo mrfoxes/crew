@@ -47,9 +47,17 @@ crew unread <you>
   nobody: it reads with `crew unread <you> --wait [seconds]`, which blocks
   until a message to it or to `all` arrives (600 seconds by default) and
   costs no turn while it waits; on a timeout it prints nothing and exits 1.
+- Every message wakes its recipients, and each woken agent spends a turn
+  reading its whole context again: one to `all` costs a turn of every member
+  that is not muted. Say each thing once, to the fewest who must act on it:
+  to one member by name, to `all` only when several must. Never send the
+  same news twice: not a `Done:` to one and a `Heads-up:` of it to the
+  others, not a copy to each. A `Heads-up:` is for what changes another
+  member's work (a file you take, a fact their lane builds on), not a
+  summary of your `Done:`; to point at an earlier message, give its number.
 - Answer every question and every review finding: fixed (with the hash) or not
-  (with the reason). Do not send messages that only acknowledge: every message
-  wakes someone.
+  (with the reason). Do not send messages that only acknowledge or agree: a
+  `Heads-up:` or a `Done:` that asks nothing gets no answer.
 - `owner` is for what only the owner can decide; it reaches them as a desktop
   notification. Never wait for the answer: take other work meanwhile.
 - Run `crew unread <you>` at every step boundary, and before and after every
@@ -207,12 +215,15 @@ listed in the report) with your files put back by
 `git checkout HEAD -- <your paths>`, which the gate holds for the
 coordinator. Write your report (`crew report <you>`, the text on stdin:
 commits, issues, reviews given and got, what the next crew should do first),
-then send `all` your `Done:`.
+then send `owner` your `Done:`: it reaches the owner as a notification and
+wakes no member, and `crew down` reads it in the stream.
 
 The owner ends the crew with `End:`, a message from `owner` to `all` (or to
 you by name, when you are muted). When it reaches you, stop starting new
 work, do all of the above at once, and send `Done:` even if you sent one
 earlier: `crew down` counts only the `Done:` that comes after its `End:`.
+When nothing changed since your last one, the new `Done:` says so in a line
+and gives that one's number.
 If you cannot land something, say what and why in the `Done:`; do not
 leave. Your agent stays up until the owner closes the pane, so a later
 message can still reach you.

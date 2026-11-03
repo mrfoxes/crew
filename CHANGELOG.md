@@ -22,6 +22,10 @@ milestone of the version, on GitHub.
 - crew ships the prices of Anthropic's models, in `share/rates`: `crew cost`
   and the board price a Claude Code member with no rates written. The
   owner's and the crew's rates replace a line or add one.
+- The protocol asks for each thing once, to the fewest who must act on it:
+  no `Heads-up:` that copies a `Done:`, no copy to each member, no message
+  that only agrees. At the end, `Done:` goes to `owner`, which wakes no
+  member, instead of `all`, which woke every one for each `Done:`.
 
 ## 1.0.2
 
