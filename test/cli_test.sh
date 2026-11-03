@@ -80,7 +80,7 @@ check "init -h too" "0" "$(cd "$tmp/bare" && crew init -h >/dev/null; echo $?)"
 check "init refuses another word" "2 none" "$(cd "$tmp/bare" && crew init --hme >/dev/null 2>&1; echo "$? $(ls -A "$tmp/bare" | wc -l | tr -d ' ' | sed 's/^0$/none/')")"
 check "init --home --help is refused, not run" "2" "$(cd "$tmp/bare" && HOME="$tmp/bare" crew init --home --help >/dev/null 2>&1; echo $?)"
 echo x | crew send tess all "Heads-up: kept" >/dev/null
-check "archive --help archives nothing" "1" "$(crew archive --help >/dev/null; ls "$dir/messages" | grep -c 'tess-to-all-heads-up-kept')"
+check "archive --help archives nothing" "1" "$(crew archive --help >/dev/null; for f in "$dir"/messages/*-tess-to-all-heads-up-kept.md; do [ ! -e "$f" ] || echo 1; done)"
 check "spawn --help prints every line of its entry" "9" "$(crew spawn --help | wc -l | tr -d ' ')"
 check "an unknown command's --help is the usage, refused" "2" "$(crew nosuch --help >/dev/null 2>&1; echo $?)"
 for c in dir panes relay archive version; do
