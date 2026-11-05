@@ -6,90 +6,113 @@ milestone of the version, on GitHub.
 
 ## Unreleased
 
+### New commands
+
+- `crew reset` puts the whole crew aside under `archive/<date and time>/`:
+  the session (the stream, the cursors, the statuses, the reports, and the
+  members' `work/`), and the plan, the Crewfile, the tabs, the layouts, the
+  mutes, and the members. It leaves `.crew/` as `crew init` makes it and
+  keeps what belongs to the project or the machine (`project`, `rates`,
+  `forbid`, `kinds`, `tmp/`, `exports/`, a clone still on disk), so a new
+  crew no longer starts on the last one's plan, tab orders, and mutes. It
+  refuses while a relay runs or the lock is held, and names each pane that
+  still runs its agent.
+- `crew restore [<archive>]` brings an archive back, the latest by default,
+  whether `crew archive` or `crew reset` made it. It refuses a crew with a
+  session of its own, or with anything the archive would put back. It
+  never puts a pane back, since a pane's number may name another pane by
+  then: `crew up` brings the members back. `crew story <archive>` reads the
+  plan, the Crewfile, and the members a reset put aside, and the shells'
+  completions offer the archive names.
+- `crew clear <name>` and `crew compact <name> [instructions]` clear or
+  compact a member's conversation, only at its idle prompt and never in
+  the pane they run in. The member's wakes are held from before the first
+  look at its screen, and the newest one held is sent after. A clear also
+  refuses a background shell, and a claimed file changed after the
+  member's status was written; it types `/clear` (Codex: `/new`), waits for
+  the cleared screen, types the line that has the member rejoin and resume
+  from its `Next:`, and checks that it was taken. A compact waits for the
+  compacted mark; only Claude Code's takes instructions. Both read the
+  screen through `lib/screen.sh`, from 25 screens captured from Claude Code
+  2.1.318, Codex 0.166.0, and Antigravity 1.4.12; a tmux screen's styles
+  tell dim placeholders and suggestions from typed text.
+- `crew up --restart <name>...` restarts live agents on their Crewfile
+  lines, each in its own pane and only at its idle prompt. It types the
+  kind's quit command (`/exit`, or `/quit` for Codex and Antigravity),
+  waits for the shell, and types the line with the kind's resume argument,
+  so the conversation goes on under the new model or options; `--fresh`
+  starts a new one. Wakes are held meanwhile. An agent in a turn, with
+  typed text, with a dialog, or with a background shell is refused, and
+  the others go on. `crew up` records the line each member started with in
+  `lines/<name>`, and names a live member whose line has changed since.
+
+### Changes
+
+- Behavior change: `crew land --check` runs the check on what the commit
+  will hold, not in the working tree, where a teammate's unfinished files
+  made it fail or pass. It runs in the member's export,
+  `exports/<member>/tree` under the crew's directory: `HEAD` with the
+  member's paths laid over it, new, changed, and deleted. The export is
+  reused through a private index, so only the files that changed are
+  written again and a build cache in it stays valid. The check gets
+  `CREW_MEMBER`, `CREW_DIR`, and `GIT_CEILING_DIRECTORIES`, so a `git` it
+  runs never reaches the shared tree. When `HEAD` moves between the check
+  and the lock, the check runs again under the lock, and a failure commits
+  nothing. A clone checks in its export too, and after a rebase in an
+  export of the rebased commit. A tool that walks the project's tree
+  without reading its ignore files (`find`, `grep -r`, an indexer) sees
+  every export under `.crew/exports/`.
+- Behavior change: `crew watch` checks for idle members by default. It
+  tells, once a stretch, of a member idle at its prompt with nothing to do
+  for 5 minutes: nothing unread, no commit waiting for its review, and an
+  `Idle:` as its last message or none. Before, the check was off unless
+  `CREW_IDLE_MINUTES` was set, and counted any unchanged screen of a member
+  that had not sent `Done:`. `CREW_IDLE_MINUTES=<n>` changes the minutes,
+  and `CREW_IDLE_MINUTES=0` turns it off. A muted member, and one that sent
+  `Done:`, are never told of. `--to <name>`, on `crew watch` and
+  `crew gate`, sends that member (the coordinator, say) a `Heads-up:` in
+  the stream instead of a notification to the owner; `crew up` does not
+  pass it yet.
+- `crew board` says what each member's pane shows after its pane:
+  `idle, nothing to do for 7 min` for a member with nothing to do, and
+  `idle (muted)` for a muted one, idle by design. It waits two seconds once
+  for all members, not once each. `crew board --live` shows the same words,
+  `dialog` in place of `prompt` and `free` for a member with nothing to do.
+- A Crewfile places the coordinator's pane, the watch, and the board
+  anywhere in its first tab: a `pane coordinator`, `pane watch`, or
+  `pane board` line among the members puts that pane at its place in the
+  tab's order, so `layout=2x2` gives a grid around the coordinator.
+  `crew up` puts the coordinator's pane back in its place after a
+  `crew restore`, and `crew up --dry` prints the first tab's order. With
+  no `pane` line the order is as before: the coordinator, the watch, the
+  board, then the members.
+- `crew archive` carries the members' `work/` with the session.
 - The protocol adds three subjects, each sent to the coordinator, or to
-  `owner` in a crew with none. `Design:` comes before a change to a
-  command's behavior, the gate, or the protocol, with its forks marked.
-  `Paused:` says a task stops before it is done, and where its work is.
-  `Idle:` says nothing is left; the coordinator answers it in the same
+  `owner` in a crew with none: `Design:` before a change to a command's
+  behavior, the gate, or the protocol, with its forks marked; `Paused:`
+  when a task stops before it is done, saying where its work is; and
+  `Idle:` when nothing is left, which the coordinator answers in the same
   turn. Before every `Pushed:`, `Done:`, or `Paused:`, a member rewrites
-  `Next:` so a fresh session after a `/clear` can resume from it. Saved
-  work lives under the crew's directory, in `reports/<you>.patch` and
-  `work/<you>/`, never only under `/tmp`. A member with a pane never waits
-  inside its turn (`crew unread --wait`, a sleep loop over CI): it ends the
-  turn at the prompt, where a wake brings it back and `crew clear` can act.
-- `crew land --check` runs the check on what the commit will hold, not in
-  the working tree, where a teammate's unfinished files made it fail or
-  pass: in the member's export, `exports/<member>/tree` under the crew's
-  directory, `HEAD` with the member's paths laid over it, new, changed, and
-  deleted. The export is reused through a private index, so only the files
-  that changed are written again and a build cache in it stays valid. The
-  check gets `CREW_MEMBER`, `CREW_DIR`, and `GIT_CEILING_DIRECTORIES`, so a
-  `git` it runs never reaches the shared tree. When `HEAD` moved between the
-  check and the lock, the check runs again under the lock, and a failure
-  commits nothing. A clone checks in its export too, and after a rebase on
-  an export of the rebased commit.
+  `Next:` so that a fresh session after a `/clear` can resume from it.
+  Saved work lives under the crew's directory, in `reports/<you>.patch`
+  and `work/<you>/`, never only under `/tmp`. A member with a pane never
+  waits inside its turn (`crew unread --wait`, a sleep loop over CI): it
+  ends the turn at the prompt, where a wake brings it back and `crew clear`
+  can act.
+
+### Fixes
+
 - `crew land` lands a tracked file turned into a directory, given as `d`,
   `d/`, or `d/x`: `git commit -- d` took the directory for a submodule and
   stopped with "'d' does not have a commit checked out". The export never
   reads, writes, or removes through a link, where a link of `HEAD`'s to a
   directory outside, turned into a directory or back, had it write or
   remove a file outside the export.
-- `crew reset` puts the whole crew aside under `archive/<date and time>/`:
-  the session, and the plan, the Crewfile, the tabs, the layouts, the mutes,
-  and the members. It leaves `.crew/` as `crew init` makes it, keeping the
-  project's and the machine's files (`project`, `rates`, `forbid`, `kinds`,
-  `tmp/`, `exports/`, a clone still on disk), so a new crew no longer
-  starts on the last one's plan, tab orders, and mutes. `crew restore
-  [<archive>]` brings either kind of archive back, the latest by default,
-  and refuses a crew with a session or a plan of its own; it never puts a
-  pane back, and `crew up` brings the members back. `crew story <archive>`
-  reads the plan, the Crewfile, and the members a reset put aside.
-- `crew archive` carries the members' `work/` with the session.
-- A Crewfile places the coordinator's pane, the watch, and the board
-  anywhere in its first tab: `pane coordinator`, `pane watch`, or
-  `pane board` among the member lines puts that pane at its place in the
-  tab's order, so `layout=2x2` gives a grid around the coordinator, and
-  `crew up` puts the coordinator's pane back in its place after a
-  `crew restore`. With no `pane` line the order is as before: the
-  coordinator, the watch, the board, then the members. `crew up --dry`
-  prints the first tab's order.
-- `crew clear <name>` and `crew compact <name> [instructions]` clear or
-  compact a member's conversation, only at its idle prompt, never in the
-  pane they run in, with the member's wakes held while they type and the
-  newest held one sent after. A clear also refuses a background shell and a
-  claimed file changed after the member's status; it types `/clear`
-  (Codex: `/new`), waits for the cleared screen, then types the line that
-  has the member rejoin and resume from its `Next:`, and checks that it was
-  taken. A compact waits for the compacted mark; only Claude Code takes
-  instructions. `lib/screen.sh` reads what each kind's screen says, from 25
-  screens newly captured from Claude Code 2.1.318, Codex 0.166.0, and
-  Antigravity 1.4.12, a tmux screen's styles telling dim placeholders and
-  suggestions from typed text. Claude Code 2.1.318 no longer says esc
-  interrupts its turn: its spinner's timer marks it.
-- `crew up --restart <name>...` restarts live agents on their Crewfile
-  lines, each in its own pane, at its idle prompt only: the kind's quit
-  command (`/exit`, `/quit`), the shell waited for, then the line with the
-  kind's resume argument, so a new model or option takes over the same
-  conversation; `--fresh` starts a new one. Wakes are held meanwhile. An
-  agent in a turn, with typed text, a dialog, or a background shell is
-  refused. `crew up` records each member's line in `lines/<name>` and names
-  a live member whose Crewfile line changed since it started.
-- Idle members. `crew board` says what each member's pane shows after its
-  pane, `idle, nothing to do for 7 min` for a member idle at its prompt
-  with nothing unread, no commit waiting for its review, and an `Idle:` as
-  its last message or none, and `idle (muted)` for a muted one, idle by
-  design. It waits two seconds once for all members, not once each.
-  `crew board --live` shows the same words, `dialog` in place of `prompt`
-  and `free` for a member with nothing to do; it now sees Claude Code
-  2.1.318's turn, which no longer says esc interrupts it.
-- `crew watch` tells of a member with nothing to do after 5 minutes, once a
-  stretch, where it was off unless `CREW_IDLE_MINUTES` was set and counted
-  a member that had not sent `Done:`. The check is on by default now:
-  `CREW_IDLE_MINUTES=<n>` changes the minutes, and `CREW_IDLE_MINUTES=0`
-  turns it off. A muted member and one that sent `Done:` are never told.
-  `--to <name>` sends that member, the coordinator, a `Heads-up:` in the
-  stream instead of a notification to the owner; `crew up` does not pass
-  it yet, so a crew up's watch notifies the owner.
+- Claude Code 2.1.318 no longer says esc interrupts its turn: the live
+  board, `crew clear`, and `crew compact` read its spinner's timer instead.
+- The site's reference lists every flag of `crew join`, `crew send`,
+  `crew unread`, and `crew log`. Tests now check that each row carries its
+  command's flags, and that README names every command.
 
 ## 1.1.0
 
