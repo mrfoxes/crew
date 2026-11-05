@@ -114,6 +114,16 @@ milestone of the version, on GitHub.
   `crew unread`, and `crew log`. Tests now check that each row carries its
   command's flags, and that README names every command.
 
+### Later
+
+Not in 1.2.0, and next:
+
+- `crew up` passing `--to` from the Crewfile, so that a crew up's watch
+  tells the coordinator of an idle member instead of notifying the owner.
+- A watch that reads the stream once a round, where it now reads it twice
+  a round for each member with nothing to do, which a crew of several
+  hundred messages feels.
+
 ## 1.1.0
 
 - `crew <command> --help` prints that command's entry of the usage and
