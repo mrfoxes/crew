@@ -15,10 +15,31 @@
 #   the line "/compact ..."     draws the captured compacting screen, then
 #                               after 3 seconds the compacted one
 #   the line "/exit", "/quit",
-#   or "!exit"                  leaves
+#   or "!exit"                  leaves; while $E2E_LOG/$E2E_NAME.slow is
+#                               there (at most 30 seconds), it stays
+#
+# Its arguments go to $E2E_LOG/$E2E_NAME.args, a line a start. Like Claude
+# Code, it has a session, which crew join records: the one after --resume,
+# or one of its own.
 
 stty -echo 2>/dev/null
 log=$E2E_LOG/$E2E_NAME
+printf 'args: [%s]\n' "$*" >>"$log.args"
+if [ $# -ge 2 ] && [ "$1" = --resume ]; then
+    CLAUDE_CODE_SESSION_ID=$2
+else
+    CLAUDE_CODE_SESSION_ID=e2e-$E2E_NAME-$$
+fi
+export CLAUDE_CODE_SESSION_ID
+
+# Waits while $log.slow is there, at most 30 seconds.
+slow() {
+    slow_left=30
+    while [ -e "$log.slow" ] && [ "$slow_left" -gt 0 ]; do
+        slow_left=$((slow_left - 1))
+        sleep 1
+    done
+}
 
 draw() {
     printf '\033[2J\033[H'
@@ -56,11 +77,7 @@ while IFS= read -r line; do
         draw "$screen"
         ;;
     /clear)
-        slow=30
-        while [ -e "$log.slow" ] && [ "$slow" -gt 0 ]; do
-            slow=$((slow - 1))
-            sleep 1
-        done
+        slow
         screen=$E2E_FIXTURES/claude-cleared.txt
         draw "$screen"
         ;;
@@ -70,7 +87,10 @@ while IFS= read -r line; do
         screen=$E2E_FIXTURES/claude-compacted.txt
         draw "$screen"
         ;;
-    /exit | /quit | '!exit') exit 0 ;;
+    /exit | /quit | '!exit')
+        slow
+        exit 0
+        ;;
     *'Run: crew '*)
         draw_taken "$screen" "$line"
         cmd=${line#*Run: }

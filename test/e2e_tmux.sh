@@ -220,6 +220,44 @@ at_prompt() {
 check "ada shows the compacted mark" "0" "$(shows "$ada" 'Compacted (ctrl+o'; echo $?)"
 check "ada waits at its empty prompt" "0" "$(at_prompt "$ada"; echo $?)"
 
+# crew up --restart refuses the background shell the compacted screen
+# still shows, and types nothing.
+check "crew up --restart refuses a background shell" "1" "$(crew up --restart ada >"$tmp/restart.out" 2>"$tmp/restart.err"; echo $?)"
+check "and says why" "0" "$(has "$tmp/restart.err" "a background shell runs in ada's pane"; echo $?)"
+check "nothing is typed" "0" "$(grep -c '^/exit' "$tmp/log/ada.in")"
+
+# A restart at ada's idle prompt: /exit, then its Crewfile line with
+# --resume and the session it joined with, then the invitation. A message
+# sent while it runs is held, and ada reads it once it is back.
+draw_in "$ada" claude-idle.txt
+check "ada is idle for the restart" "0" "$(wait_for 10 not_shows "$ada" '1 shell'; echo $?)"
+ada_session=$(cat "$crewdir/sessions/ada" 2>/dev/null)
+check "crew join recorded ada's session" "e2e-ada-" "$(printf '%s' "$ada_session" | cut -c1-8)"
+: >"$tmp/log/ada.slow"
+crew up --restart ada >"$tmp/restart.out" 2>"$tmp/restart.err" &
+restart_pid=$!
+check "crew up --restart types /exit" "0" "$(wait_for 20 grep -q '^/exit$' "$tmp/log/ada.in"; echo $?)"
+crew send bob ada "Question: back yet" >/dev/null 2>"$tmp/send.err" <<'EOT'
+Sent while ada was restarted.
+EOT
+check "the wake waits for the restart" "0" "$(wait_for 10 held; echo $?)"
+rm -f "$tmp/log/ada.slow"
+wait "$restart_pid"
+check "crew up --restart goes through" "0" "$?"
+check "it says so" "0" "$(has "$tmp/restart.out" '^restarted ada on its Crewfile line$'; echo $?)"
+check "ada's agent runs its line with --resume" "args: [--resume $ada_session]" "$(tail -n 1 "$tmp/log/ada.args")"
+check "ada is invited and joins" "0" "$(wait_for 20 joined ada 3; echo $?)"
+check "ada reads the message held" "0" "$(wait_for 20 has "$tmp/log/ada.out" 'Sent while ada was restarted'; echo $?)"
+
+# ada's Crewfile line changed under its live agent: crew up says so, and
+# restarts nothing; bob's line, as it was, says nothing.
+sed 's/^member ada reviewer=bob -- E2E_NAME=ada claude$/member ada reviewer=bob -- E2E_NAME=ada E2E_NEW=1 claude/' \
+    "$crewdir/Crewfile" >"$tmp/Crewfile" && cp "$tmp/Crewfile" "$crewdir/Crewfile"
+check "crew up with ada's line changed" "0" "$(crew up >"$tmp/up4.out" 2>&1; echo $?)"
+check "it says the line changed" "crew: ada's Crewfile line changed since it started; 'crew up --restart ada' restarts it" "$(grep "^crew: ada's" "$tmp/up4.out")"
+check "and restarts nothing" "1" "$(grep -c '^/exit' "$tmp/log/ada.in")"
+check "bob's line says nothing" "" "$(grep "^crew: bob's" "$tmp/up4.out")"
+
 # The end: crew down sends End: and waits for a Done: from each. ada leaves
 # without one, which frees the wait for it; bob sends its Done: and stays
 # up. --close closes the pane whose agent exited, and only that one.
@@ -333,7 +371,7 @@ if [ "$failed" -gt 0 ]; then
     done
     printf -- '--- messages\n'
     ls "$crewdir/messages" 2>/dev/null | tail -n 12
-    for dump_file in up.out land.out clear.out clear.err send.err compact.out down.out reset.out reset.err up2.out restore.out up3.out; do
+    for dump_file in up.out land.out clear.out clear.err send.err compact.out restart.out restart.err up4.out down.out reset.out reset.err up2.out restore.out up3.out; do
         printf -- '--- %s\n' "$dump_file"
         tail -n 15 "$tmp/$dump_file" 2>/dev/null
     done
