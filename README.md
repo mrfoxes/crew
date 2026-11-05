@@ -259,11 +259,15 @@ elsewhere (`CARGO_TARGET_DIR="$CREW_DIR/exports/$CREW_MEMBER/target"`), and
 `GIT_CEILING_DIRECTORIES`, so a `git` it runs finds no repository instead of
 walking up to the project's shared tree. A failed check names the export, to
 run it there by hand. `crew reset` keeps `exports/`, and no archive carries
-it. Two limits: untracked dependencies (`node_modules`, `.venv`) are not in
-the export, so the check installs them or points at them; and when the
+it. Three limits: untracked dependencies (`node_modules`, `.venv`) are not
+in the export, so the check installs them or points at them; when the
 crew's directory is inside the project, a tool that walks up from the
 export (node's module resolution, a parent workspace) still reaches the
-project's files. A submodule comes out as an empty directory.
+project's files; and every member's export is a full copy of the project
+under `.crew/exports/`, which a tool in the project that walks down without
+reading `.gitignore` or `.git/info/exclude` (`find`, `grep -r`, an indexer)
+sees too: point it past `.crew/`, or use `crew init --home`. A submodule
+comes out as an empty directory.
 
 At the end, `crew archive` puts the session (the stream, the cursors, the
 statuses, the reports, and the members' `work/`) under
@@ -846,6 +850,7 @@ tabs/<tab>                 a tab's members, in the order they were placed
 layouts/<tab>              the layout a tab is kept in (crew layout)
 reports/<name>.md          each member's report at the end (crew report)
 work/<name>/               a member's notes, logs, and screenshots
+exports/<name>/            a member's export for crew land --check: tree/, index, overlay
 archive/<date and time>/   earlier sessions (crew archive) and crews (crew reset)
 forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
