@@ -226,7 +226,7 @@ land_export() {
     mkdir -p "$ld_exp/tree" || return 1
     if [ -f "$ld_exp/overlay" ]; then
         while IFS= read -r ld_f; do
-            [ -z "$ld_f" ] || rm -rf "$ld_exp/tree/$ld_f"
+            [ -z "$ld_f" ] || ! land_parents "$ld_exp/tree" "$ld_f" || rm -rf "$ld_exp/tree/$ld_f"
         done <"$ld_exp/overlay"
         rm -f "$ld_exp/overlay"
     fi
@@ -239,13 +239,40 @@ land_export() {
     land_overlay "$@" >"$ld_exp/overlay" || return 1
     while IFS= read -r ld_f; do
         [ -n "$ld_f" ] || continue
-        rm -rf "$ld_exp/tree/$ld_f"
-        # A directory where a file was: its files come as entries of their own.
-        if [ -L "$ld_tree/$ld_f" ] || { [ -e "$ld_tree/$ld_f" ] && [ ! -d "$ld_tree/$ld_f" ]; }; then
+        # A file or a link of the member's, laid in; a directory where a
+        # file was brings its files as entries of their own, and a path
+        # under a link of the member's (a directory turned into a link) is
+        # the link's, not a file of the tree.
+        if land_parents "$ld_tree" "$ld_f" &&
+            { [ -L "$ld_tree/$ld_f" ] || { [ -e "$ld_tree/$ld_f" ] && [ ! -d "$ld_tree/$ld_f" ]; }; }; then
+            land_parents "$ld_exp/tree" "$ld_f" lay
+            rm -rf "$ld_exp/tree/$ld_f"
             mkdir -p "$(dirname "$ld_exp/tree/$ld_f")" &&
                 cp -P "$ld_tree/$ld_f" "$ld_exp/tree/$ld_f" || return 1
+        elif land_parents "$ld_exp/tree" "$ld_f"; then
+            rm -rf "$ld_exp/tree/$ld_f"
         fi
     done <"$ld_exp/overlay"
+}
+
+# Whether every parent of <path> under <root> is a directory, not a link,
+# from the top down, so that nothing is read, removed, or written through a
+# link to a directory outside. A parent that is not (in the export, a file
+# or a link of HEAD that the member turned into a directory) is removed when
+# <path> is to be laid in, any third word; otherwise nothing under it is
+# <root>'s, and the answer is no.
+land_parents() {
+    lp_rest=$2
+    lp_up=
+    while :; do
+        case "$lp_rest" in */*) ;; *) return 0 ;; esac
+        lp_up=$lp_up${lp_up:+/}${lp_rest%%/*}
+        lp_rest=${lp_rest#*/}
+        if [ -L "$1/$lp_up" ] || { [ -e "$1/$lp_up" ] && [ ! -d "$1/$lp_up" ]; }; then
+            [ -n "${3:-}" ] || return 1
+            rm -f "$1/$lp_up"
+        fi
+    done
 }
 
 land_read_tree() {
@@ -351,11 +378,27 @@ EOF
 
 # Adds the given paths that git does not track yet, then commits those paths
 # only, with the message file: a file changed beside them stays uncommitted.
+# Whether <path> is a directory in the tree, not a link and not a submodule,
+# where HEAD or the index holds a file or a link at that very path.
+land_file_to_dir() {
+    [ -d "$ld_tree/$1" ] && [ ! -L "$ld_tree/$1" ] && [ ! -e "$ld_tree/$1/.git" ] || return 1
+    lt_type=$(git -C "$ld_tree" cat-file -t "HEAD:$1" 2>/dev/null) || lt_type=
+    [ -z "$lt_type" ] || [ "$lt_type" = tree ] || return 0
+    git -C "$ld_tree" rev-parse -q --verify ":0:$1" >/dev/null 2>&1
+}
+
 land_commit() {
     for ld_p in "$@"; do
         ld_path=$(land_norm "$ld_p")
         if [ -n "$(git --literal-pathspecs -C "$ld_tree" ls-files --others --exclude-standard -- "$ld_path")" ]; then
             git --literal-pathspecs -C "$ld_tree" add -- "$ld_path" >&2 || return 1
+        fi
+        # A file of HEAD or of the index that is a directory now: git commit
+        # -- <path> takes the directory for a submodule and stops, while
+        # <path>/ commits the files under it and, with them, the file's
+        # removal.
+        if land_file_to_dir "$ld_path"; then
+            ld_path=$ld_path/
         fi
         # Each path moves from the front to the back normalized.
         set -- "$@" "$ld_path"

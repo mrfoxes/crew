@@ -202,6 +202,74 @@ release_at=0
 meanwhile=
 tidy
 
+# A file of HEAD turned into a directory: git commit -- f takes the directory
+# for a submodule and stops, so the landing commits f's removal and the files
+# under it, whichever paths name them, and the export lays them in.
+status ann "c.txt, n.txt, f, f/, l, l/"
+for paths in "f f/x" "f" "f/" "f/x"; do
+    rm -rf f
+    echo file >f
+    git add -A -- f
+    git commit -q -m "f as a file"
+    git push -q origin HEAD:main 2>/dev/null
+    rm f
+    mkdir f
+    echo inside >f/x
+    edit c.txt
+    # shellcheck disable=SC2086 # the paths are words
+    check "a file turned into a directory lands, given as $paths" "0" "$(land ann -F "$tmp/message" --to cat --check '[ "$(cat f/x)" = inside ]' -- $paths)"
+    (crew_unread ann >/dev/null)
+    (crew_unread cat >/dev/null)
+    check "its commit removes f and adds f/x, given as $paths" "f f/x" "$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ' ' | sed 's/ $//')"
+    check "and leaves the rest as it was, given as $paths" " M c.txt" "$(git status --porcelain)"
+    check "it is pushed, given as $paths" "Add the things" "$(origin_head)"
+    tidy
+done
+# And back: a directory of HEAD turned into a file.
+rm -r f
+echo file >f
+check "a directory turned into a file lands" "0" "$(land ann -F "$tmp/message" --to cat --check '[ "$(cat f)" = file ]' -- f)"
+(crew_unread ann >/dev/null)
+(crew_unread cat >/dev/null)
+check "its commit removes f/x and adds f" "f f/x" "$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ' ' | sed 's/ $//')"
+tidy
+# A link of HEAD to a directory outside, turned into a directory: the export
+# drops the link before it lays l/x in, and never writes through it.
+mkdir -p "$tmp/outside"
+ln -s "$tmp/outside" l
+git add l
+git commit -q -m "l as a link"
+git push -q origin HEAD:main 2>/dev/null
+echo n >n.txt
+check "a landing puts the link in the export" "0" "$(land ann -F "$tmp/message" --to cat --check true -- n.txt)"
+(crew_unread ann >/dev/null)
+(crew_unread cat >/dev/null)
+check "the export holds the link" "$tmp/outside" "$(readlink "$exp/l")"
+rm l
+mkdir l
+echo inside >l/x
+check "a link turned into a directory lands" "0" "$(land ann -F "$tmp/message" --to cat --check '[ ! -L l ] && [ "$(cat l/x)" = inside ]' -- l/x)"
+(crew_unread ann >/dev/null)
+(crew_unread cat >/dev/null)
+check "nothing was written through the link" "" "$(ls "$tmp/outside")"
+check "its commit removes l and adds l/x" "l l/x" "$(git diff-tree --no-commit-id --name-only -r HEAD | tr '\n' ' ' | sed 's/ $//')"
+tidy
+# And back: a directory of HEAD turned into a link to a directory outside.
+# The export lays the link in, and removes nothing through it: l/x, deleted,
+# is the outside's x now.
+rm -r l
+echo keep >"$tmp/outside/x"
+ln -s "$tmp/outside" l
+check "a check over a directory turned into a link runs, and fails" "1" "$(land ann -F "$tmp/message" --to cat --check 'exit 1' -- l)"
+check "the export holds the member's link" "$tmp/outside" "$(readlink "$exp/l")"
+check "nothing was removed through the link" "keep" "$(cat "$tmp/outside/x")"
+tidy
+edit n.txt
+land ann -F "$tmp/message" --to cat --check "[ -d l ] && [ ! -L l ] && cat l/x >'$tmp/seen'; exit 1" -- n.txt >/dev/null
+check "the next export holds HEAD's l/x again" "inside" "$(cat "$tmp/seen")"
+check "and removed nothing through the link" "keep" "$(cat "$tmp/outside/x")"
+tidy
+
 # A status with a Pushed: line has that line rewritten in place.
 printf 'Agent: ann\nPushed: none\nFiles: a.txt\nNext: more\n' | crew_write status ann >/dev/null 2>&1
 edit a.txt
