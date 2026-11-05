@@ -239,6 +239,9 @@ gate_dry=""
 gate_to=""
 gate_setup --to >/dev/null 2>&1
 check "--to wants a name" "2" "$?"
+check "--to refuses a word that is no name" "2" "$(gate_setup --all --to Coord 2>/dev/null; echo $?)"
+check "and says so" "crew: 'Coord' is not a name: use lower-case letters, digits, and dashes" "$(gate_setup --all --to Coord 2>&1)"
+check "--to does not take a flag for its name" "2" "$(gate_setup --all --to --dry 2>/dev/null; echo $?)"
 
 # --all watches every member with a pane, read again at each round.
 gate_all=1

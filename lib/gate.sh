@@ -279,7 +279,8 @@ gate_setup() {
         --dry) gate_dry=--dry ;;
         --all) gate_all=1 ;;
         --to)
-            if [ $# -lt 2 ]; then
+            # Its name, which is never a flag.
+            if [ $# -lt 2 ] || [ "${2#-}" != "$2" ]; then
                 names=""
                 gate_all=""
                 break
@@ -295,6 +296,8 @@ gate_setup() {
         echo "usage: crew gate <name>... | --all [--dry] [--to <name>], or crew watch the same" >&2
         return 2
     fi
+    # A name crew_send would refuse is refused now, not once a stretch.
+    [ -z "$gate_to" ] || crew_name "$gate_to" || return 2
     dir=$(crew_dir) || return 1
     # The default rules; a crew's own forbid replaces them, at each prompt.
     gate_rules=$CREW_HOME/share/forbid
