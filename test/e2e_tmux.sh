@@ -169,17 +169,68 @@ check "the origin has the commit" "Add two.txt" "$(git --git-dir="$tmp/origin.gi
 check "bob is told" "0" "$(wait_for 20 has "$tmp/log/bob.in" 'from ada. Run: crew unread bob'; echo $?)"
 check "bob reads the Pushed:" "0" "$(crew unread bob 2>/dev/null | grep -q 'Pushed: .*Add two.txt'; echo $?)"
 
+# crew clear refuses a background shell in ada's footer, and types nothing.
+draw_in() {
+    tm send-keys -t "${1#tmux:}" -l "!draw $here/fixtures/$2"
+    tm send-keys -t "${1#tmux:}" Enter
+}
+shows() { screen "${1#tmux:}" | grep -q -- "$2"; }
+draw_in "$ada" claude-shell.txt
+check "ada draws a background shell" "0" "$(wait_for 10 shows "$ada" '1 shell still running'; echo $?)"
+check "crew clear refuses it" "1" "$(crew clear ada >"$tmp/clear.out" 2>"$tmp/clear.err"; echo $?)"
+check "and says why" "0" "$(has "$tmp/clear.err" "a background shell runs in ada's pane"; echo $?)"
+check "nothing is typed" "0" "$(grep -c '^/clear' "$tmp/log/ada.in")"
+
+# A clear at ada's idle prompt: /clear, then the line to rejoin. A message
+# sent while the clear runs is held, never typed into it, and ada reads it
+# once it rejoined.
+draw_in "$ada" claude-idle.txt
+not_shows() { ! shows "$@"; }
+check "ada is idle again" "0" "$(wait_for 10 not_shows "$ada" '1 shell'; echo $?)"
+: >"$tmp/log/ada.slow"
+crew clear ada >"$tmp/clear.out" 2>"$tmp/clear.err" &
+clear_pid=$!
+check "crew clear types /clear" "0" "$(wait_for 20 grep -q '^/clear$' "$tmp/log/ada.in"; echo $?)"
+crew send bob ada "Question: still there" >/dev/null 2>"$tmp/send.err" <<'EOT'
+Sent while ada was cleared.
+EOT
+# The watch's relay wakes ada: held, the wake is recorded, not typed.
+held() { ls "$crewdir"/tmp/wake.*.ada >/dev/null 2>&1; }
+check "the wake waits for the clear" "0" "$(wait_for 10 held; echo $?)"
+rm -f "$tmp/log/ada.slow"
+wait "$clear_pid"
+check "crew clear goes through" "0" "$?"
+check "it says ada took the line to rejoin" "cleared ada: it took the line to rejoin (crew join ada) and to resume from its Next:" "$(cat "$tmp/clear.out")"
+check "the line after /clear is the one to rejoin, no wake" 'crew: your context was cleared. Run: crew join ada, then crew status ada, and resume from its Next: line. Work in caveman mode ($caveman) from now on.' "$(sed -n '/^\/clear$/{n;p;}' "$tmp/log/ada.in")"
+joined() { [ "$(grep -c 'The crew protocol' "$tmp/log/$1.out" 2>/dev/null)" -ge "$2" ]; }
+check "ada rejoined" "0" "$(wait_for 20 joined ada 2; echo $?)"
+check "ada reads the message held" "0" "$(wait_for 20 has "$tmp/log/ada.out" 'Sent while ada was cleared'; echo $?)"
+
+# A compact with instructions types /compact and them, waits for the
+# compacted mark, and types nothing after: ada waits at its empty prompt.
+check "crew compact goes through" "0" "$(crew compact ada keep the task >"$tmp/compact.out" 2>&1; echo $?)"
+check "it says so" "compacted ada" "$(cat "$tmp/compact.out")"
+check "the instructions go with /compact, nothing after" "/compact keep the task" "$(tail -n 1 "$tmp/log/ada.in")"
+# The lowest line that starts with the mark is the input line: empty.
+at_prompt() {
+    screen "${1#tmux:}" | LC_ALL=C awk '
+        index($0, "\342\235\257") == 1 { l = $0; gsub(/\302\240| /, "", l) }
+        END { exit l != "\342\235\257" }'
+}
+check "ada shows the compacted mark" "0" "$(shows "$ada" 'Compacted (ctrl+o'; echo $?)"
+check "ada waits at its empty prompt" "0" "$(at_prompt "$ada"; echo $?)"
+
 # The end: crew down sends End: and waits for a Done: from each. ada leaves
 # without one, which frees the wait for it; bob sends its Done: and stays
 # up. --close closes the pane whose agent exited, and only that one.
 crew down 1 --close >"$tmp/down.out" 2>&1 &
 down_pid=$!
 check "End: is sent" "0" "$(wait_for 20 grep -q 'End:' "$tmp/down.out"; echo $?)"
-# The End: wakes ada with a line typed into its pane: "!exit" waits until
-# that line is in, or the two are typed into one line and ada never leaves
-# (macOS CI saw it).
+# The End: wakes ada with a line typed into its pane: "/exit", Claude Code's
+# quit, waits until that line is in, or the two are typed into one line and
+# ada never leaves (macOS CI saw it).
 check "ada is woken for End:" "0" "$(wait_for 20 grep -q 'from owner\. Run: crew unread ada' "$tmp/log/ada.in"; echo $?)"
-tm send-keys -t "${ada#tmux:}" -l '!exit'
+tm send-keys -t "${ada#tmux:}" -l '/exit'
 tm send-keys -t "${ada#tmux:}" Enter
 # tmux names the command by its path on macOS: compare its last part.
 agent_left() { [ "$(tm display-message -p -t "${ada#tmux:}" '#{pane_current_command}' | sed 's#.*/##')" != claude ]; }
@@ -241,7 +292,6 @@ grid() {
           if (NR == 1 || $3 < mt) mt = $3 }
         END { for (i = 1; i <= NR; i++) print n[i], (l[i] == ml ? "0" : "+"), (t[i] == mt ? "0" : "+") }'
 }
-joined() { [ "$(grep -c 'The crew protocol' "$tmp/log/$1.out" 2>/dev/null)" -ge "$2" ]; }
 check "crew up brings the crew around the coordinator" "0" "$(crew up >"$tmp/up2.out" 2>&1; echo $?)"
 for m in qa dev1 dev2; do
     check "$m joined" "0" "$(wait_for 20 joined "$m" 1; echo $?)"
@@ -283,7 +333,7 @@ if [ "$failed" -gt 0 ]; then
     done
     printf -- '--- messages\n'
     ls "$crewdir/messages" 2>/dev/null | tail -n 12
-    for dump_file in up.out land.out down.out reset.out reset.err up2.out restore.out up3.out; do
+    for dump_file in up.out land.out clear.out clear.err send.err compact.out down.out reset.out reset.err up2.out restore.out up3.out; do
         printf -- '--- %s\n' "$dump_file"
         tail -n 15 "$tmp/$dump_file" 2>/dev/null
     done
