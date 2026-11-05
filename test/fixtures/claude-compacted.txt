@@ -1,0 +1,20 @@
+ ▐▛███▛█   Claude Code v2.1.318
+▝▜██████▀  Haiku 5.5 · Claude Ultra
+ ▝▝   ▝▝   /…/f7c131f2-f313-4d63-b5c2-f89d09385229/scratchpad/cap/claude
+❯ Run the shell command: sleep 8 (foreground). Then reply with the single word done.
+  Ran 1 shell command
+⏺ done
+✻ Rainbowed for 11s · done 3:15 AM · 1 shell still running
+❯ Start the shell command sleep 300 in the background (run_in_background), then reply with the single word started and
+  end your turn.
+  Ran 1 shell command
+⏺ started
+✻ Rainbowed for 3s · done 3:15 AM · 1 shell still running
+❯ /compact
+  ⎿  Compacted (ctrl+o to see full summary)
+⏺ Task "Sleep 300 seconds in background" still running in background
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [CAVEMAN]
+  ⏵⏵ auto mode on · 1 shell

@@ -1,0 +1,23 @@
+      ▄▀▀▄
+     ▀▀▀▀▀▀
+    ▀▀▀▀▀▀▀▀
+   ▄▀▀    ▀▀▄
+  ▄▀▀      ▀▀▄
+  Antigravity CLI 1.4.12
+  owner@example.com (Agent Platform)
+  GCP Project: example-project
+  Gemini 4 Argon (High)
+  /private/tmp/claude-501/-Users-mrfoxes-Documents-repos-github-com-mrfoxes-crew/f7c131f2-f313-4d63-b5c2-f89d09385229/sc
+────────────────────────────────────────────────────────────
+> Run the shell command: sleep 6. Then reply with the single word done.
+9.6k in | 220 out | 175 thinking
+● Bash(sleep 6) (ctrl+o to expand)
+  done
+────────────────────────────────────────────────────────────
+> /compact
+─────────────────────────────────────────────── Conversation compacted ────────────────────────────────────────────────
+                         5 steps summarized · context 10.9k → ~14.0k (533 summary) · took 10s
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+? for shortcuts                                                                                    Gemini 4 Argon · high

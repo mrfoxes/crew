@@ -1,0 +1,13 @@
+ ▐▛███▛█   Claude Code v2.1.318
+▝▜██████▀  Haiku 5.5 · Claude Ultra
+ ▝▝   ▝▝   /…/f7c131f2-f313-4d63-b5c2-f89d09385229/scratchpad/cap/claude
+❯ Run the shell command: sleep 8 (foreground). Then reply with the single word done.
+⏺ Sleeping for 8 seconds in foreground · 2s
+  ⎿  $ sleep 8 (3s)
+     (ctrl+b ctrl+b (twice) to run in background)
+▀▄▀▄▀▄~·:·^ω^ ✳ Sparkling… (4s · ↓ 216 tokens · thought for 1s)
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [CAVEMAN]
+  ⏵⏵ auto mode on (shift+tab to cycle)

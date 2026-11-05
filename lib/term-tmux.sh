@@ -10,6 +10,10 @@ tmux_read() {
     tmux capture-pane -p -t "$1"
 }
 
+tmux_read_styled() {
+    tmux capture-pane -p -e -t "$1"
+}
+
 tmux_type() {
     tmux send-keys -t "$1" -l -- "$2"
 }

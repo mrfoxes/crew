@@ -220,6 +220,18 @@ term_read() {
     "${backend}_read" "${1#*:}"
 }
 
+# What the pane shows now, with its styles as escape sequences where the
+# terminal gives them (tmux), so that dim text can be told from typed text;
+# plain text where it does not (iTerm2).
+term_read_styled() {
+    backend=$(term_of "$1") || return
+    if [ "$backend" = tmux ]; then
+        tmux_read_styled "${1#*:}"
+    else
+        "${backend}_read" "${1#*:}"
+    fi
+}
+
 # Types <text> into the pane, without Return.
 term_type() {
     backend=$(term_of "$1") || return

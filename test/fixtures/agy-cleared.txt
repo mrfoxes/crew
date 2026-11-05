@@ -1,0 +1,14 @@
+      ▄▀▀▄
+     ▀▀▀▀▀▀
+    ▀▀▀▀▀▀▀▀
+   ▄▀▀    ▀▀▄
+  ▄▀▀      ▀▀▄
+  Antigravity CLI 1.4.12
+  owner@example.com (Agent Platform)
+  GCP Project: example-project
+  Gemini 4 Argon (High)
+  /private/tmp/claude-501/-Users-mrfoxes-Documents-repos-github-com-mrfoxes-crew/f7c131f2-f313-4d63-b5c2-f89d09385229/sc
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+? for shortcuts                                                                                    Gemini 4 Argon · high

@@ -103,13 +103,13 @@ doctor_agent_version() {
     esac
 }
 report
-check "an agent newer than its fixtures warns" "1" "$(has '^warn  claude: 2.1.400 is newer than its fixtures (2.1.317)$')"
+check "an agent newer than its fixtures warns" "1" "$(has '^warn  claude: 2.1.400 is newer than its fixtures (2.1.318)$')"
 check "the newest fixture of the kind counts" "1" "$(has '^warn  codex: 0.170.0 is newer than its fixtures (0.166.0)$')"
 check "it says to capture again" "2" "$(has "crew peek <name> 40")"
 check "an agent as old as its fixtures is ok" "1" "$(has '^ok    agy: 1.4.12, fixtures from 1.4.12$')"
 doctor_agent_version() { echo 2.1.315; }
 report
-check "an agent between its fixtures is ok" "1" "$(has '^ok    claude: 2.1.315, fixtures from 2.1.317$')"
+check "an agent between its fixtures is ok" "1" "$(has '^ok    claude: 2.1.315, fixtures from 2.1.318$')"
 doctor_agent_version() { :; }
 report
 check "an agent that prints no version is ok" "1" "$(has '^ok    agy: agy, version unknown$')"

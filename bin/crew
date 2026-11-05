@@ -24,6 +24,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/land.sh"
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
+. "$CREW_HOME/lib/screen.sh"
 . "$CREW_HOME/lib/doctor.sh"
 . "$CREW_HOME/lib/cost.sh"
 . "$CREW_HOME/lib/crewfile.sh"
