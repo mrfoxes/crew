@@ -240,6 +240,7 @@ crew_up() {
     u_invites=""
     u_listed=" "
     u_first=1
+    u_ctab=""
     u_tab=""
     # Each tab, then its members; a tab's layout once its members are in.
     # A member's reviewer and budget (the 9th and 10th fields) are read
@@ -252,28 +253,37 @@ crew_up() {
             u_layout=$u_b
             u_entries=""
             if [ -n "$u_first" ]; then
-                # The coordinator's own tab: its pane comes first, then the
-                # watch and the board beside it.
+                # The coordinator's own tab, with the watch and the board
+                # opened beside its pane. Their place in the tab's order is
+                # given by up_first_entries once its lines are read.
                 u_first=""
-                u_entries=$u_me
+                u_ctab=$u_tab
+                u_watch=$u_c
+                u_board=$u_d
+                u_wpane=""
+                u_bpane=""
                 up_do term_tab "$u_me" "$u_tab" || echo "crew: could not name the tab $u_tab" >&2
                 u_last=$u_me
                 if [ "$u_c" = 1 ]; then
-                    u_w=$(up_open_helper "$dir" watch "cd $(shell_word "$u_root") && $u_crew watch --all" "$u_last") || return 1
-                    [ -z "$u_w" ] || { u_entries="$u_entries $u_w"; u_last=$u_w; }
+                    u_wpane=$(up_open_helper "$dir" watch "cd $(shell_word "$u_root") && $u_crew watch --all" "$u_last") || return 1
+                    [ -z "$u_wpane" ] || u_last=$u_wpane
                 fi
                 if [ "$u_d" = 1 ]; then
-                    u_w=$(up_open_helper "$dir" board "cd $(shell_word "$u_root") && $u_crew board --live" "$u_last") || return 1
-                    [ -z "$u_w" ] || u_entries="$u_entries $u_w"
+                    u_bpane=$(up_open_helper "$dir" board "cd $(shell_word "$u_root") && $u_crew board --live" "$u_last") || return 1
                 fi
+                # In the tab now, so that crew spawn --tab finds it.
                 if [ -z "$u_dry" ]; then
-                    for u_entry in $u_entries; do
+                    for u_entry in $u_me $u_wpane $u_bpane; do
                         tab_add "$dir" "$u_tab" "$u_entry"
                     done
                 fi
             elif [ "$u_c" = 1 ] || [ "$u_d" = 1 ]; then
                 echo "crew: $u_file: watch and board belong on the first tab, the coordinator's; $u_tab has them" >&2
             fi
+            ;;
+        pane)
+            # The coordinator's pane, the watch, or the board, at its place.
+            u_entries="$u_entries @$u_b"
             ;;
         member)
             u_name=$u_b
@@ -346,12 +356,40 @@ EOR
     done
 }
 
+# The first tab's <entry>... with the panes put in: @coordinator, @watch,
+# and @board, from its pane lines, become the panes crew up runs in and
+# opened. With no pane line the coordinator's pane comes first, and a watch
+# or a board the tab line asks for comes right after it, as before pane
+# lines were. A dry run opens no pane: the word watch or board stands in.
+up_first_entries() {
+    case " $* " in
+    *" @coordinator "*) ;;
+    *) set -- @coordinator "$@" ;;
+    esac
+    for u_fe in "$@"; do
+        case "$u_fe" in
+        @coordinator)
+            echo "$u_me"
+            case " $* " in *" @watch "*) ;; *) [ "$u_watch" != 1 ] || echo "${u_wpane:-${u_dry:+watch}}" ;; esac
+            case " $* " in *" @board "*) ;; *) [ "$u_board" != 1 ] || echo "${u_bpane:-${u_dry:+board}}" ;; esac
+            ;;
+        @watch) echo "${u_wpane:-${u_dry:+watch}}" ;;
+        @board) echo "${u_bpane:-${u_dry:+board}}" ;;
+        *) echo "$u_fe" ;;
+        esac
+    done | awk 'NF'
+}
+
 # The end of a tab in crew up: its entries in the Crewfile's order, its
 # layout recorded and made.
 up_tab_done() {
     # shellcheck disable=SC2086 # the entries, one a word
+    [ "$u_tab" != "$u_ctab" ] || u_entries=$(up_first_entries $u_entries)
+    # shellcheck disable=SC2086 # the entries, one a word
     up_order "$dir" "$u_tab" $u_entries
     if [ -n "$u_dry" ]; then
+        # shellcheck disable=SC2086 # the entries, one a word
+        [ "$u_tab" != "$u_ctab" ] || echo "the order of $u_tab:" $u_entries
         echo "crew layout $u_layout --tab $u_tab"
         return
     fi

@@ -37,6 +37,14 @@ milestone of the version, on GitHub.
   pane back, and `crew up` brings the members back. `crew story <archive>`
   reads the plan, the Crewfile, and the members a reset put aside.
 - `crew archive` carries the members' `work/` with the session.
+- A Crewfile places the coordinator's pane, the watch, and the board
+  anywhere in its first tab: `pane coordinator`, `pane watch`, or
+  `pane board` among the member lines puts that pane at its place in the
+  tab's order, so `layout=2x2` gives a grid around the coordinator, and
+  `crew up` puts the coordinator's pane back in its place after a
+  `crew restore`. With no `pane` line the order is as before: the
+  coordinator, the watch, the board, then the members. `crew up --dry`
+  prints the first tab's order.
 
 ## 1.1.0
 

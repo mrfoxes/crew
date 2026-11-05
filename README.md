@@ -457,6 +457,26 @@ member tess                              # started and joined by hand
   running `crew board --live`. Every next tab opens for its first member.
   `layout=` is one of `crew layout`'s: `table`, `grid` (the default),
   `<columns>x<rows>`, or `main`.
+- `pane coordinator`, `pane watch`, and `pane board`, among the members
+  of the first tab, put the coordinator's pane, the watch, or the board at
+  that place in the tab's order, which `layout=` fills; `pane watch` and
+  `pane board` open them as the tab's words do. With no `pane` line the
+  coordinator's pane comes first, and the watch and the board right after
+  it. The crew around its coordinator, qa over it on the left and dev1
+  over dev2 on the right:
+
+  ```
+  tab main layout=2x2
+  member qa   -- claude
+  member dev1 -- claude
+  pane coordinator
+  member dev2 -- claude
+  ```
+
+  `crew up` writes the panes' order to `tabs/main`, so `crew layout`
+  keeps it, and puts the coordinator's pane back in its place after a
+  `crew restore`, which brings back no pane; `crew up --dry` prints the
+  first tab's order.
 - `member <name> [option]... [-- <line>]` belongs to the last tab above
   it. After ` -- ` the line is the owner's shell's, verbatim, `#` and
   `&&` included, run in the project's root or the member's clone. A member
@@ -466,8 +486,9 @@ member tess                              # started and joined by hand
   repeatable, `reviewer=<member>` (crew land), `budget=<dollars>`.
 - A `#` word starts a comment before ` -- `. An unknown word, an option on
   the wrong line, a name crew does not take, a member twice, a reviewer
-  who is not a member, or a cache with no clone stops `crew up` before it
-  does anything, naming the file and the line.
+  who is not a member, a cache with no clone, or a `pane` line twice, on a
+  later tab, or for a watch or a board the tab line already names stops
+  `crew up` before it does anything, naming the file and the line.
 
 ```
 crew up                     # the crew of the Crewfile, up or back

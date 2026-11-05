@@ -40,7 +40,7 @@ check "a member not there" "" "$(crewfile_get "$dir" nobody reviewer)"
 # What the reader refuses, each with its line, and nothing printed then.
 refused() { printf '%s\n' "$@" >"$tmp/bad"; crewfile_read "$tmp/bad" 2>&1 >/dev/null | sed "s|$tmp/bad|F|"; }
 check "a member before a tab" "crew: F:1: a member comes after a tab" "$(refused 'member a -- x')"
-check "a word crew does not know" "crew: F:2: a line is a tab or a member, not lane" "$(refused 'tab t' 'lane x')"
+check "a word crew does not know" "crew: F:2: a line is a tab, a member, or a pane, not lane" "$(refused 'tab t' 'lane x')"
 check "a tab's option" "crew: F:1: a tab takes layout=, watch, and board, not mute" "$(refused 'tab t mute')"
 check "a member's option" "crew: F:2: a member takes kind=, mute, noinvite, clone, cache=, reviewer=, and budget=, not watch" "$(refused 'tab t' 'member a watch')"
 check "a layout crew does not know" "crew: F:1: layout zigzag is not table, grid, main, or <columns>x<rows>" "$(refused 'tab t layout=zigzag')"
@@ -56,6 +56,25 @@ check "nothing after --" "crew: F:2: nothing after --" "$(refused 'tab t' 'membe
 check "a tab with a command" "crew: F:1: a tab runs no command" "$(refused 'tab t -- x')"
 check "every error is said" "2" "$(refused 'tab t mute' 'member Ada' | wc -l | tr -d ' ')"
 check "nothing is read from a refused file" "" "$(printf 'tab t\nmember a\nmember a\n' >"$tmp/bad"; crewfile_read "$tmp/bad" 2>/dev/null)"
+
+# Pane lines: the coordinator's pane, the watch, and the board, each at its
+# place in the first tab; a pane line opens the watch or the board.
+printf 'tab main layout=2x2 board\nmember qa\npane coordinator\nmember dev1\npane watch\ntab lane\nmember dev2\n' >"$tmp/panes"
+check "pane lines read in place" "tab	main	2x2	1	1
+member	main	qa	-	0	1	0	-	-	-	-
+pane	main	coordinator
+member	main	dev1	-	0	1	0	-	-	-	-
+pane	main	watch
+tab	lane	grid	0	0
+member	lane	dev2	-	0	1	0	-	-	-	-" "$(crewfile_read "$tmp/panes")"
+check "a pane before a tab" "crew: F:1: a pane comes after a tab" "$(refused 'pane coordinator')"
+check "a pane crew does not know" "crew: F:2: a pane is coordinator, watch, or board" "$(refused 'tab t' 'pane desk')"
+check "a pane with no word" "crew: F:2: a pane is coordinator, watch, or board" "$(refused 'tab t' 'pane')"
+check "a pane's option" "crew: F:2: a pane takes no option, not mute" "$(refused 'tab t' 'pane watch mute')"
+check "a pane with a command" "crew: F:2: a pane runs no command" "$(refused 'tab t' 'pane coordinator -- x')"
+check "a pane on a later tab" "crew: F:3: pane coordinator belongs on the first tab, the coordinator's" "$(refused 'tab t' 'tab u' 'pane coordinator')"
+check "a pane twice" "crew: F:3: pane board is there twice" "$(refused 'tab t' 'pane board' 'pane board')"
+check "a helper both on the tab line and on a line" "crew: F:2: watch is on the tab line and on a line of its own" "$(refused 'tab t watch' 'pane watch')"
 
 # The terminal: the coordinator in tmux:%1; each spawn gets the next pane.
 echo 1 >"$tmp/n"
@@ -89,6 +108,7 @@ calls() { cat "$tmp/calls" 2>/dev/null; rm -f "$tmp/calls"; }
 # A dry run checks the file and says what it would do, and does nothing.
 check "a dry run says what it would do" "name the tab of tmux:%1 main
 open a pane beside tmux:%1 running: cd $(cd "$tmp/repo" && pwd -P) && $(shell_word "$CREW_HOME/bin/crew") watch --all
+the order of main: tmux:%1 watch board
 crew layout main --tab main
 crew spawn claude --tab proof 'claude --model claude-opus-5-5 --effort high'
 crew spawn claude2 --tab proof --clone --cache .lake 'cd sub && claude   # not a comment: after --'
@@ -108,7 +128,7 @@ crew_up >/dev/null 2>"$tmp/up.err"
 check "the coordinator's tab is named" "tab tmux:%1 main" "$(grep '^tab ' "$tmp/calls" | head -n 1)"
 check "the watch and the board beside the coordinator" "spawn beside tmux:%1 cd $(cd "$tmp/repo" && pwd -P) && $(shell_word "$CREW_HOME/bin/crew") watch --all
 spawn beside tmux:%2 cd $(cd "$tmp/repo" && pwd -P) && $(shell_word "$CREW_HOME/bin/crew") board --live" "$(grep -e 'watch --all' -e 'board --live' "$tmp/calls")"
-check "the coordinator's tab, in order" "tmux:%1 tmux:%2 tmux:%3" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
+check "with no pane line, the coordinator first, then the watch and the board" "tmux:%1 tmux:%2 tmux:%3" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
 check "a lane, in the Crewfile's order" "claude claude2" "$(tab_members "$dir" proof | tr '\n' ' ' | sed 's/ $//')"
 check "the other lane" "agy codex" "$(tab_members "$dir" runtime | tr '\n' ' ' | sed 's/ $//')"
 check "a member's line" "1" "$(grep -c "^spawn tab  cd $(cd "$tmp/repo" && pwd -P) && claude --model claude-opus-5-5 --effort high\$" "$tmp/calls")"
@@ -200,5 +220,48 @@ check "an agent not installed is named" "crew: b runs no-such-agent, which is no
 check "a member joined by hand needs no agent" "0" "$(up_agents "$(rec c -)" >/dev/null 2>&1; echo $?)"
 check "up wants one preset" "2" "$(crew_up a b >/dev/null 2>&1; echo $?)"
 check "up knows only --dry" "2" "$(crew_up --fast >/dev/null 2>&1; echo $?)"
+
+# A crew laid out around its coordinator, as the crew that wrote this was:
+# qa over the coordinator on the left, dev1 over dev2 on the right.
+git init -q "$tmp/two"
+cd "$tmp/two" || exit 1
+dir=$(crew_init)
+echo 1 >"$tmp/n"
+: >"$tmp/closed"
+: >"$tmp/exited"
+rm -f "$tmp/calls" "$tmp/invites"
+printf 'tab main layout=2x2\nmember qa -- claude\nmember dev1 -- claude\npane coordinator\nmember dev2 -- claude\n' >"$dir/Crewfile"
+check "a dry run says the first tab's order" "the order of main: qa dev1 tmux:%1 dev2" "$(crew_up --dry 2>/dev/null | grep '^the order of ')"
+crew_up >/dev/null 2>&1
+qa=$(cat "$dir/panes/qa")
+d1=$(cat "$dir/panes/dev1")
+d2=$(cat "$dir/panes/dev2")
+check "a pane line puts the coordinator's pane in its place" "qa dev1 tmux:%1 dev2" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
+check "2x2 puts the coordinator under qa, and dev2 beside it" "move tmux:%1 below $qa
+move $d1 beside $qa
+move $d2 beside tmux:%1" "$(grep '^move ' "$tmp/calls")"
+rm -f "$tmp/calls"
+check "crew layout keeps it" "move tmux:%1 below $qa" "$(crew_layout >/dev/null 2>&1; grep '^move ' "$tmp/calls" | sed -n 1p)"
+
+# A restore drops the coordinator's old pane from the tab; crew up puts the
+# one it runs in now back in its place.
+crew_reset >/dev/null 2>&1
+crew_restore >/dev/null
+check "the restored tab has no pane" "qa dev1 dev2" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
+echo 30 >"$tmp/n"
+term_self() { echo tmux:%30; }
+crew_up >/dev/null 2>&1
+check "crew up puts the coordinator's pane back in its place" "qa dev1 tmux:%30 dev2" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
+
+# The watch at its place on a line; the board, a word of the tab line, right
+# after the coordinator's pane, which comes first with no line of its own.
+git init -q "$tmp/three"
+cd "$tmp/three" || exit 1
+dir=$(crew_init)
+echo 1 >"$tmp/n"
+term_self() { echo tmux:%1; }
+printf 'tab main layout=grid board\nmember qa -- claude\npane watch\n' >"$dir/Crewfile"
+crew_up >/dev/null 2>&1
+check "a watch on a line, a board on the tab line" "tmux:%1 $(cat "$dir/up/board") qa $(cat "$dir/up/watch")" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
 
 finish

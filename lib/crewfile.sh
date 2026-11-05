@@ -15,7 +15,10 @@
 #
 # A word that starts with # starts a comment, to the end of the line, but
 # after " -- ", which keeps the rest of the line as the owner's shell gets
-# it. The first tab is the one crew up runs in, the coordinator's.
+# it. The first tab is the one crew up runs in, the coordinator's: its
+# panes come in the order of its lines, the coordinator's first, then
+# the watch and the board, unless a line "pane coordinator", "pane
+# watch", or "pane board" puts one in its place among the members.
 
 # Where the Crewfile of the crew <dir> lives.
 crewfile_path() {
@@ -49,10 +52,13 @@ crewfile_preset_names() {
 #
 #   tab <name> <layout> <watch> <board>
 #   member <tab> <name> <kind> <mute> <invite> <clone> <caches> <reviewer> <budget> <line>
+#   pane <tab> <coordinator, watch, or board>
 #
 # <watch>, <board>, <mute>, <invite>, and <clone> are 1 or 0, <caches> the
-# cache= directories apart by commas. Anything it cannot read stops it
-# before a record is printed, each error said with its file and line.
+# cache= directories apart by commas. A pane record stands at its place
+# among the members, and its tab opens the watch or the board it names.
+# Anything it cannot read stops it before a record is printed, each error
+# said with its file and line.
 crewfile_read() {
     awk -v file="$1" -v kinds="$(kinds_names | tr '\n' ' ')other" '
         function fail(msg) { printf "crew: %s:%d: %s\n", file, NR, msg > "/dev/stderr"; bad = 1 }
@@ -81,16 +87,37 @@ crewfile_read() {
                 if ($2 in tabs) fail("tab " $2 " is there twice")
                 tabs[$2] = 1
                 tab = $2
+                if (first == "") first = tab
                 layout = "grid"; watch = 0; board = 0
                 for (i = 3; i <= NF; i++) {
                     if ($i ~ /^layout=/) {
                         layout = substr($i, 8)
                         if (layout !~ /^(table|grid|main|[0-9]+x[0-9]+)$/) fail("layout " layout " is not table, grid, main, or <columns>x<rows>")
-                    } else if ($i == "watch") watch = 1
-                    else if ($i == "board") board = 1
+                    } else if ($i == "watch") { watch = 1; worded["watch"] = 1 }
+                    else if ($i == "board") { board = 1; worded["board"] = 1 }
                     else fail("a tab takes layout=, watch, and board, not " $i)
                 }
                 out[++n] = "tab\t" tab "\t" layout "\t" watch "\t" board
+                tabline = n
+                next
+            }
+            # A pane no member sits in, at its place in the first tab: the
+            # coordinator pane, or the watch or the board, which its tab then
+            # opens as the words on the tab line do.
+            if ($1 == "pane") {
+                if (hascmd) fail("a pane runs no command")
+                if (tab == "") { fail("a pane comes after a tab"); next }
+                what = $2
+                if (NF < 2 || (what != "coordinator" && what != "watch" && what != "board")) { fail("a pane is coordinator, watch, or board"); next }
+                if (NF > 2) fail("a pane takes no option, not " $3)
+                if (tab != first) { fail("pane " what " belongs on the first tab, the coordinator\047s"); next }
+                if (what in placed) { fail("pane " what " is there twice"); next }
+                placed[what] = 1
+                if (what in worded) fail(what " is on the tab line and on a line of its own")
+                if (what == "watch") watch = 1
+                if (what == "board") board = 1
+                out[tabline] = "tab\t" tab "\t" layout "\t" watch "\t" board
+                out[++n] = "pane\t" tab "\t" what
                 next
             }
             if ($1 == "member") {
@@ -122,7 +149,7 @@ crewfile_read() {
                 out[++n] = "member\t" tab "\t" name "\t" kind "\t" mute "\t" invite "\t" clone "\t" (caches == "" ? "-" : caches) "\t" reviewer "\t" budget "\t" (cmd == "" ? "-" : cmd)
                 next
             }
-            fail("a line is a tab or a member, not " $1)
+            fail("a line is a tab, a member, or a pane, not " $1)
         }
         END {
             for (m in reviewed) {
