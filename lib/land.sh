@@ -376,8 +376,6 @@ EOF
     fi
 }
 
-# Adds the given paths that git does not track yet, then commits those paths
-# only, with the message file: a file changed beside them stays uncommitted.
 # Whether <path> is a directory in the tree, not a link and not a submodule,
 # where HEAD or the index holds a file or a link at that very path.
 land_file_to_dir() {
@@ -387,6 +385,8 @@ land_file_to_dir() {
     git -C "$ld_tree" rev-parse -q --verify ":0:$1" >/dev/null 2>&1
 }
 
+# Adds the given paths that git does not track yet, then commits those paths
+# only, with the message file: a file changed beside them stays uncommitted.
 land_commit() {
     for ld_p in "$@"; do
         ld_path=$(land_norm "$ld_p")

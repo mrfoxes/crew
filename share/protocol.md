@@ -113,9 +113,9 @@ crew status <you> "Files: none" "Pushed: 1234567 ..." "Next: ..."
 ```
 
 Before every `Pushed:` (so before `crew land`, which sends it), `Done:`, or
-`Paused:`, rewrite `Next:` so that a
-fresh session, after a `/clear`, can resume from it alone: the step, the
-files, and where work not landed lives (hash, patch, path).
+`Paused:`, rewrite `Next:` so that a fresh session, after a `/clear`, can
+resume from it alone: the step, the files, and where work not landed lives
+(hash, patch, path).
 
 Saved work lives under the crew's directory, never only under `/tmp` or
 `/private/tmp`, which a reboot cleans and a sandbox can hide: a diff not

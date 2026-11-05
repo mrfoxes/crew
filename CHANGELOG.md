@@ -26,6 +26,12 @@ milestone of the version, on GitHub.
   check and the lock, the check runs again under the lock, and a failure
   commits nothing. A clone checks in its export too, and after a rebase on
   an export of the rebased commit.
+- `crew land` lands a tracked file turned into a directory, given as `d`,
+  `d/`, or `d/x`: `git commit -- d` took the directory for a submodule and
+  stopped with "'d' does not have a commit checked out". The export never
+  reads, writes, or removes through a link, where a link of `HEAD`'s to a
+  directory outside, turned into a directory or back, had it write or
+  remove a file outside the export.
 - `crew reset` puts the whole crew aside under `archive/<date and time>/`:
   the session, and the plan, the Crewfile, the tabs, the layouts, the mutes,
   and the members. It leaves `.crew/` as `crew init` makes it, keeping the
