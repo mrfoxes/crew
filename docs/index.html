@@ -664,8 +664,8 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
               <td>Make <code>.crew/</code> at the root, or with <code>--home</code> <code>~/.crew/-home-me-app/</code> for <code>/home/me/app</code>.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew up [&lt;preset&gt;] [--fresh] [--dry]</code></td>
-              <td>Bring the crew of the <code>Crewfile</code> up, or back: tabs, members, invites, layouts; an agent brought back resumes its conversation, unless <code>--fresh</code>.</td>
+              <td class="cmd-col"><code>crew up [&lt;preset&gt;] [--fresh] [--dry] [--restart &lt;name&gt;...]</code></td>
+              <td>Bring the crew of the <code>Crewfile</code> up, or back: tabs, members, invites, layouts; an agent brought back resumes its conversation, unless <code>--fresh</code>; <code>--restart</code> restarts those members' live agents on their Crewfile lines, at their idle prompts.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew down [minutes] [--archive] [--close]</code></td>
@@ -806,6 +806,7 @@ rates                      the project's prices per model, over the owner's (opt
 muted/&lt;name&gt;               a member woken only by messages to its name (crew mute)
 nopane/&lt;name&gt;              a member that reads the stream on its own (crew join --no-pane)
 kind/&lt;name&gt;                each member's kind (claude, codex, agy, other)
+lines/&lt;name&gt;               the Crewfile line each member started with (crew up)
 clones/&lt;name&gt;              the path of a member's clone (crew spawn --clone)
 tabs/&lt;tab&gt;                 a tab's members, in the order they were placed
 layouts/&lt;tab&gt;              the layout a tab is kept in (crew layout)

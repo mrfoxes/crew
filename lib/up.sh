@@ -137,6 +137,105 @@ up_resume() {
     printf '%s %s\n' "$4" "$u_flag"
 }
 
+# The most looks, each about 2 seconds, that a restart waits for the agent
+# to leave after its quit command, and then for the agent started on its
+# line to be idle at its prompt: about half a minute, and a minute.
+up_quit_looks=15
+up_start_looks=30
+
+# Refuses, before crew up does anything, a --restart name that is no member
+# of the Crewfile <file>'s <records>, or a member started and joined by hand.
+up_restartable() {
+    for u_rn in $u_restart; do
+        u_rl=$(printf '%s\n' "$2" | awk -F '\t' -v m="$u_rn" '
+            $1 == "member" && $3 == m { found = 1; print $11; exit }
+            END { if (!found) print "?" }')
+        case "$u_rl" in
+        "?")
+            echo "crew: $u_rn is no member of $1: nothing was restarted" >&2
+            return 1
+            ;;
+        -)
+            echo "crew: $u_rn is started and joined by hand ($1 gives it no line): crew up cannot restart it" >&2
+            return 1
+            ;;
+        esac
+    done
+}
+
+# Records <line> as the Crewfile line <member> was started with, in
+# lines/<member>, for crew up to say when it changes. Not in a dry run.
+up_started() {
+    [ -z "$u_dry" ] || return 0
+    mkdir -p "$dir/lines"
+    printf '%s\n' "$2" >"$dir/lines/$1"
+}
+
+# Says, touching nothing, when the live <member>'s Crewfile <line> is not
+# the one it was started with.
+up_changed() {
+    [ -f "$dir/lines/$1" ] || return 0
+    [ "$(cat "$dir/lines/$1")" != "$2" ] || return 0
+    echo "crew: $1's Crewfile line changed since it started; 'crew up --restart $1' restarts it"
+}
+
+# Restarts the live agent of <member>, of the Crewfile's <kind> (or -), on
+# its Crewfile <line>, in its own pane: only at its idle prompt with no
+# background shell, as lib/context.sh's context_start says, and with --fresh
+# only when its Next: can say where its work is (context_landed). Wakes to
+# it are held meanwhile. It types the kind's quit command, waits for the
+# shell, types the line with the kind's resume argument (up_resume), and
+# waits for the agent's prompt. A subshell keeps the hold's traps and the
+# cx_ variables in it.
+# shellcheck disable=SC2154 # the cx_ variables are set by context_start, in lib/context.sh
+up_restart() (
+    if [ -n "$u_dry" ]; then
+        u_k=$2
+        [ "$u_k" != - ] || u_k=$(kind_member "$dir" "$1")
+        [ -n "$u_k" ] || u_k=$(kind_of_line "$3")
+        u_q=$(context_command "$u_k" restart) || u_q="its quit command"
+        echo "restart $1 in its pane: $u_q, then $(up_resume "$dir" "$1" "$2" "$3")"
+        exit 0
+    fi
+    context_start restart "$1" || exit 1
+    [ -z "$u_fresh" ] || context_landed || exit 1
+    u_rline=$(up_resume "$dir" "$1" "$2" "$3")
+    u_q=$(context_command "$cx_kind" restart)
+    context_hold
+    if ! term_poke "$cx_pane" "$u_q" 2>/dev/null; then
+        context_end "could not type $u_q into $1's pane"
+        exit 1
+    fi
+    if ! context_wait "$up_quit_looks" up_quit_done; then
+        context_end "$1's agent did not leave within about half a minute of $u_q: look with crew peek $1"
+        exit 1
+    fi
+    if ! term_poke "$cx_pane" "$u_rline" 2>/dev/null; then
+        context_end "$1's agent left, but its line could not be typed: crew up brings it back"
+        exit 1
+    fi
+    up_started "$1" "$3"
+    if ! context_wait "$up_start_looks" up_start_done; then
+        context_end "$1's line was typed, but its agent is not idle at its prompt within about a minute: its pane shows $cx_state; look with crew peek $1"
+        exit 1
+    fi
+    context_end
+    echo "restarted $1 on its Crewfile line"
+)
+
+# Whether the agent being restarted left its pane: a shell alone runs there.
+# shellcheck disable=SC2154 # the cx_ variables are set by context_start, in lib/context.sh
+up_quit_done() {
+    ! up_running "$cx_dir" "$cx_who"
+}
+
+# Whether the agent started on its line is idle at its prompt.
+# shellcheck disable=SC2154 # the cx_ variables are set by context_start, in lib/context.sh
+up_start_done() {
+    cx_state=$(screen_state "$cx_dir" "$cx_who")
+    [ "$cx_state" = idle ] || [ "$cx_state" = shell ]
+}
+
 # The pane crew up keeps for <what> (watch, board) in the crew <dir>, when
 # it is still there.
 up_helper() {
@@ -203,23 +302,35 @@ crew_up() {
     u_dry=""
     u_fresh=""
     u_preset=""
+    u_restart=""
+    u_naming=""
+    u_usage="usage: crew up [<preset>] [--fresh] [--dry] [--restart <name>...]"
     for u_arg in "$@"; do
         case "$u_arg" in
         --dry) u_dry=1 ;;
         --fresh) u_fresh=1 ;;
+        --restart) u_naming=1 ;;
         -*)
-            echo "usage: crew up [<preset>] [--fresh] [--dry]" >&2
+            echo "$u_usage" >&2
             return 2
             ;;
         *)
-            if [ -n "$u_preset" ]; then
-                echo "usage: crew up [<preset>] [--fresh] [--dry]" >&2
+            if [ -n "$u_naming" ]; then
+                crew_name "$u_arg" || return 2
+                u_restart="$u_restart $u_arg"
+            elif [ -n "$u_preset" ]; then
+                echo "$u_usage" >&2
                 return 2
+            else
+                u_preset=$u_arg
             fi
-            u_preset=$u_arg
             ;;
         esac
     done
+    if [ -n "$u_naming" ] && [ -z "$u_restart" ]; then
+        echo "$u_usage" >&2
+        return 2
+    fi
     if ! dir=$(crew_dir 2>/dev/null); then
         if [ -n "$u_dry" ]; then
             echo "crew init"
@@ -231,6 +342,7 @@ crew_up() {
     u_file=$(up_crewfile "$dir" "$u_preset") || return 1
     u_records=$(crewfile_read "$u_file") || return 1
     [ -z "$u_preset" ] || up_agents "$u_records" || return 1
+    up_restartable "$u_file" "$u_records" || return 1
     u_me=$(term_self) || {
         echo "crew: crew up runs in a pane of iTerm2 or tmux: the coordinator's" >&2
         return 1
@@ -238,6 +350,7 @@ crew_up() {
     u_crew="$(shell_word "$CREW_HOME/bin/crew")"
     u_root=$(crew_project "$dir")
     u_invites=""
+    u_status=0
     u_listed=" "
     u_first=1
     u_ctab=""
@@ -291,7 +404,20 @@ crew_up() {
             if up_alive "$dir" "$u_name"; then
                 u_entries="$u_entries $u_name"
                 [ -n "$u_dry" ] || [ "$(tab_of "$dir" "$u_name")" = "$u_tab" ] || tab_add "$dir" "$u_tab" "$u_name"
-                if up_running "$dir" "$u_name" || [ "$u_line" = - ]; then
+                if [ "$u_line" = - ]; then
+                    continue
+                fi
+                if up_running "$dir" "$u_name"; then
+                    case "$u_restart " in
+                    *" $u_name "*)
+                        if up_restart "$u_name" "$u_c" "$u_line"; then
+                            [ "$u_e" != 1 ] || u_invites="$u_invites $u_name"
+                        else
+                            u_status=1
+                        fi
+                        ;;
+                    *) up_changed "$u_name" "$u_line" ;;
+                    esac
                     continue
                 fi
                 u_rline=$(up_resume "$dir" "$u_name" "$u_c" "$u_line")
@@ -299,6 +425,7 @@ crew_up() {
                     echo "crew: could not restart $u_name; the others go on" >&2
                     continue
                 }
+                up_started "$u_name" "$u_line"
                 [ "$u_e" != 1 ] || u_invites="$u_invites $u_name"
                 continue
             fi
@@ -319,6 +446,7 @@ crew_up() {
                 echo "crew: could not spawn $u_name; the others go on" >&2
                 continue
             }
+            up_started "$u_name" "$u_line"
             u_entries="$u_entries $u_name"
             if [ "$u_d" = 1 ]; then
                 if [ -n "$u_dry" ]; then
@@ -354,6 +482,7 @@ EOR
     for u_name in $u_invites; do
         [ -n "$u_dry" ] || { cat "$dir/tmp/up.invite.$u_name"; rm -f "$dir/tmp/up.invite.$u_name"; }
     done
+    return "$u_status"
 }
 
 # The first tab's <entry>... with the panes put in: @coordinator, @watch,

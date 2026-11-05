@@ -532,6 +532,7 @@ member tess                              # started and joined by hand
 crew up                     # the crew of the Crewfile, up or back
 crew up --dry               # what it would do, touching nothing
 crew up --fresh             # an agent brought back starts a new conversation
+crew up --restart qa        # restart qa's live agent on its Crewfile line
 crew up pair                # start the Crewfile from the preset pair
 ```
 
@@ -551,7 +552,25 @@ it, gives it its clone, mutes it, lays the tab out by its layout, and
 invites every member spawned, all at once. Run again, it brings back only
 what is missing: a closed pane returns in its place, a live agent is never
 restarted, and a member with a pane the Crewfile does not list is named
-and left alone. A preset is a Crewfile in `~/.config/crew/presets/<name>`
+and left alone. It records the line each member started with in
+`lines/<name>`, and names a live member whose Crewfile line changed since:
+a new model, say.
+
+`crew up --restart <name>...` restarts those members' live agents on their
+Crewfile lines, each in its own pane: it types the kind's quit command
+(Claude Code `/exit`, Codex and Antigravity `/quit`), waits for the shell,
+types the line with the kind's resume argument, so that the conversation
+goes on with the new line's model and options, and waits for the agent's
+prompt, then invites the member. `--fresh` starts a new conversation
+instead. Wakes to the member are held meanwhile. It restarts an agent only
+at its idle prompt: one in a turn, with text typed on its input line, with
+a dialog open, or with a background shell, which would die with it, is
+refused and the others go on, and `crew up` exits 1. A name the Crewfile
+lacks or gives no line stops it before anything is done. With `--fresh`,
+a claimed file changed after the member's status was written is refused
+too, as for `crew clear`.
+
+A preset is a Crewfile in `~/.config/crew/presets/<name>`
 (under `$XDG_CONFIG_HOME`), or one of crew's own; the owner's preset of
 the same name wins. `crew up <preset>` copies it to a crew that has no
 Crewfile, and refuses one that has its own, which is the truth. Tab
@@ -906,6 +925,7 @@ rates                      the project's prices per model, over the owner's and 
 muted/<name>               a member woken only by messages to its name (crew mute)
 nopane/<name>              a member that reads the stream on its own (crew join --no-pane)
 kind/<name>                each member's kind (claude, codex, agy, other)
+lines/<name>               the Crewfile line each member started with (crew up)
 clones/<name>              the path of a member's clone (crew spawn --clone)
 tabs/<tab>                 a tab's members, in the order they were placed
 layouts/<tab>              the layout a tab is kept in (crew layout)

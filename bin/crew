@@ -78,11 +78,13 @@ For the coordinator
                                 directory under ~/.crew named after the
                                 root's path: ~/.crew/-home-me-app for
                                 /home/me/app
-  up [<preset>] [--fresh] [--dry]
+  up [<preset>] [--fresh] [--dry] [--restart <name>...]
                                 bring the crew of the Crewfile up, or back:
                                 tabs, members, invites, layouts; an agent
                                 brought back resumes its conversation, unless
-                                --fresh
+                                --fresh; --restart restarts those members'
+                                live agents on their Crewfile lines, at their
+                                idle prompts
   down [minutes] [--archive] [--close]
                                 end the crew: tell all, wait for each Done:
                                 (15 minutes), say what is left, stop the

@@ -264,4 +264,86 @@ printf 'tab main layout=grid board\nmember qa -- claude\npane watch\n' >"$dir/Cr
 crew_up >/dev/null 2>&1
 check "a watch on a line, a board on the tab line" "tmux:%1 $(cat "$dir/up/board") qa $(cat "$dir/up/watch")" "$(tab_members "$dir" main | tr '\n' ' ' | sed 's/ $//')"
 
+# Restarting a live member on its Crewfile line. The fake agent leaves its
+# pane on its kind's quit command and comes back on any other line; its
+# screen says what $tmp/state.<name> holds, idle when there is none.
+git init -q "$tmp/four"
+cd "$tmp/four" || exit 1
+dir=$(crew_init)
+echo 1 >"$tmp/n"
+: >"$tmp/exited"
+rm -f "$tmp/calls" "$tmp/invites"
+screen_pause() { :; }
+screen_state() { cat "$tmp/state.$2" 2>/dev/null || echo idle; }
+term_poke() {
+    echo "poke $1 $2" >>"$tmp/calls"
+    p_tty=$(term_tty "$1")
+    case "$2" in
+    /exit | /quit) [ -e "$tmp/stuck" ] || echo "$p_tty" >>"$tmp/exited" ;;
+    *) grep -vx "$p_tty" "$tmp/exited" >"$tmp/exited.new" || :; mv "$tmp/exited.new" "$tmp/exited" ;;
+    esac
+}
+printf 'tab main\nmember qa -- claude --model sonnet\nmember cx kind=codex noinvite -- codex\nmember hand\n' >"$dir/Crewfile"
+crew_up >/dev/null 2>&1
+qa=$(cat "$dir/panes/qa")
+cx=$(cat "$dir/panes/cx")
+check "crew up records the line each member started with" "claude --model sonnet|codex" "$(cat "$dir/lines/qa" "$dir/lines/cx" | tr '\n' '|' | sed 's/|$//')"
+mkdir -p "$dir/sessions"
+echo sess-1 >"$dir/sessions/qa"
+echo thr-9 >"$dir/threads/cx"
+printf 'tab main\nmember qa -- claude --model opus\nmember cx kind=codex noinvite -- codex -m gpt-x\nmember hand\n' >"$dir/Crewfile"
+rm -f "$tmp/calls" "$tmp/invites"
+check "crew up names the live members whose line changed, and restarts none" "crew: qa's Crewfile line changed since it started; 'crew up --restart qa' restarts it
+crew: cx's Crewfile line changed since it started; 'crew up --restart cx' restarts it" "$(crew_up 2>/dev/null | grep 'line changed')"
+check "nothing was typed" "" "$(grep '^poke ' "$tmp/calls" 2>/dev/null)"
+check "a dry run says how it would restart" "restart qa in its pane: /exit, then claude --model opus --resume sess-1" "$(crew_up --dry --restart qa 2>/dev/null | grep '^restart ')"
+rm -f "$tmp/calls" "$tmp/invites"
+out=$(crew_up --restart qa cx 2>&1)
+check "--restart quits each agent with its kind's command, then types its line, resumed" "poke $qa /exit
+poke $qa claude --model opus --resume sess-1
+poke $cx /quit
+poke $cx codex -m gpt-x resume thr-9" "$(grep '^poke ' "$tmp/calls")"
+check "and says so" "restarted qa on its Crewfile line|restarted cx on its Crewfile line" "$(printf '%s\n' "$out" | grep '^restarted ' | tr '\n' '|' | sed 's/|$//')"
+check "a restarted member is invited, but noinvite" "invite qa" "$(cat "$tmp/invites")"
+check "the new lines are recorded" "claude --model opus|codex -m gpt-x" "$(cat "$dir/lines/qa" "$dir/lines/cx" | tr '\n' '|' | sed 's/|$//')"
+check "no hold is left" "" "$(ls "$dir/tmp/hold" 2>/dev/null)"
+check "crew up names no change now" "" "$(crew_up 2>/dev/null | grep 'line changed')"
+printf 'tab main\nmember qa -- claude --model opus\nmember cx kind=codex noinvite -- codex\nmember hand\n' >"$dir/Crewfile"
+rm -f "$tmp/calls"
+crew_up --fresh --restart qa cx >/dev/null 2>&1
+check "--fresh restarts with no resume, a plain codex line too" "poke $qa /exit
+poke $qa claude --model opus
+poke $cx /quit
+poke $cx codex" "$(grep '^poke ' "$tmp/calls")"
+
+# What a restart refuses: before crew up does anything, a name the Crewfile
+# lacks or gives no line; then, member by member, a screen that is not idle
+# or runs a background shell, and with --fresh, work its Next: cannot place.
+rm -f "$tmp/calls"
+check "a name the Crewfile lacks" "crew: nobody is no member of $dir/Crewfile: nothing was restarted" "$(crew_up --restart nobody 2>&1)"
+check "a member started by hand" "crew: hand is started and joined by hand ($dir/Crewfile gives it no line): crew up cannot restart it" "$(crew_up --restart hand 2>&1)"
+check "--restart names someone" "2" "$(crew_up --restart >/dev/null 2>&1; echo $?)"
+check "nothing was typed for them" "" "$(grep '^poke ' "$tmp/calls" 2>/dev/null)"
+echo working >"$tmp/state.qa"
+check "a member in a turn is refused" "crew: qa is not idle at an empty prompt: it is working, so nothing was typed" "$(crew_up --restart qa 2>&1 >/dev/null | grep -v "^crew: hand ")"
+check "and crew up says it failed" "1" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
+echo shell >"$tmp/state.qa"
+check "a background shell is refused" "1" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
+echo typed >"$tmp/state.qa"
+check "typed text is refused" "1" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
+check "nothing was typed into qa's pane" "" "$(grep "^poke $qa" "$tmp/calls" 2>/dev/null)"
+rm -f "$tmp/state.qa"
+printf 'Agent: qa\nFiles: f.txt\nNext: f\n' | crew_write status qa >/dev/null
+touch -t 202601010000 "$dir/status/qa.md"
+echo f >f.txt
+check "--fresh refuses work its Next: cannot place" "1" "$(crew_up --fresh --restart qa >/dev/null 2>&1; echo $?)"
+check "a resume does not need it" "0" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
+rm -f f.txt
+: >"$tmp/stuck"
+rm -f "$tmp/calls"
+check "an agent that does not leave is said" "crew: qa's agent did not leave within about half a minute of /exit: look with crew peek qa" "$(crew_up --restart qa 2>&1 >/dev/null | grep -v "^crew: hand ")"
+check "its line is not typed" "poke $qa /exit" "$(grep '^poke ' "$tmp/calls")"
+check "and the hold is released" "" "$(ls "$dir/tmp/hold" 2>/dev/null)"
+rm -f "$tmp/stuck"
+
 finish

@@ -7,10 +7,11 @@
 ARCHIVE_SESSION="messages seq cursors status reports work"
 # What else belongs to a crew, and not to the project or the machine: its
 # plan, its Crewfile, its members' tabs, layouts, mutes, kinds, panes,
-# threads, and sessions, and the panes crew up opened for the watch and the
-# board. The project's rates, forbid, and kinds, the project file, tmp/,
-# exports/, archive/, and a clone still on disk stay.
-ARCHIVE_CREW="README.md Crewfile tabs layouts muted kind panes nopane threads sessions up"
+# threads, sessions, and the Crewfile lines they were started with, and
+# the panes crew up opened for the watch and the board. The project's
+# rates, forbid, and kinds, the project file, tmp/, exports/, archive/, and
+# a clone still on disk stay.
+ARCHIVE_CREW="README.md Crewfile tabs layouts muted kind panes nopane threads sessions lines up"
 
 # Whether the crew <dir> holds something of its own in <entry>: a file, a
 # directory with anything in it, or a plan that is not share/plan.md, the

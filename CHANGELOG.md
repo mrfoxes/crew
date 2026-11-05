@@ -64,6 +64,14 @@ milestone of the version, on GitHub.
   Antigravity 1.4.12, a tmux screen's styles telling dim placeholders and
   suggestions from typed text. Claude Code 2.1.318 no longer says esc
   interrupts its turn: its spinner's timer marks it.
+- `crew up --restart <name>...` restarts live agents on their Crewfile
+  lines, each in its own pane, at its idle prompt only: the kind's quit
+  command (`/exit`, `/quit`), the shell waited for, then the line with the
+  kind's resume argument, so a new model or option takes over the same
+  conversation; `--fresh` starts a new one. Wakes are held meanwhile. An
+  agent in a turn, with typed text, a dialog, or a background shell is
+  refused. `crew up` records each member's line in `lines/<name>` and names
+  a live member whose Crewfile line changed since it started.
 
 ## 1.1.0
 

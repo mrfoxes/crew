@@ -30,6 +30,8 @@ echo "tmux:%8" >"$dir/panes/dev1"
 printf 'qa\ndev1\ntmux:%%6\n' >"$dir/tabs/main"
 printf 'iterm:CC85\n' >"$dir/tabs/side"
 echo grid >"$dir/layouts/main"
+mkdir -p "$dir/lines"
+echo "claude --model opus" >"$dir/lines/qa"
 echo "tmux:%9" >"$dir/up/watch"
 : >"$dir/muted/qa"
 echo notes >"$dir/work/qa/notes.md"
@@ -65,7 +67,7 @@ to=$(crew_reset 2>"$tmp/reset.err")
 check "reset" "$dir/archive/$when" "$to"
 check "reset names a pane that still runs its agent" "crew: dev1's pane tmux:%8 still runs its agent; it is no member now" "$(cat "$tmp/reset.err")"
 missing=""
-for e in README.md Crewfile messages seq cursors status reports work tabs layouts muted kind panes nopane threads sessions up; do
+for e in README.md Crewfile messages seq cursors status reports work tabs layouts muted kind panes nopane threads sessions lines up; do
     [ -e "$to/$e" ] || missing="$missing $e"
 done
 check "reset puts the session and the crew aside" "" "$missing"
@@ -121,6 +123,7 @@ check "a restored crew has no pane" "" "$(find "$dir/panes" "$dir/up" -type f 2>
 check "its tabs hold names, no pane" "qa dev1" "$(cat "$dir"/tabs/* | tr '\n' ' ' | sed 's/ $//')"
 check "a tab of panes alone is gone" "main" "$(ls "$dir/tabs")"
 check "the gone clone's entry is back" "$tmp/repo-qa" "$(cat "$dir/clones/qa")"
+check "the lines the members started with are back" "claude --model opus" "$(cat "$dir/lines/qa")"
 check "the panes stay aside" "tmux:%8 tmux:%9" "$(cat "$to/panes/dev1" "$to/up/watch" | tr '\n' ' ' | sed 's/ $//')"
 check "a second restore finds nothing" "crew: nothing to restore in $to" "$(crew_restore 2>&1)"
 rm -rf "$to"
