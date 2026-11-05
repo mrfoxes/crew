@@ -224,23 +224,46 @@ crew land ada -F /tmp/msg --to bob -- src/a.rs     # a reviewer the Crewfile doe
 `crew land` does what the protocol's Landing says, in order: it finds the
 reviewer (`--to`, else `reviewer=` on the member's Crewfile line; with neither
 it stops before anything else), runs the check through `sh -c` in the
-member's working tree and stops on a failure, takes the lock (every 10
+member's export (below) and stops on a failure, takes the lock (every 10
 seconds for 5 minutes, saying who holds it), checks that each path is on the
-member's `Files:` line and on no other member's, adds the new ones, commits
-those paths only (`git commit -F <file> -- <path>...`), pushes, and releases
-the lock in every case. Then it sets the `Pushed:` line of the member's
-status to `<hash> <subject>, CI pending` (adding it when there is none), and
-sends the reviewer `Pushed: <hash> <subject>`, with the commit's stat. It lands from the member's clone when it
-has one (to its branch of `origin`), else from the project's tree (to the
-branch's upstream). In a clone, under the lock, it fetches `origin` and, when
-`origin/<branch>` has moved, rebases onto it and runs `--check` again on the
-rebased tree before pushing (a conflict aborts the rebase, restores the commit
-as it was, and messages `owner`; a failed check after a rebase leaves the
-rebased commit in place without pushing and messages `owner` with `ORIG_HEAD`,
-`HEAD`, and the check output). In the shared tree it never pulls or rebases; a
-rejected push is told to `owner` as a `Question:`. `crew
-board` shows `reviewed by <member>` on the header of each member the
-Crewfile gives a reviewer.
+member's `Files:` line and on no other member's, runs the check again on a
+fresh export when `HEAD` moved since the first (it names the commits that
+moved it, and a failure commits nothing), adds the new paths, commits those
+paths only (`git commit -F <file> -- <path>...`), pushes, and releases the
+lock in every case. Then it sets the `Pushed:` line of the member's status to
+`<hash> <subject>, CI pending` (adding it when there is none), and sends the
+reviewer `Pushed: <hash> <subject>`, with the commit's stat. It lands from
+the member's clone when it has one (to its branch of `origin`), else from
+the project's tree (to the branch's upstream). In a clone, under the lock, it
+fetches `origin` and, when `origin/<branch>` has moved, rebases onto it and
+runs `--check` again on an export of the rebased commit before pushing (a
+conflict aborts the rebase, restores the commit as it was, and messages
+`owner`; a failed check after a rebase leaves the rebased commit in place
+without pushing and messages `owner` with `ORIG_HEAD`, `HEAD`, and the check
+output). In the shared tree it never pulls or rebases; a rejected push is
+told to `owner` as a `Question:`. `crew board` shows `reviewed by <member>`
+on the header of each member the Crewfile gives a reviewer.
+
+The check never runs in the working tree, where a teammate's unfinished
+files would make it fail, or pass. It runs in the member's export,
+`<crew dir>/exports/<member>/tree`: `HEAD` with the member's paths laid over
+it, new, changed, and deleted files alike, which is what the commit will
+hold. One export per member, reused: git brings it to `HEAD` through a
+private index (`exports/<member>/index`), rewriting only the files that
+changed since the last landing, so their time is newer than a build cache
+made before, and the files that did not change keep theirs; it deletes what
+`HEAD` dropped and what the last landing laid over it, and leaves untracked
+files, a build cache among them (`./target`), alone. The check gets
+`CREW_MEMBER` and `CREW_DIR`, for a project that keeps its build directory
+elsewhere (`CARGO_TARGET_DIR="$CREW_DIR/exports/$CREW_MEMBER/target"`), and
+`GIT_CEILING_DIRECTORIES`, so a `git` it runs finds no repository instead of
+walking up to the project's shared tree. A failed check names the export, to
+run it there by hand. `crew reset` keeps `exports/`, and no archive carries
+it. Two limits: untracked dependencies (`node_modules`, `.venv`) are not in
+the export, so the check installs them or points at them; and when the
+crew's directory is inside the project, a tool that walks up from the
+export (node's module resolution, a parent workspace) still reaches the
+project's files. A submodule comes out as an empty directory.
 
 At the end, `crew archive` puts the stream, the cursors, the statuses, and
 the reports under `archive/<date and time>/` and starts the stream over,
@@ -756,7 +779,7 @@ lib/up.sh           crew up: the crew of the Crewfile brought up, or back
 lib/live.sh         crew board --live: a line a member, redrawn
 lib/down.sh         crew down: End: sent, Done: waited for, what is left said, panes stopped and closed
 lib/clones.sh       a member's clone: made, reused, synced, shown on the board, removed
-lib/land.sh         crew land: check, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
+lib/land.sh         crew land: check on an export, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
 lib/story.sh        crew story: the session as one document, from the crew or an archive
 lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking

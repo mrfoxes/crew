@@ -36,15 +36,20 @@ dir=$(crew_init)
 printf 'Add the things\n\nThe body.\n' >"$tmp/message"
 
 # A clock that only the waits move, so that no test sleeps. A wait can also
-# release the lock bob holds, at the wait numbered release_at.
+# release the lock bob holds, at the wait numbered release_at, and then run
+# the command meanwhile: what bob did while he held it.
 echo 0 >"$tmp/clock"
 : >"$tmp/waits"
 release_at=0
+meanwhile=
 land_now() { cat "$tmp/clock"; }
 land_wait() {
     echo $(($(cat "$tmp/clock") + 10)) >"$tmp/clock"
     echo wait >>"$tmp/waits"
-    [ "$(waits)" -ne "$release_at" ] || crew_unlock bob >/dev/null
+    if [ "$(waits)" -eq "$release_at" ]; then
+        crew_unlock bob >/dev/null
+        [ -z "$meanwhile" ] || $meanwhile
+    fi
 }
 waits() { wc -l <"$tmp/waits" | tr -d ' '; }
 
@@ -77,16 +82,46 @@ origin_head() { git -C "$tmp/origin.git" log -1 --format=%s main; }
 status ann "a.txt new.txt clone.txt"
 status bob "b.txt"
 
+# A check that writes down what it sees to $tmp/probe: where it runs, its
+# environment, the files, and whether a git it runs finds a repository.
+cat >"$tmp/probe.sh" <<EOF
+{
+    echo "pwd \$(pwd)"
+    echo "member \$CREW_MEMBER"
+    echo "dir \$CREW_DIR"
+    for f in a.txt b.txt c.txt new.txt bob.txt clone.txt target/cache; do
+        if [ -e "\$f" ]; then echo "\$f \$(cat "\$f")"; else echo "\$f none"; fi
+    done
+    if git rev-parse --show-toplevel >/dev/null 2>&1; then echo "git finds a repository"; else echo "git finds none"; fi
+} >"$tmp/probe"
+EOF
+probe="sh '$tmp/probe.sh'"
+exp=$dir/exports/ann/tree
+
 # A landing: only the given paths, the new one added, pushed, the lock free,
-# the reviewer told. The check runs in the working tree.
+# the reviewer told. The check runs in the member's export: HEAD with the
+# paths laid over it, without bob's unfinished b.txt and bob.txt.
 edit a.txt
+a_val=$(cat a.txt)
 edit b.txt
+echo bob >bob.txt
 echo fresh >new.txt
-check "a landing succeeds" "0" "$(land ann -F "$tmp/message" --check "pwd >'$tmp/checkdir'" --to cat -- a.txt new.txt)"
+check "a landing succeeds" "0" "$(land ann -F "$tmp/message" --check "$probe" --to cat -- a.txt new.txt)"
 hash=$(git rev-parse --short HEAD)
 (crew_unread ann >/dev/null)
 (crew_unread bob >/dev/null)
-check "the check ran in the working tree" "$proj" "$(cat "$tmp/checkdir")"
+check "the check ran in the export, on HEAD and the paths only, never up to the project's git" "pwd $exp
+member ann
+dir $dir
+a.txt $a_val
+b.txt two
+c.txt three
+new.txt fresh
+bob.txt none
+clone.txt none
+target/cache none
+git finds none" "$(cat "$tmp/probe")"
+rm bob.txt
 check "origin has the commit" "Add the things" "$(origin_head)"
 check "the commit is the given paths" "a.txt
 new.txt" "$(git show --name-only --format= HEAD)"
@@ -102,6 +137,69 @@ told cat" "$(cat "$tmp/out")"
 check "the reviewer from --to is told" "1" "$(sent ann cat "pushed-$hash-add-the-things")"
 check "the message is Pushed: with the hash and the subject" "1" "$(grep -c "^# 0001\. ann to cat: Pushed: $hash Add the things$" "$dir"/messages/*-ann-to-cat-*)"
 check "and the stat of the commit" "1" "$(grep -c 'new.txt' "$dir"/messages/*-ann-to-cat-*)"
+tidy
+
+# The export is reused: a deleted path is removed from it, a new file laid
+# over it is gone by the next landing, a build cache in it stays, and a file
+# that did not change is not written again.
+mkdir -p "$exp/target"
+echo built >"$exp/target/cache"
+touch -r "$exp/c.txt" "$tmp/c.stamp"
+git rm -q new.txt
+echo extra >clone.txt
+check "a failing check stops" "1" "$(land ann -F "$tmp/message" --check "$probe; exit 1" --to cat -- new.txt clone.txt)"
+check "a deleted path is not in the export, a new one is" "new.txt none
+clone.txt extra" "$(grep '^new.txt\|^clone.txt' "$tmp/probe")"
+check "the stop names the export" "1" "$(grep -c "^crew: the check failed on [0-9a-f]* with your paths, in $exp, so nothing was locked or committed" "$tmp/err")"
+tidy
+edit a.txt
+check "the next landing succeeds" "0" "$(land ann -F "$tmp/message" --check "$probe" --to cat -- a.txt)"
+(crew_unread ann >/dev/null)
+(crew_unread cat >/dev/null)
+check "HEAD's file is back, the last new file gone, the cache kept" "new.txt fresh
+clone.txt none
+target/cache built" "$(grep '^new.txt\|^clone.txt\|^target' "$tmp/probe")"
+check "a file that did not change keeps its time" "" "$(find "$exp/c.txt" -newer "$tmp/c.stamp")"
+tidy
+
+# HEAD moved between the check and the lock (bob landed while he held it): the
+# check runs again under the lock on the new HEAD, and says why.
+bob_lands() {
+    echo "bob's" >b.txt
+    git commit -q -m "Bob meanwhile" -- b.txt
+}
+crew_lock bob >/dev/null
+release_at=1
+meanwhile=bob_lands
+: >"$tmp/checks"
+edit a.txt
+check "a landing over a moved HEAD succeeds" "0" "$(land ann -F "$tmp/message" --check "cat b.txt >>'$tmp/checks'" --to cat -- a.txt)"
+(crew_unread ann >/dev/null)
+(crew_unread cat >/dev/null)
+check "the check ran twice, the second time on bob's commit" "two
+bob's" "$(cat "$tmp/checks")"
+check "it says HEAD moved" "1" "$(grep -c '^crew: HEAD moved since the check, so the check runs again under the lock, on:$' "$tmp/err")"
+check "and which commit moved it" "1" "$(grep -c '^  [0-9a-f]* Bob meanwhile$' "$tmp/err")"
+check "the commit sits on bob's" "Bob meanwhile" "$(git log -1 --format=%s HEAD~1)"
+check "the lock is free" "free" "$(lock)"
+tidy
+
+# A check that passes, then fails on the moved HEAD: nothing is committed.
+bob_adds() {
+    echo z >z.txt
+    git add z.txt
+    git commit -q -m "Bob adds z" -- z.txt
+}
+crew_lock bob >/dev/null
+meanwhile=bob_adds
+edit a.txt
+check "a check that fails on the moved HEAD stops" "1" "$(land ann -F "$tmp/message" --check "[ ! -e z.txt ]" --to cat -- a.txt)"
+check "it says nothing was committed" "1" "$(grep -c "^crew: the check failed on [0-9a-f]* with your paths, in $exp, so nothing was committed, and the lock is released" "$tmp/err")"
+check "HEAD is bob's commit" "Bob adds z" "$(git log -1 --format=%s)"
+check "a.txt stays changed" " M a.txt" "$(git status --porcelain)"
+check "the lock is free" "free" "$(lock)"
+release_at=0
+meanwhile=
 tidy
 
 # A status with a Pushed: line has that line rewritten in place.
@@ -294,12 +392,15 @@ before=$(git rev-parse HEAD)
 edit "$tmp/work/proj-ann/a.txt"
 echo fresh >"$tmp/work/proj-ann/clone.txt"
 edit "$tmp/work/proj-ann/c.txt"
-check "a clone lands" "0" "$(land ann -F "$tmp/message" --to bob -- a.txt clone.txt)"
+check "a clone lands" "0" "$(land ann -F "$tmp/message" --to bob --check "$probe" -- a.txt clone.txt)"
 hash=$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD)
 check "origin has the clone's commit" "Add the things" "$(origin_head)"
 check "it holds the given paths only" "a.txt
 clone.txt" "$(git -C "$tmp/work/proj-ann" show --name-only --format= HEAD)"
 check "the clone's other change stays" " M c.txt" "$(git -C "$tmp/work/proj-ann" status --porcelain)"
+check "the check ran in the export, without the clone's other change" "pwd $exp
+c.txt three
+clone.txt fresh" "$(grep '^pwd\|^c.txt\|^clone.txt' "$tmp/probe")"
 check "the project's tree was not touched" "$before" "$(git rev-parse HEAD)"
 check "the lock is free" "free" "$(lock)"
 check "the reviewer is told" "1" "$(sent ann bob "pushed-$hash")"
@@ -383,9 +484,10 @@ git -C "$tmp/work/proj-ann" reset -q --hard origin/main
 # output are in the message to owner.
 edit "$tmp/work/proj-bob/b.txt"
 check "bob lands b.txt to move origin" "0" "$(land bob -F "$tmp/bob-msg" --to ann -- b.txt)"
+bob_b=$(cat "$tmp/work/proj-bob/b.txt")
 bob_head=$(git -C "$tmp/work/proj-bob" rev-parse --short HEAD)
 edit "$tmp/work/proj-ann/a.txt"
-check "a check failing after rebase stops the push" "1" "$(land ann -F "$tmp/message" --to bob --check "if [ \"\$(git rev-parse --short HEAD~1)\" = '$bob_head' ]; then echo 'after-rebase-boom'; exit 4; fi" -- a.txt)"
+check "a check failing after rebase stops the push" "1" "$(land ann -F "$tmp/message" --to bob --check "if [ \"\$(cat b.txt)\" = '$bob_b' ]; then echo 'after-rebase-boom'; exit 4; fi" -- a.txt)"
 rebased_hash=$(git -C "$tmp/work/proj-ann" rev-parse --short HEAD)
 orig_hash=$(git -C "$tmp/work/proj-ann" rev-parse --short ORIG_HEAD)
 check "the two hashes differ" "yes" "$([ "$orig_hash" != "$rebased_hash" ] && echo yes)"

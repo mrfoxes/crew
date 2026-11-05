@@ -1,6 +1,7 @@
-# Landing in one command: crew land runs the member's check, takes the push
-# lock, commits the member's own paths and nothing else, pushes, releases the
-# lock whatever happened, and tells the reviewer. A responsibility of its own,
+# Landing in one command: crew land runs the member's check on an export of
+# HEAD with the member's paths laid over it, takes the push lock, commits the
+# member's own paths and nothing else, pushes, releases the lock whatever
+# happened, and tells the reviewer. A responsibility of its own,
 # built on the lock and the stream (lib/store.sh), the claims (lib/claims.sh),
 # the member's clone (lib/clones.sh), and the Crewfile (lib/crewfile.sh). Its
 # variables start with ld_: it runs inside commands whose own it must not
@@ -61,7 +62,7 @@ crew_land() {
     land_ready || return $?
     land_changed "$@" || return 1
     land_claims "$@" || return 1
-    land_check "$ld_tree" "$ld_check" || return 1
+    land_check "$@" || return 1
     land_lock "$ld_who" || return 1
     # A signal while the lock is held must release it too.
     trap 'crew_unlock "$ld_who" >/dev/null 2>&1; exit 130' INT TERM HUP
@@ -178,15 +179,114 @@ EOF
     done
 }
 
-# Runs the check <command> in the tree <tree>, if there is one; on a failure
-# it says so with the last lines of what the check printed.
+# Runs the check, if there is one, on what the commit will hold: HEAD with
+# the paths laid over it, never the working tree, where a teammate's
+# unfinished files would make it fail or pass. On a failure it says so with
+# the last lines of what the check printed.
 land_check() {
-    [ -n "$2" ] || return 0
-    if ld_out=$(cd "$1" && sh -c "$2" 2>&1 </dev/null); then
-        return 0
+    [ -n "$ld_check" ] || return 0
+    land_try "$@" && return 0
+    land_failed "so nothing was locked or committed"
+    return 1
+}
+
+# The member's export, reused from one landing to the next so that a build
+# cache in it (./target) stays warm: <crew dir>/exports/<you>/, with the
+# tree, its private index, and the list of the files laid over HEAD.
+land_exp() {
+    ld_exp=$ld_dir/exports/$ld_who
+}
+
+# Exports HEAD to the member's export with the paths <path>... laid over it,
+# none for HEAD alone, and runs the check there. The check gets CREW_MEMBER
+# and CREW_DIR, and GIT_CEILING_DIRECTORIES so that a git it runs never walks
+# up to the project's repository and its shared tree. Sets ld_checked to the
+# HEAD it checked and ld_out to what the check printed.
+land_try() {
+    land_exp
+    ld_checked=$(git -C "$ld_tree" rev-parse HEAD) || return 1
+    if ! land_export "$@"; then
+        ld_out="crew could not export HEAD to $ld_exp/tree: $ld_git"
+        return 1
     fi
-    echo "crew: the check failed, so nothing was locked or committed: $2" >&2
+    ld_out=$(cd "$ld_exp/tree" &&
+        CREW_MEMBER=$ld_who CREW_DIR=$ld_dir GIT_CEILING_DIRECTORIES=$ld_exp \
+            sh -c "$ld_check" 2>&1 </dev/null)
+}
+
+# Brings the export's tree to HEAD through its private index: git rewrites
+# only the files that differ from the last export (their time becomes now),
+# deletes those HEAD no longer has, and leaves untracked files, a build cache
+# among them, alone; nothing is written to the project's repository. The
+# files the last export laid over HEAD are removed first, so that a new file
+# of an earlier landing never lingers. Then the paths' changes are laid over
+# it: a file that exists is copied, one that does not is removed. An export
+# git cannot bring up to date (a broken index) is made again from nothing.
+land_export() {
+    mkdir -p "$ld_exp/tree" || return 1
+    if [ -f "$ld_exp/overlay" ]; then
+        while IFS= read -r ld_f; do
+            [ -z "$ld_f" ] || rm -rf "$ld_exp/tree/$ld_f"
+        done <"$ld_exp/overlay"
+        rm -f "$ld_exp/overlay"
+    fi
+    if ! land_read_tree; then
+        rm -rf "$ld_exp/tree" "$ld_exp/index"
+        mkdir -p "$ld_exp/tree" || return 1
+        land_read_tree || return 1
+    fi
+    [ $# -gt 0 ] || return 0
+    land_overlay "$@" >"$ld_exp/overlay" || return 1
+    while IFS= read -r ld_f; do
+        [ -n "$ld_f" ] || continue
+        rm -rf "$ld_exp/tree/$ld_f"
+        # A directory where a file was: its files come as entries of their own.
+        if [ -L "$ld_tree/$ld_f" ] || { [ -e "$ld_tree/$ld_f" ] && [ ! -d "$ld_tree/$ld_f" ]; }; then
+            mkdir -p "$(dirname "$ld_exp/tree/$ld_f")" &&
+                cp -P "$ld_tree/$ld_f" "$ld_exp/tree/$ld_f" || return 1
+        fi
+    done <"$ld_exp/overlay"
+}
+
+land_read_tree() {
+    ld_git=$(GIT_INDEX_FILE=$ld_exp/index git -C "$ld_tree" --work-tree="$ld_exp/tree" \
+        read-tree --reset -u HEAD 2>&1)
+}
+
+# The files under the literal paths <path>... that differ from HEAD, deleted
+# ones too and both sides of a rename, and the untracked ones crew land would
+# add; one a line.
+land_overlay() {
+    for ld_p in "$@"; do
+        set -- "$@" "$(land_norm "$ld_p")"
+        shift
+    done
+    {
+        git --literal-pathspecs -C "$ld_tree" diff --no-ext-diff --no-renames --name-only -z HEAD -- "$@" &&
+            git --literal-pathspecs -C "$ld_tree" ls-files -z --others --exclude-standard -- "$@"
+    } | tr '\0' '\n' | sort -u
+}
+
+# Says that the check failed and how, ending with <what it means>, and where
+# to run it again by hand.
+land_failed() {
+    echo "crew: the check failed on $(git -C "$ld_tree" rev-parse --short "$ld_checked" 2>/dev/null) with your paths, in $ld_exp/tree, $1: $ld_check" >&2
     printf '%s\n' "$ld_out" | tail -n 20 | sed 's/^/  /' >&2
+    echo "  to run it again there: cd $ld_exp/tree && sh -c '<the check>'" >&2
+}
+
+# Under the lock: when HEAD moved since the check (another member landed
+# meanwhile), the commit would go on a HEAD that was never checked, so the
+# check runs again on a fresh export of the new HEAD with the paths, and a
+# failure commits nothing.
+land_recheck() {
+    [ -n "$ld_check" ] || return 0
+    ld_head=$(git -C "$ld_tree" rev-parse HEAD) || return 1
+    [ "$ld_head" != "$ld_checked" ] || return 0
+    echo "crew: HEAD moved since the check, so the check runs again under the lock, on:" >&2
+    git -C "$ld_tree" log --no-show-signature --format='  %h %s' "$ld_checked..$ld_head" | head -n 10 >&2
+    land_try "$@" && return 0
+    land_failed "so nothing was committed, and the lock is released"
     return 1
 }
 
@@ -209,6 +309,7 @@ land_lock() {
 # commit, the push. The paths are the arguments.
 land_locked() {
     land_claims "$@" || return 1
+    land_recheck "$@" || return 1
     land_commit "$@" || return 1
     land_push
 }
@@ -312,10 +413,11 @@ land_rebase() {
     ld_before=$(git -C "$ld_tree" rev-parse --short ORIG_HEAD 2>/dev/null) || ld_before=$ld_hash
     ld_hash=$(git -C "$ld_tree" rev-parse --short HEAD)
     [ -n "$ld_check" ] || return 0
-    if ld_out=$(cd "$ld_tree" && sh -c "$ld_check" 2>&1 </dev/null); then
+    # The rebased commit alone: an export of HEAD with nothing laid over it.
+    if land_try; then
         return 0
     fi
-    echo "crew: the check failed after rebasing $ld_before to $ld_hash, so nothing was pushed: $ld_check" >&2
+    echo "crew: the check failed after rebasing $ld_before to $ld_hash, in $ld_exp/tree, so nothing was pushed: $ld_check" >&2
     printf '%s\n' "$ld_out" | tail -n 20 | sed 's/^/  /' >&2
     {
         echo "I committed $ld_before \"$ld_subject\" in $ld_tree and rebased it onto origin/$ld_branch as $ld_hash, and the check failed on the rebased tree: $ld_check"

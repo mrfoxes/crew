@@ -15,6 +15,17 @@ milestone of the version, on GitHub.
   `Next:` so a fresh session after a `/clear` can resume from it. Saved
   work lives under the crew's directory, in `reports/<you>.patch` and
   `work/<you>/`, never only under `/tmp`.
+- `crew land --check` runs the check on what the commit will hold, not in
+  the working tree, where a teammate's unfinished files made it fail or
+  pass: in the member's export, `exports/<member>/tree` under the crew's
+  directory, `HEAD` with the member's paths laid over it, new, changed, and
+  deleted. The export is reused through a private index, so only the files
+  that changed are written again and a build cache in it stays valid. The
+  check gets `CREW_MEMBER`, `CREW_DIR`, and `GIT_CEILING_DIRECTORIES`, so a
+  `git` it runs never reaches the shared tree. When `HEAD` moved between the
+  check and the lock, the check runs again under the lock, and a failure
+  commits nothing. A clone checks in its export too, and after a rebase on
+  an export of the rebased commit.
 
 ## 1.1.0
 

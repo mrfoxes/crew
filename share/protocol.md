@@ -167,16 +167,24 @@ happens. Write the commit message to a file, then:
 crew land <you> -F <message file> --check '<the project checks>' -- <path>...
 ```
 
-It runs the check in your working tree, takes the lock (trying every 10
-seconds for 5 minutes, and saying who holds it), refuses a path that is not
-on your `Files:` line or that another member claims, adds your new files,
-commits those paths and nothing else, pushes, unlocks, and sends your
-reviewer `Pushed:` with the hash and the subject, and sets the `Pushed:` line
-of your status to the hash and the subject, CI pending. The reviewer is
-`--to <member>`, else the `reviewer=` of your line in the Crewfile; with
-neither it stops before anything else. If the push is rejected it tells
-`owner` with `Question:` and does not pull or rebase. A stop leaves your
-files as they are: fix what it says and run it again.
+It runs the check on what the commit will hold, not in your working tree:
+in your export, `$(crew dir)/exports/<you>/tree`, which is `HEAD` with your
+paths laid over it (new, changed, and deleted files), so a teammate's
+unfinished file can neither break the check nor carry it. A file the check
+needs must be committed or among your paths; untracked dependencies
+(`node_modules`, `.venv`) are not there. The check gets `CREW_MEMBER` and
+`CREW_DIR`, and a `git` it runs finds no repository. The export is reused,
+and a build cache in it too. Then it takes the lock (trying every 10 seconds
+for 5 minutes, and saying who holds it), refuses a path that is not on your
+`Files:` line or that another member claims, runs the check again if `HEAD`
+moved since, adds your new files, commits those paths and nothing else,
+pushes, unlocks, and sends your reviewer `Pushed:` with the hash and the
+subject, and sets the `Pushed:` line of your status to the hash and the
+subject, CI pending. The reviewer is `--to <member>`, else the `reviewer=`
+of your line in the Crewfile; with neither it stops before anything else. If
+the push is rejected it tells `owner` with `Question:` and does not pull or
+rebase. A stop leaves your files as they are: fix what it says and run it
+again.
 
 A crew that lands by hand follows these steps, which are what the command does:
 
@@ -208,12 +216,12 @@ you never need them.
 
 `crew land` works from a clone as well: under the lock it commits your paths,
 fetches `origin`, and when `origin/<branch>` has moved, rebases the new
-commit onto it, runs `--check` again on the rebased tree, and pushes. On a
-conflict while rebasing it runs `git rebase --abort`, leaves your commit as
-it was, releases the lock, and tells `owner` with the conflicting files; on a
-failed check after a rebase that succeeded, nothing is pushed, the rebased
-commit stays as your clone's `HEAD`, and `owner` is told with both hashes
-(`ORIG_HEAD` and `HEAD`) and the check's last lines.
+commit onto it, runs `--check` again on an export of the rebased commit, and
+pushes. On a conflict while rebasing it runs `git rebase --abort`, leaves
+your commit as it was, releases the lock, and tells `owner` with the
+conflicting files; on a failed check after a rebase that succeeded, nothing
+is pushed, the rebased commit stays as your clone's `HEAD`, and `owner` is
+told with both hashes (`ORIG_HEAD` and `HEAD`) and the check's last lines.
 
 If you work in the shared tree while others push from clones, `origin/main`
 moves under you. Commit your paths as in Landing, then, under the lock only,
