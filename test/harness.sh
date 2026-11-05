@@ -12,6 +12,8 @@ CREW_HOME=$(dirname "$here")
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/store.sh"
 # shellcheck source=/dev/null
+. "$CREW_HOME/lib/archive.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/kinds.sh"
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/claims.sh"

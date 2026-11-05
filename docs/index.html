@@ -745,7 +745,15 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
             </tr>
             <tr>
               <td class="cmd-col"><code>crew archive</code></td>
-              <td>Put the session's stream and files aside, start over.</td>
+              <td>Put the session aside (the stream, the statuses, the reports, the members' work) and start the stream over.</td>
+            </tr>
+            <tr>
+              <td class="cmd-col"><code>crew reset</code></td>
+              <td>Put the whole crew aside: the session, the plan, the Crewfile, the tabs, the layouts, the mutes, the members. Leave <code>.crew/</code> as <code>crew init</code> makes it, with the project's files kept.</td>
+            </tr>
+            <tr>
+              <td class="cmd-col"><code>crew restore [&lt;archive&gt;]</code></td>
+              <td>Bring an archive back, the latest by default, into a crew with no session of its own. Never its panes: <code>crew up</code> brings the members back.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew update [--check]</code></td>
@@ -794,7 +802,8 @@ clones/&lt;name&gt;              the path of a member's clone (crew spawn --clon
 tabs/&lt;tab&gt;                 a tab's members, in the order they were placed
 layouts/&lt;tab&gt;              the layout a tab is kept in (crew layout)
 reports/&lt;name&gt;.md          each member's report at the end (crew report)
-archive/&lt;date and time&gt;/   earlier sessions (crew archive), each with its story.md
+work/&lt;name&gt;/               a member's notes, logs, and screenshots
+archive/&lt;date and time&gt;/   earlier sessions (crew archive) and crews (crew reset)
 forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path

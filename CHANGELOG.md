@@ -26,6 +26,17 @@ milestone of the version, on GitHub.
   check and the lock, the check runs again under the lock, and a failure
   commits nothing. A clone checks in its export too, and after a rebase on
   an export of the rebased commit.
+- `crew reset` puts the whole crew aside under `archive/<date and time>/`:
+  the session, and the plan, the Crewfile, the tabs, the layouts, the mutes,
+  and the members. It leaves `.crew/` as `crew init` makes it, keeping the
+  project's and the machine's files (`project`, `rates`, `forbid`, `kinds`,
+  `tmp/`, `exports/`, a clone still on disk), so a new crew no longer
+  starts on the last one's plan, tab orders, and mutes. `crew restore
+  [<archive>]` brings either kind of archive back, the latest by default,
+  and refuses a crew with a session or a plan of its own; it never puts a
+  pane back, and `crew up` brings the members back. `crew story <archive>`
+  reads the plan, the Crewfile, and the members a reset put aside.
+- `crew archive` carries the members' `work/` with the session.
 
 ## 1.1.0
 

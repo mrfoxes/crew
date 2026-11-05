@@ -265,10 +265,24 @@ crew's directory is inside the project, a tool that walks up from the
 export (node's module resolution, a parent workspace) still reaches the
 project's files. A submodule comes out as an empty directory.
 
-At the end, `crew archive` puts the stream, the cursors, the statuses, and
-the reports under `archive/<date and time>/` and starts the stream over,
-keeping the plan, the rules, the panes, and the mutes; `crew leave codex`
-forgets a pane you closed; `crew version` says which crew this is: a
+At the end, `crew archive` puts the session (the stream, the cursors, the
+statuses, the reports, and the members' `work/`) under
+`archive/<date and time>/` and starts the stream over, keeping the plan, the
+rules, the panes, and the mutes. Before a new crew, `crew reset` puts the
+whole crew there instead: the session, and the plan, the Crewfile, the tabs,
+the layouts, the mutes, and the members (their kinds, panes, threads,
+sessions, and the clones/ entry of a clone gone from disk). It leaves
+`.crew/` as `crew init` makes it, keeping what belongs to the project or the
+machine: `project`, `rates`, `forbid`, `kinds`, `tmp/`, `exports/`, and a
+clone still on disk. It refuses while a relay runs or the lock is held, and
+names each pane that still runs its agent, no member once the crew is put
+aside. `crew restore [<archive>]` brings an archive of either kind back, the
+latest by default, into a crew with no session of its own and none of what
+the archive holds (a plan of its own, a Crewfile, members); it never puts
+back a pane, since a pane's number may name another pane by then: the
+panes and the pane entries of the tabs stay out, and `crew up` brings the
+members back, resuming their sessions. `crew leave codex` forgets a pane
+you closed; `crew version` says which crew this is: a
 release's tag (`crew v1.0.0`), the tag
 when the checkout has one (`crew v1.0.0 (2026-11-02)`, and
 `crew v1.0.0-3-g17aac8d (2026-11-05)` three commits past it), else the commit.
@@ -278,7 +292,8 @@ plan and the Crewfile whole, a line a member with its kind, tab, clone,
 reviewer, and what it spent, every message in order, each `Pushed:` with
 who landed it and the `Review:` that answered it (or whose review it
 still waits for), and the reports with the patches left. `crew story
-<time>` reads an archive `crew archive` made (or a path to one), and
+<time>` reads an archive `crew archive` or `crew reset` made (or a path to
+one), with the plan, the Crewfile, and the members the archive holds, and
 `crew down --archive` saves the story it archives as
 `archive/<time>/story.md`: a session you can read whole, and hand to
 someone.
@@ -780,6 +795,7 @@ lib/live.sh         crew board --live: a line a member, redrawn
 lib/down.sh         crew down: End: sent, Done: waited for, what is left said, panes stopped and closed
 lib/clones.sh       a member's clone: made, reused, synced, shown on the board, removed
 lib/land.sh         crew land: check on an export, lock, commit the member's paths, rebase a clone, push, unlock, Pushed:
+lib/archive.sh      crew archive, reset, and restore: a session or a whole crew put aside, and back
 lib/story.sh        crew story: the session as one document, from the crew or an archive
 lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
@@ -829,7 +845,8 @@ clones/<name>              the path of a member's clone (crew spawn --clone)
 tabs/<tab>                 a tab's members, in the order they were placed
 layouts/<tab>              the layout a tab is kept in (crew layout)
 reports/<name>.md          each member's report at the end (crew report)
-archive/<date and time>/   earlier sessions (crew archive), each with its story.md
+work/<name>/               a member's notes, logs, and screenshots
+archive/<date and time>/   earlier sessions (crew archive) and crews (crew reset)
 forbid                     the project's gate rules (optional)
 kinds                      the project's kinds of agent, added to share/kinds (optional)
 project                    the project's path

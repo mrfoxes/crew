@@ -92,12 +92,18 @@ crew_init() {
                 echo '/.crew/' >>"$common/info/exclude"
         fi
     fi
-    for d in messages seq cursors panes threads muted kind status reports tmp; do
-        mkdir -p "$dir/$d"
-    done
+    crew_skeleton "$dir"
     echo "$root" >"$dir/project"
-    [ -e "$dir/README.md" ] || cp "$CREW_HOME/share/plan.md" "$dir/README.md"
     echo "$dir"
+}
+
+# Makes what a crew starts with in <dir>, keeping what is there: its
+# directories, and the plan from share/plan.md when it has none.
+crew_skeleton() {
+    for sk_d in messages seq cursors panes threads muted kind status reports tmp; do
+        mkdir -p "$1/$sk_d"
+    done
+    [ -e "$1/README.md" ] || cp "$CREW_HOME/share/plan.md" "$1/README.md"
 }
 
 # A command that takes no argument refuses one with its usage, <usage>: a
@@ -547,39 +553,6 @@ crew_write() {
         return 1
     }
     echo "$file"
-}
-
-# Puts the session's stream, cursors, statuses, reports, and wake claims
-# under archive/<date and time>/ and starts the stream over, keeping the
-# plan, the rules, the project, the lock, the panes, the threads, and the
-# mutes. Not under a relay, whose count would go on from the old stream.
-crew_archive() {
-    crew_none "crew archive" "$@" || return 2
-    dir=$(crew_dir) || return 1
-    if crew_relay_alive "$dir"; then
-        echo "crew: a relay runs; stop it before the archive" >&2
-        return 1
-    fi
-    if [ -z "$(find "$dir/messages" "$dir/status" "$dir/reports" -type f | head -n 1)" ]; then
-        echo "crew: nothing to archive"
-        return
-    fi
-    to=$dir/archive/$(date '+%Y-%m-%d-%H%M%S')
-    # A second archive in the same second would move into the first, nested:
-    # a free name, -2 onward, keeps them apart.
-    ar_base=$to
-    ar_n=1
-    while [ -e "$to" ]; do
-        ar_n=$((ar_n + 1))
-        to=$ar_base-$ar_n
-    done
-    mkdir -p "$to"
-    for d in messages seq cursors status reports; do
-        mv "$dir/$d" "$to/"
-        mkdir "$dir/$d"
-    done
-    rm -rf "$dir"/tmp/wake.* "$dir/relay.last"
-    echo "$to"
 }
 
 # The time, for a line of a log the owner reads.

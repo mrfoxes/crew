@@ -15,6 +15,7 @@ done
 CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 
 . "$CREW_HOME/lib/store.sh"
+. "$CREW_HOME/lib/archive.sh"
 . "$CREW_HOME/lib/kinds.sh"
 . "$CREW_HOME/lib/claims.sh"
 . "$CREW_HOME/lib/term.sh"
@@ -123,7 +124,12 @@ For the coordinator
                                 gate and relay in one pane
   story [<archive>]             the session as one document: plan, Crewfile,
                                 members, stream, commits with reviews, reports
-  archive                       put the session's stream and files aside, start over
+  archive                       put the session aside: stream, statuses,
+                                reports, work; start the stream over
+  reset                         put the whole crew aside: the session, the plan,
+                                the Crewfile, the members; start as crew init
+  restore [<archive>]           bring an archive back, the latest by default;
+                                never its panes: crew up brings the members back
   update [--check]              say which version runs and which release is
                                 the latest; without --check, install the latest
   version                       which crew this is
@@ -192,6 +198,8 @@ relay) crew_relay "$@" ;;
 watch) crew_watch "$@" ;;
 story) crew_story "$@" ;;
 archive) crew_archive "$@" ;;
+reset) crew_reset "$@" ;;
+restore) crew_restore "$@" ;;
 update) crew_update "$@" ;;
 version | --version) crew_version "$@" ;;
 -h | --help | usage) usage ;;

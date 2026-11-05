@@ -15,6 +15,17 @@ story_source() {
     esac
 }
 
+# The crew whose plan, Crewfile, and members go with the session in <src>,
+# of the crew <dir>: an archive crew reset made holds its own, plan first;
+# one crew archive made holds the session alone, and the live crew the rest.
+story_crew() {
+    if [ "$2" != "$1" ] && [ -f "$2/README.md" ]; then
+        echo "$2"
+    else
+        echo "$1"
+    fi
+}
+
 # The plan and the Crewfile of the crew <dir>, whole, when it has them.
 story_plan() {
     if [ -f "$1/README.md" ]; then
@@ -35,7 +46,8 @@ story_plan() {
 
 # The members of the crew <dir> whose session is in <src>: one with a
 # status there, a pane, a thread, a session, or a kind; a line each with
-# its kind, tab, clone, reviewer, and what it spent.
+# its kind, tab, clone (from the live crew <live> when the clone outlived
+# its crew), reviewer, and what it spent.
 story_members() {
     s_names=$( (for f in "$2"/status/*.md; do [ -e "$f" ] && basename "$f" .md; done; cost_members "$1") | sort -u)
     [ -n "$s_names" ] || return 0
@@ -46,6 +58,7 @@ story_members() {
         s_kind=$(kind_member "$1" "$s_who")
         s_tab=$(tab_of "$1" "$s_who")
         s_clone=$(clone_of "$1" "$s_who")
+        [ -n "$s_clone" ] || s_clone=$(clone_of "$3" "$s_who")
         s_reviewer=$(crewfile_get "$1" "$s_who" reviewer)
         s_spent=$(cost_sum board "$1" "$s_who" | sed -n "1s/^ *$s_who *//p")
         echo "- $s_who (${s_kind:-no kind}${s_tab:+, tab $s_tab}${s_clone:+, clone $s_clone}${s_reviewer:+, reviewed by $s_reviewer})${s_spent:+: $s_spent}"
@@ -149,8 +162,9 @@ crew_story() {
     else
         echo "No message yet."
     fi
-    story_plan "$dir"
-    story_members "$dir" "$src"
+    s_crew=$(story_crew "$dir" "$src")
+    story_plan "$s_crew"
+    story_members "$s_crew" "$src" "$dir"
     story_stream "$src"
     story_commits "$src"
     story_reports "$src"
