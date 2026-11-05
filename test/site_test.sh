@@ -29,6 +29,29 @@ for cmd in $cmds; do
     check "site documents crew $cmd" "1" \
         "$(grep -q "crew $cmd" "$html" && echo 1 || echo 0)"
 done
+# Every flag crew --help gives a command is on that command's row of the
+# reference: its synopsis, read by the parser the completions share.
+parser=$(sed -n '/# usage-parser begin/,/# usage-parser end/p' "$CREW_HOME/share/completions/crew.bash")
+printf '%s\n' "$help" | awk "$parser" | while read -r cmd words; do
+    rows=$(grep "<td class=\"cmd-col\"><code>crew ${cmd}[ <]" "$html")
+    for word in $words; do
+        case "$word" in
+        --*)
+            flag=${word%%=*}
+            if printf '%s\n' "$rows" | grep -q -- "$flag"; then
+                echo ok
+            else
+                echo "FAIL the site's row of crew $cmd has no $flag"
+            fi
+            ;;
+        esac
+    done
+done >"$tmp/flags.out"
+passed=$((passed + $(grep -c '^ok$' "$tmp/flags.out")))
+failed=$((failed + $(grep -c '^FAIL' "$tmp/flags.out")))
+grep '^FAIL' "$tmp/flags.out"
+check "the flags are checked" "1" "$([ -s "$tmp/flags.out" ] && echo 1)"
+
 site_cmds=$(
     sed -n 's/.*<td class="cmd-col"><code>crew \([a-z][a-z-]*\).*/\1/p' "$html" |
         sort -u

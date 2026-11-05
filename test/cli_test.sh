@@ -128,5 +128,10 @@ for qc in $qs_cmds; do
     check "Quickstart command 'crew $qc' in --help" "1" \
         "$(printf '%s\n' "$help_cmds" | grep -qx "$qc" && echo 1 || echo 0)"
 done
+# Every command of crew --help is in README.md, as crew <command>.
+for hc in $help_cmds; do
+    [ "$hc" = help ] && continue
+    check "README.md names crew $hc" "1" "$(grep -q "crew $hc\\b" "$CREW_HOME/README.md" && echo 1 || echo 0)"
+done
 
 finish

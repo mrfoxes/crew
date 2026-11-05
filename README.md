@@ -242,7 +242,9 @@ conflict aborts the rebase, restores the commit as it was, and messages
 without pushing and messages `owner` with `ORIG_HEAD`, `HEAD`, and the check
 output). In the shared tree it never pulls or rebases; a rejected push is
 told to `owner` as a `Question:`. `crew board` shows `reviewed by <member>`
-on the header of each member the Crewfile gives a reviewer.
+on the header of each member the Crewfile gives a reviewer. A crew that lands
+by hand takes the lock with `crew lock <name>` and releases it with
+`crew unlock <name>`; `crew unlock --force` frees one a member left held.
 
 The check never runs in the working tree, where a teammate's unfinished
 files would make it fail, or pass. It runs in the member's export,
@@ -318,8 +320,8 @@ wakes every member but its sender, and one to a member who has not joined
 says so. Set `CREW_WAKE=0` to post without waking anyone. `crew mute codex`
 keeps an agent you would rather not wake often in the crew: a message to
 `all` no longer wakes it, and says so, while one to `codex` still does; it
-reads both with `crew unread`, and `crew board` shows it muted until `crew
-unmute codex`.
+reads both with `crew unread`, and `crew board` shows it muted until
+`crew unmute codex`.
 
 A member that joined with `crew join <name> --no-pane` (a coordinator in
 the pane the owner types in, an agent whose sandbox hides its pane, a

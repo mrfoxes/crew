@@ -594,20 +594,20 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
               <td>Print the protocol agents follow (<code>share/protocol.md</code>).</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew join &lt;name&gt; [--pane &lt;pane&gt;]</code></td>
-              <td>Join the crew as <code>&lt;name&gt;</code> from this pane, recording pane, kind, thread, or session, and print the protocol, plan, and unread messages.</td>
+              <td class="cmd-col"><code>crew join &lt;name&gt; [--pane &lt;pane&gt; | --no-pane]</code></td>
+              <td>Join the crew as <code>&lt;name&gt;</code> from this pane, recording pane, kind, thread, or session, and print the protocol, plan, and unread messages; with <code>--no-pane</code>, messages wait in the stream for your next <code>crew unread</code>.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew send &lt;from&gt; &lt;to&gt; &lt;subject&gt;</code></td>
-              <td>Post a message, body on stdin; wakes <code>&lt;to&gt;</code> (a member, <code>all</code>, or <code>owner</code>).</td>
+              <td class="cmd-col"><code>crew send &lt;from&gt; &lt;to&gt; &lt;subject&gt; [--message &lt;text&gt; | --file &lt;file&gt;]</code></td>
+              <td>Post a message, body on stdin or given with <code>-m</code> or <code>-F</code>; wakes <code>&lt;to&gt;</code> (a member, <code>all</code>, or <code>owner</code>).</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew unread &lt;name&gt;</code></td>
-              <td>Print the messages to <code>&lt;name&gt;</code> or <code>all</code> not read yet and advance the cursor.</td>
+              <td class="cmd-col"><code>crew unread &lt;name&gt; [--peek] [--wait [seconds]]</code></td>
+              <td>Print the messages to <code>&lt;name&gt;</code> or <code>all</code> not read yet and advance the cursor; <code>--peek</code> keeps them unread, <code>--wait</code> blocks until one comes (600 seconds).</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew log [count]</code></td>
-              <td>Print the last messages, whole (default 5).</td>
+              <td class="cmd-col"><code>crew log [count] [--from &lt;name&gt;] [--to &lt;name&gt;] [--grep &lt;text&gt;] [--oneline]</code></td>
+              <td>Print the last messages, whole (default 5), filtered by sender, recipient, or text; <code>--oneline</code> prints a header a message.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew show &lt;number&gt;...</code></td>

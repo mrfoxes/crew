@@ -81,6 +81,14 @@ _crew_numbers() {
     ls -1 "$dir/seq" 2>/dev/null | awk '{ printf "%04d\n", $1 }'
 }
 
+# The archives of the crew, by the name crew archive and crew reset give
+# them, for crew restore and crew story.
+_crew_archives() {
+    local dir
+    dir=$(command crew dir 2>/dev/null) || return 0
+    ls -1 "$dir/archive" 2>/dev/null
+}
+
 # The kinds: share/kinds of the checkout this crew runs from (found by
 # following the links from the crew on PATH, as bin/crew does, so that the
 # file is read wherever this one is installed or copied), then the owner's
@@ -178,6 +186,7 @@ _crew() {
     name | from | member) cands=(${(f)"$(_crew_members)"}) ;;
     to) cands=(${(f)"$(_crew_members)"} all owner) ;;
     number) cands=(${(f)"$(_crew_numbers)"}) ;;
+    archive) cands=(${(f)"$(_crew_archives)"}) ;;
     kind) cands=(${(f)"$(_crew_kinds)"}) ;;
     preset) cands=(${(f)"$(_crew_presets)"}) ;;
     key)

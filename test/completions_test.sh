@@ -75,6 +75,7 @@ ln -s "$CREW_HOME/bin/crew" "$tmp/bin/crew"
 : >"$crewdir/status/agy.md"
 : >"$crewdir/seq/3"
 : >"$crewdir/seq/12"
+mkdir -p "$crewdir/archive/2026-11-05-025404" "$crewdir/archive/2026-11-05-030723"
 
 # Every command bin/crew dispatches, which the usage text must list too.
 commands=$(sed -n '/^case "\$cmd" in$/,/^esac$/s/^\([a-z][a-z-]*\)[ |)].*/\1/p' "$CREW_HOME/bin/crew" | grep -vx case | sort | tr '\n' ' ' | sed 's/ $//')
@@ -107,6 +108,12 @@ crew spawn x --beside |agy claude codex
 crew spawn x --kind |agy claude codex other
 crew up |pair ring solo
 crew up r|ring
+crew up --|--dry --fresh --restart
+crew up --restart |agy claude codex
+crew restore |2026-11-05-025404 2026-11-05-030723
+crew story 2026-11-05-03|2026-11-05-030723
+crew clear |agy claude codex
+crew compact c|claude codex
 crew spawn x --kind c|claude codex
 crew spawn x --|--above --below --beside --cache --clone --join --kind --tab
 crew spawn x --kind agy --b|--below --beside

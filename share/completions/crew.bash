@@ -81,6 +81,15 @@ _crew_numbers() {
     ls -1 "$dir/seq" 2>/dev/null | awk '{ printf "%04d\n", $1 }'
 }
 
+# The archives of the crew, by the name crew archive and crew reset give
+# them, for crew restore and crew story.
+_crew_archives() {
+    local dir
+    dir=$(command crew dir 2>/dev/null) || return 0
+    # shellcheck disable=SC2012 # the names are dates and times
+    ls -1 "$dir/archive" 2>/dev/null
+}
+
 # The kinds: share/kinds of the checkout this crew runs from (found by
 # following the links from the crew on PATH, as bin/crew does, so that the
 # file is read wherever this one is installed or copied), then the owner's
@@ -196,6 +205,7 @@ _crew() {
 all
 owner" ;;
     number) _crew_reply "$(_crew_numbers)" ;;
+    archive) _crew_reply "$(_crew_archives)" ;;
     kind) _crew_reply "$(_crew_kinds)" ;;
     preset) _crew_reply "$(_crew_presets)" ;;
     key)

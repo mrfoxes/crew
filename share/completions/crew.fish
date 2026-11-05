@@ -82,6 +82,14 @@ function __crew_numbers
     command ls -1 $dir/seq 2>/dev/null | awk '{ printf "%04d\n", $1 }'
 end
 
+# The archives of the crew, by the name crew archive and crew reset give
+# them, for crew restore and crew story.
+function __crew_archives
+    set -l dir (command crew dir 2>/dev/null)
+    or return 0
+    command ls -1 $dir/archive 2>/dev/null
+end
+
 # The kinds: share/kinds of the checkout this crew runs from (found by
 # following the links from the crew on PATH, as bin/crew does, so that the
 # file is read wherever this one is installed or copied), then the owner's
@@ -193,6 +201,8 @@ function __crew_complete
             printf '%s\n' all owner
         case number
             __crew_numbers
+        case archive
+            __crew_archives
         case kind
             __crew_kinds
         case preset
