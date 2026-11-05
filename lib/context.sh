@@ -43,8 +43,10 @@ crew_clear() {
         return 2
     fi
     context_start clear "$1" || return $?
-    context_landed || return 1
-    context_hold
+    if ! context_landed; then
+        context_end
+        return 1
+    fi
     cx_before=$(term_read "$cx_pane" 2>/dev/null) || cx_before=""
     # Codex's /new starts a thread of its own: wakes must not go to the old
     # one, which may still take them; the rejoin writes the new one.
@@ -84,12 +86,11 @@ crew_compact() {
     cx_cmd=$(context_command "$cx_kind" compact)
     if [ $# -gt 0 ]; then
         if [ "$cx_kind" != claude ]; then
-            echo "crew: only Claude Code's /compact takes instructions; $cx_who is $cx_kind, so nothing was typed" >&2
+            context_end "only Claude Code's /compact takes instructions; $cx_who is $cx_kind, so nothing was typed"
             return 1
         fi
         cx_cmd="$cx_cmd $*"
     fi
-    context_hold
     cx_before=$(term_read "$cx_pane" 2>/dev/null) || cx_before=""
     cx_marks=$(printf '%s\n' "$cx_before" | screen_compacted "$cx_kind")
     cx_seen=""
@@ -108,8 +109,10 @@ crew_compact() {
 # What must hold before anything is typed, for crew <what> (clear,
 # compact, or restart) <name>: a member with a pane of its own, of a kind
 # crew knows the command of, not the pane this runs in, idle at an empty
-# prompt, and for a clear or a restart with no background shell. Sets cx_who, cx_dir, cx_pane, cx_kind,
-# and cx_state.
+# prompt, and for a clear or a restart with no background shell. The hold
+# is taken before the screen is looked at, so that no wake comes between
+# the look and the command; a refusal releases it (context_end). Sets
+# cx_who, cx_dir, cx_pane, cx_kind, and cx_state.
 context_start() {
     cx_what=$1
     cx_who=$2
@@ -133,19 +136,20 @@ context_start() {
         echo "crew: $cx_who's pane is the one this runs in: crew cannot $cx_what its own pane" >&2
         return 1
     fi
+    context_hold
     cx_state=$(screen_state "$cx_dir" "$cx_who")
     case "$cx_state:$cx_what" in
     idle:* | shell:compact) ;;
     shell:clear)
-        echo "crew: a background shell runs in $cx_who's pane (its footer says so): a clear would lose who started it; wait until it ends" >&2
+        context_end "a background shell runs in $cx_who's pane (its footer says so): a clear would lose who started it; wait until it ends"
         return 1
         ;;
     shell:restart)
-        echo "crew: a background shell runs in $cx_who's pane (its footer says so): it would die with the agent; wait until it ends" >&2
+        context_end "a background shell runs in $cx_who's pane (its footer says so): it would die with the agent; wait until it ends"
         return 1
         ;;
     *)
-        echo "crew: $cx_who is not idle at an empty prompt: $(context_said "$cx_state"), so nothing was typed" >&2
+        context_end "$cx_who is not idle at an empty prompt: $(context_said "$cx_state"), so nothing was typed"
         return 1
         ;;
     esac

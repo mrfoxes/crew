@@ -33,6 +33,7 @@ term_poke() {
     [ ! -f "$tmp/after$pokes" ] || cp "$tmp/after$pokes" "$tmp/queue"
 }
 screen_pause() {
+    held >>"$tmp/holds"
     [ -s "$tmp/queue" ] || return 0
     show "$(head -n 1 "$tmp/queue")"
     tail -n +2 "$tmp/queue" >"$tmp/queue.next"
@@ -121,7 +122,10 @@ start claude-run
 run crew_compact ann >/dev/null
 check "a prompt open" "crew: ann is not idle at an empty prompt: a prompt or a dialog is open in its pane, so nothing was typed" "$(err)"
 start claude-shell
+rm -f "$tmp/holds"
 check "a clear with a background shell is refused" "1" "$(run crew_clear ann)"
+check "the hold is taken before the screen is looked at" "held" "$(head -n 1 "$tmp/holds")"
+check "and released by the refusal" "free" "$(held)"
 check "it says a clear would lose who started it" "1" "$(grep -c 'a background shell runs in ann.s pane' "$tmp/err")"
 
 # A claimed file changed after the status: the clear is refused, with both
