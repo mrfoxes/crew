@@ -4,7 +4,7 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
-## Unreleased
+## 1.2.0
 
 ### New commands
 
