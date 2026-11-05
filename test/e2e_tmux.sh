@@ -202,6 +202,79 @@ wait "$down_pid"
 check "ada's pane is closed" "0" "$(tm list-panes -s -t e2e -F '#{pane_id}' | grep -c "^${ada#tmux:}\$")"
 check "bob's pane, its agent running, is not" "1" "$(tm list-panes -s -t e2e -F '#{pane_id}' | grep -c "^${bob#tmux:}\$")"
 
+# The next crew: crew reset puts this one aside, bob's agent still up, and
+# leaves the directory as crew init makes it. It refuses while the relay
+# the watch ran lets go, so it is tried until it goes through.
+reset_once() { crew reset >"$tmp/reset.out" 2>"$tmp/reset.err"; }
+check "crew reset goes through" "0" "$(wait_for 15 reset_once; echo $?)"
+check "it names the pane that still runs its agent" "crew: bob's pane $bob still runs its agent; it is no member now" "$(cat "$tmp/reset.err")"
+check "it leaves the plan crew init writes" "0" "$(cmp -s "$crewdir/README.md" "$CREW_HOME/share/plan.md"; echo $?)"
+check "and no Crewfile, member, or message" "" "$(find "$crewdir/Crewfile" "$crewdir/panes" "$crewdir/kind" "$crewdir/messages" "$crewdir/tabs" -type f 2>/dev/null)"
+for e2e_pane in $(tm list-panes -s -t e2e -F '#{pane_id}'); do
+    [ "$e2e_pane" = "$coord" ] || tm kill-pane -t "$e2e_pane"
+done
+
+# A crew around its coordinator: qa over it on the left, dev1 over dev2 on
+# the right, as tmux draws it.
+cat >"$crewdir/Crewfile" <<'EOT'
+tab main layout=2x2
+member qa   -- E2E_NAME=qa claude
+member dev1 -- E2E_NAME=dev1 claude
+pane coordinator
+member dev2 -- E2E_NAME=dev2 claude
+EOT
+# Each pane's place: 0 in the first column or row, + past it. A row's top
+# is not 0: crew turns on the border's status line above the panes.
+place() {
+    printf '%s ' "$2"
+    tm display-message -p -t "${1#tmux:}" '#{pane_left} #{pane_top}'
+}
+grid() {
+    {
+        place "$(cat "$crewdir/panes/qa")" qa
+        place "$(cat "$crewdir/panes/dev1")" dev1
+        place "$1" coordinator
+        place "$(cat "$crewdir/panes/dev2")" dev2
+    } | awk '
+        { n[NR] = $1; l[NR] = $2; t[NR] = $3
+          if (NR == 1 || $2 < ml) ml = $2
+          if (NR == 1 || $3 < mt) mt = $3 }
+        END { for (i = 1; i <= NR; i++) print n[i], (l[i] == ml ? "0" : "+"), (t[i] == mt ? "0" : "+") }'
+}
+joined() { [ "$(grep -c 'The crew protocol' "$tmp/log/$1.out" 2>/dev/null)" -ge "$2" ]; }
+check "crew up brings the crew around the coordinator" "0" "$(crew up >"$tmp/up2.out" 2>&1; echo $?)"
+for m in qa dev1 dev2; do
+    check "$m joined" "0" "$(wait_for 20 joined "$m" 1; echo $?)"
+done
+check "the tab's order puts the coordinator's pane third" "qa dev1 tmux:$coord dev2" "$(tr '\n' ' ' <"$crewdir/tabs/main" | sed 's/ $//')"
+check "2x2 draws qa and dev1 on top, the coordinator and dev2 under them" "qa 0 0
+dev1 + 0
+coordinator 0 +
+dev2 + +" "$(grid "$coord")"
+
+# crew reset with three members up names each; crew restore brings the crew
+# back with no pane, and crew up, run from another coordinator's pane now,
+# puts the members back and that pane in the coordinator's place.
+check "crew reset again" "0" "$(crew reset >"$tmp/reset.out" 2>"$tmp/reset.err"; echo $?)"
+check "it names each pane that still runs its agent" "dev1 dev2 qa" "$(sed -n "s/^crew: \([a-z0-9]*\)'s pane tmux:%[0-9]* still runs its agent; it is no member now\$/\1/p" "$tmp/reset.err" | sort | tr '\n' ' ' | sed 's/ $//')"
+coord2=$(tm new-window -d -P -F '#{pane_id}' -t e2e -c "$tmp/project" sh)
+for e2e_pane in $(tm list-panes -s -t e2e -F '#{pane_id}'); do
+    [ "$e2e_pane" = "$coord2" ] || tm kill-pane -t "$e2e_pane"
+done
+export TMUX_PANE=$coord2
+check "crew restore" "0" "$(crew restore >"$tmp/restore.out" 2>&1; echo $?)"
+check "it says to bring the members back" "run 'crew up' to bring the members back" "$(tail -n 1 "$tmp/restore.out")"
+check "the restored crew has no pane" "" "$(find "$crewdir/panes" -type f; grep 'tmux:' "$crewdir/tabs/main")"
+check "crew up brings them back" "0" "$(crew up >"$tmp/up3.out" 2>&1; echo $?)"
+for m in qa dev1 dev2; do
+    check "$m joined again" "0" "$(wait_for 20 joined "$m" 2; echo $?)"
+done
+check "the new coordinator's pane is in its place, the old one gone" "qa dev1 tmux:$coord2 dev2" "$(tr '\n' ' ' <"$crewdir/tabs/main" | sed 's/ $//')"
+check "2x2 again, around the new coordinator's pane" "qa 0 0
+dev1 + 0
+coordinator 0 +
+dev2 + +" "$(grid "$coord2")"
+
 # What the run saw, for a failure to be read from CI's log.
 if [ "$failed" -gt 0 ]; then
     for dump_pane in $(tm list-panes -s -t e2e -F '#{pane_id}' 2>/dev/null); do
@@ -210,7 +283,7 @@ if [ "$failed" -gt 0 ]; then
     done
     printf -- '--- messages\n'
     ls "$crewdir/messages" 2>/dev/null | tail -n 12
-    for dump_file in up.out land.out down.out; do
+    for dump_file in up.out land.out down.out reset.out reset.err up2.out restore.out up3.out; do
         printf -- '--- %s\n' "$dump_file"
         tail -n 15 "$tmp/$dump_file" 2>/dev/null
     done
