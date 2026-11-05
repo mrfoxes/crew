@@ -329,7 +329,9 @@ pane`, and `crew unread <name> --wait [seconds]` blocks, reading the
 stream every two seconds, until a message to it or to `all` arrives (600
 seconds by default), then prints them as `crew unread` does; on a timeout
 it prints nothing, leaves the cursor, and exits 1. A wait inside one
-command costs the agent no turn.
+command costs the agent no turn. Only a member with no pane waits that way:
+one with a pane ends its turn at the prompt and a wake brings it back,
+since a turn that waits keeps it working, which `crew clear` refuses.
 
 A line typed while the agent is in a turn is queued, not read as an
 interruption, and delivered when the turn ends: Claude Code 2.1.314 shows

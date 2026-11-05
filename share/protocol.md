@@ -59,6 +59,10 @@ crew unread <you>
   nobody: it reads with `crew unread <you> --wait [seconds]`, which blocks
   until a message to it or to `all` arrives (600 seconds by default) and
   costs no turn while it waits; on a timeout it prints nothing and exits 1.
+- A member with a pane never waits inside its turn: no `crew unread --wait`,
+  no sleep loop over CI. It ends its turn at the prompt, and a wake brings it
+  back. A turn that waits keeps the member working, so `crew clear` refuses
+  it and `crew watch` cannot tell that it is idle.
 - Every message wakes its recipients, and each woken agent spends a turn
   reading its whole context again: one to `all` costs a turn of every member
   that is not muted. Say each thing once, to the fewest who must act on it:

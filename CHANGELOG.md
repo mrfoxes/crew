@@ -14,7 +14,9 @@ milestone of the version, on GitHub.
   turn. Before every `Pushed:`, `Done:`, or `Paused:`, a member rewrites
   `Next:` so a fresh session after a `/clear` can resume from it. Saved
   work lives under the crew's directory, in `reports/<you>.patch` and
-  `work/<you>/`, never only under `/tmp`.
+  `work/<you>/`, never only under `/tmp`. A member with a pane never waits
+  inside its turn (`crew unread --wait`, a sleep loop over CI): it ends the
+  turn at the prompt, where a wake brings it back and `crew clear` can act.
 - `crew land --check` runs the check on what the commit will hold, not in
   the working tree, where a teammate's unfinished files made it fail or
   pass: in the member's export, `exports/<member>/tree` under the crew's
