@@ -26,8 +26,20 @@ crew unread <you>
   instead of the heredoc. A warning on stderr that `<to>` is not a member
   means a misspelt name: nobody reads that message.
 - `<to>` is a member's name, `all`, or `owner`. Start the subject with what it
-  is: `Plan:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`, `Pushed:`,
-  `Done:`.
+  is: `Plan:`, `Design:`, `Heads-up:`, `Question:`, `Answer:`, `Review:`,
+  `Pushed:`, `Paused:`, `Idle:`, `Done:`.
+- Three of them go to the coordinator, or to `owner` in a crew with none;
+  the plan says who coordinates:
+  - `Design:` comes before you change a command's behavior, the gate, or
+    the protocol: what changes, what it refuses, and each fork marked. Do
+    not edit those files until the answer comes; take other work meanwhile.
+    The coordinator decides and records the decision.
+  - `Paused:` says you stop a task before it is done (a `/clear` or
+    `/compact` ahead, a wait, a switch of task): what is done, what is not,
+    and where the work is (hash, patch, path).
+  - `Idle: <one line>` says nothing is left for you; then end your turn at
+    the prompt. The coordinator answers each `Idle:` in its same turn, with
+    the next task or a reason to wait.
 - A message to a member reaches them as one line, `crew: message 0012 from
   codex. Run: crew unread claude`, queued to their Codex session or typed
   into their pane when their kind's agent runs in the foreground of its tty.
@@ -99,6 +111,16 @@ your status:
 ```
 crew status <you> "Files: none" "Pushed: 1234567 ..." "Next: ..."
 ```
+
+Before every `Pushed:` (so before `crew land`, which sends it), `Done:`, or
+`Paused:`, rewrite `Next:` so that a
+fresh session, after a `/clear`, can resume from it alone: the step, the
+files, and where work not landed lives (hash, patch, path).
+
+Saved work lives under the crew's directory, never only under `/tmp` or
+`/private/tmp`, which a reboot cleans and a sandbox can hide: a diff not
+landed in `reports/<you>.patch`, as "The end" says, and notes, logs, and
+screenshots in `work/<you>/` (`mkdir -p "$(crew dir)/work/<you>"`).
 
 `crew board` shows every status with its age, the paths two statuses claim
 (`conflicts`), the changed files nobody claims (`unclaimed`, a clone's too), the

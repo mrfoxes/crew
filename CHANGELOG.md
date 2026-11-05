@@ -4,6 +4,18 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## Unreleased
+
+- The protocol adds three subjects, each sent to the coordinator, or to
+  `owner` in a crew with none. `Design:` comes before a change to a
+  command's behavior, the gate, or the protocol, with its forks marked.
+  `Paused:` says a task stops before it is done, and where its work is.
+  `Idle:` says nothing is left; the coordinator answers it in the same
+  turn. Before every `Pushed:`, `Done:`, or `Paused:`, a member rewrites
+  `Next:` so a fresh session after a `/clear` can resume from it. Saved
+  work lives under the crew's directory, in `reports/<you>.patch` and
+  `work/<you>/`, never only under `/tmp`.
+
 ## 1.1.0
 
 - `crew <command> --help` prints that command's entry of the usage and
