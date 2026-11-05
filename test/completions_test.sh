@@ -42,8 +42,8 @@ check "spawn takes a member after --beside" "1" "$(words spawn | grep -c -- ' --
 check "spawn takes a kind after --kind" "1" "$(words spawn | grep -c -- ' --kind=kind ')"
 check "spawn's positionals" "<name> <cmd>..." "$(words spawn | tr ' ' '\n' | grep '^<' | tr '\n' ' ' | sed 's/ $//')"
 check "move flags" "--above --below --beside" "$(flags move)"
-check "gate flags" "--all --dry" "$(flags gate)"
-check "watch flags" "--all --dry" "$(flags watch)"
+check "gate flags" "--all --dry --to" "$(flags gate)"
+check "watch flags" "--all --dry --to" "$(flags watch)"
 check "join flags" "--no-pane --pane" "$(flags join)"
 check "unread flags" "--peek --wait" "$(flags unread)"
 check "update flags" "--check" "$(flags update)"
@@ -99,8 +99,9 @@ crew unread claude --|--peek --wait
 crew log --|--from --grep --oneline --to
 crew log --from c|claude codex
 crew gate claude co|codex
-crew gate --|--all --dry
+crew gate --|--all --dry --to
 crew watch |agy claude codex
+crew watch --to c|claude codex
 crew show |0003 0012
 crew show 0003 |0003 0012
 crew spawn |

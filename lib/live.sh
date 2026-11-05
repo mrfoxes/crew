@@ -5,40 +5,14 @@
 # messages, and the last commit with its CI. Its variables start with v_.
 # Sourced by bin/crew.
 
-# What <name>'s pane shows now, in the crew <dir>: none (no pane), gone,
-# exited (back to a shell), prompt (a prompt waits for an answer), working
-# (the agent says esc interrupts it, or its screen changed since the last
-# look), or idle. The screen's checksum is kept in tmp/live/<name> for the
-# next look.
+# What <name>'s pane shows now, in the crew <dir>, in one word: none (no
+# pane), unknown, gone, exited (no agent of its kind in the foreground),
+# dialog (a prompt or dialog waits for an answer), working (a turn runs,
+# or the screen changed since the last look), typed, shell (idle, with a
+# background shell), or idle (lib/idle.sh). The screen's checksum is kept
+# in tmp/live/<name> for the next look.
 live_state() {
-    v_pane=$(cat "$1/panes/$2" 2>/dev/null) || v_pane=""
-    if [ -z "$v_pane" ]; then
-        echo none
-        return
-    fi
-    if ! v_tty=$(term_tty "$v_pane" 2>/dev/null); then
-        echo gone
-        return
-    fi
-    if ! term_running "$v_tty"; then
-        echo exited
-        return
-    fi
-    if ! v_screen=$(term_read "$v_pane" 2>/dev/null); then
-        echo gone
-        return
-    fi
-    mkdir -p "$1/tmp/live"
-    v_sum=$(printf '%s' "$v_screen" | cksum | cut -d' ' -f1)
-    v_was=$(cat "$1/tmp/live/$2" 2>/dev/null) || v_was=""
-    echo "$v_sum" >"$1/tmp/live/$2"
-    if [ -n "$(printf '%s\n' "$v_screen" | gate_prompt)" ]; then
-        echo prompt
-    elif printf '%s\n' "$v_screen" | grep -q 'esc to interrupt' || { [ -n "$v_was" ] && [ "$v_sum" != "$v_was" ]; }; then
-        echo working
-    else
-        echo idle
-    fi
+    idle_look "$1" "$2" "$1/tmp/live/$2"
 }
 
 # The members of the crew <dir> in the board's order: each tab's members as
@@ -101,6 +75,8 @@ live_frame() {
         v_kind=$(kind_member "$v_dir" "$v_name")
         v_tab=$(tab_of "$v_dir" "$v_name")
         v_state=$(live_state "$v_dir" "$v_name")
+        # Idle at its prompt with nothing to do: free.
+        ! idle_free "$v_dir" "$v_name" "$v_state" || v_state=free
         v_status=$v_dir/status/$v_name.md
         v_issue=-
         v_age=-

@@ -176,7 +176,7 @@ wake line stays the number and the sender.
 While they work:
 
 ```
-crew board                  # (on an empty crew, what to run first) statuses with their age and pane (gone, if closed), files claimed twice or by nobody, lock, messages, git, CI, cost
+crew board                  # (on an empty crew, what to run first) statuses with their age, pane, and what it shows (idle, nothing to do for 7 min), files claimed twice or by nobody, lock, messages, git, CI, cost
 crew board --live           # a line a member, redrawn every 5 seconds, in a pane of its own
 crew status codex           # codex's status; with "Field: value"..., update those lines in place
 crew log 3                  # the last 3 messages, whole
@@ -192,6 +192,7 @@ crew key codex esc          # press keys: y, enter, esc, tab, up, ctrl-c, alt-m,
 crew watch codex claude     # answer their prompts and wake recipients, from this pane
 crew gate codex claude      # the first half of watch: answer prompts, hold the forbidden
 crew watch --all            # every member with a pane, those spawned later too
+crew watch --all --to coord # and tell coord of a member with nothing to do
 crew relay                  # the other half: wake recipients for every sender
 ```
 
@@ -213,6 +214,10 @@ not yet answered by a `Review:` from its recipient naming the hash (a prefix of
 has its changed files its own `Files:` line does not claim listed under
 `== unclaimed`, as `path (name's clone)`, and its header on the board adds
 `N unread` while messages wait for it (`+` marks it on the live board).
+After the pane, the header says what the pane shows, in the live board's
+words (below): `idle, nothing to do for 7 min` for a member the watch would
+tell of, counted from its last message, and `idle (muted)` for a muted one.
+The board looks at the panes twice, two seconds apart, once for all.
 
 ### Landing in one command
 
@@ -806,10 +811,13 @@ codex     codex   runtime  prompt   #190 review                    1m 38.10
 agy       agy     runtime  exited*  -                             22m 9.40
 ```
 
-The state is what the member's pane shows now: `prompt` (a prompt waits
-for an answer), `working` (the agent says esc interrupts it, or its screen
-changed since the last frame), `idle`, `exited` (back to a shell), `gone`,
-or `none`; `*` marks a muted member, `?` one with a commit waiting for its
+The state is what the member's pane shows now: `dialog` (a prompt or a
+dialog waits for an answer), `working` (a turn runs, or its screen changed
+since the last frame), `typed` (text waits on the input line), `shell`
+(idle, with a background shell), `idle`, `free` (idle with nothing to do,
+as the watch counts it, below), `exited` (no agent of its kind in the
+foreground), `gone`, `unknown` (a kind with no input line crew knows), or
+`none`; `*` marks a muted member, `?` one with a commit waiting for its
 review, `+` one with unread messages. Then the `Issue:` line of its status,
 the status's age, and what it spent, dollars where the rates price its
 model, else tokens. Under the members: the lock, the relay, the last three
@@ -856,9 +864,13 @@ once it has ended and come back. Each says what to run:
   before: `crew spawn ...` or `crew up` to bring it back;
 - a member's pane that is gone: `crew leave <name>`, or bring it back the
   same way;
-- off by default, a member idle for `CREW_IDLE_MINUTES=<n>` minutes: its
-  agent's input line drawn, its screen unchanged for that long, and no
-  message from it whose subject starts with `Done:`.
+- a member with nothing to do for 5 minutes, once a stretch: idle at an
+  empty prompt, not muted (a muted member is idle by design), nothing
+  unread, no commit waiting for its review, and an `Idle:` as its last
+  message or none (one that sent `Done:` has ended). `CREW_IDLE_MINUTES=<n>`
+  changes the minutes, and `CREW_IDLE_MINUTES=0` turns the check off. With
+  `--to <name>` the watch sends that member, the coordinator, a `Heads-up:`
+  in the stream instead of notifying you; `crew up` does not pass it yet.
 
 Each event also prints a line in the watch's pane, with the time.
 `CREW_NOTIFY=0` turns the notifications off and never the lines. Where
@@ -886,6 +898,7 @@ lib/story.sh        crew story: the session as one document, from the crew or an
 lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/screen.sh       what an agent's screen says, per kind: a dialog, a turn, typed text, a background shell, or idle
+lib/idle.sh         idle members: what each pane shows, from looks that never wait, and who has nothing to do
 lib/context.sh      crew clear and crew compact: a member's conversation cleared or compacted at its idle prompt
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only

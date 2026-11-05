@@ -264,23 +264,35 @@ crew_watch() {
     done
 }
 
-# Reads the gate's arguments into $names, $gate_all, and $gate_dry, finds
-# the rules and the panes, and makes the state directory $gate_state under
-# the crew's tmp. --all watches every member with a pane, read again at
-# each round, so that a member spawned later is watched too.
+# Reads the gate's arguments into $names, $gate_all, $gate_dry, and
+# $gate_to, finds the rules and the panes, and makes the state directory
+# $gate_state under the crew's tmp. --all watches every member with a pane,
+# read again at each round, so that a member spawned later is watched too;
+# --to <name> names who hears of a member with nothing to do (gate_idle).
 gate_setup() {
     gate_dry=""
     gate_all=""
+    gate_to=""
     names=""
-    for arg in "$@"; do
-        case "$arg" in
+    while [ $# -gt 0 ]; do
+        case "$1" in
         --dry) gate_dry=--dry ;;
         --all) gate_all=1 ;;
-        *) names="$names $arg" ;;
+        --to)
+            if [ $# -lt 2 ]; then
+                names=""
+                gate_all=""
+                break
+            fi
+            gate_to=$2
+            shift
+            ;;
+        *) names="$names $1" ;;
         esac
+        shift
     done
     if [ -z "$names" ] && [ -z "$gate_all" ]; then
-        echo "usage: crew gate <name>... | --all [--dry], or crew watch the same" >&2
+        echo "usage: crew gate <name>... | --all [--dry] [--to <name>], or crew watch the same" >&2
         return 2
     fi
     dir=$(crew_dir) || return 1
@@ -365,13 +377,14 @@ gate_now() {
     date +%s
 }
 
-# The minutes a member may sit idle before the owner is told, from
-# CREW_IDLE_MINUTES; nothing when it is not a positive number, so that the
-# idle check is off unless asked for.
+# The minutes a member may sit idle with nothing to do before the watch
+# tells: 5, or CREW_IDLE_MINUTES when it is a positive number; nothing for
+# 0, which turns the check off. Five is more than a CI run and far more
+# than the coordinator takes to answer an Idle:, in its same turn.
 gate_idle_minutes() {
     case "${CREW_IDLE_MINUTES:-}" in
-    '' | *[!0-9]* | 0*) ;;
-    *) echo "$CREW_IDLE_MINUTES" ;;
+    '' | *[!0-9]*) echo 5 ;;
+    *) printf '%s\n' "$CREW_IDLE_MINUTES" | sed 's/^0*//; /^$/d' ;;
     esac
 }
 
@@ -421,9 +434,8 @@ gate_short() {
 #   exited  the pane's tty is back to a shell where an agent ran at an
 #           earlier look
 #   gone    the terminal no longer lists the pane
-#   idle    with CREW_IDLE_MINUTES, the kind's input line drawn on a screen
-#           unchanged for that long, and no message from the member whose
-#           subject starts with Done:
+#   idle    a member idle at its prompt with nothing to do (lib/idle.sh)
+#           for gate_idle_minutes, told once a stretch (see gate_idle)
 #
 # The screen is the one gate_look read; the tty is asked for once, and the
 # terminal's list a second time only when the tty is not found.
@@ -446,29 +458,55 @@ gate_tend() {
             gate_notify "$t_name" "Its pane is gone. Forget it: crew leave $t_name. Bring it back: crew spawn $t_name ... or crew up"
         fi
     fi
-    gate_idle "$t_name"
+    gate_idle "$t_name" "$t_pane"
 }
 
-# The idle check of gate_tend, from $screen when gate_look read it. The
-# screen's checksum and the time it first came are kept in seen/<name>.
+# The idle check of gate_tend: <name>, idle at its prompt in <pane> with
+# nothing to do (idle_free: not muted, nothing unread, its last message an
+# Idle: or none) for gate_idle_minutes, is told once a stretch: a line in
+# the watch's pane, and a Heads-up: in the stream to the member --to names,
+# else a notification to the owner. The stream is read first, which costs
+# no look at the pane; then the screen, read with its styles for
+# screen_of. Its checksum and the time it first came are kept in
+# seen/<name>, so a screen that changed, or a member with something to do,
+# starts the stretch over.
 gate_idle() {
     i_min=$(gate_idle_minutes)
     if [ -z "$i_min" ] || [ -z "$screen_read" ]; then
         return 0
     fi
-    i_sum=$(printf '%s' "$screen" | cksum | cut -d ' ' -f1)
     i_file=$gate_state/seen/$1
+    if ! idle_free "$dir" "$1" idle; then
+        rm -f "$i_file"
+        gate_end idle "$1"
+        return 0
+    fi
+    i_screen=$(term_read_styled "$2" 2>/dev/null) || return 0
+    i_sum=$(printf '%s' "$i_screen" | cksum | cut -d ' ' -f1)
     if [ "$i_sum" != "$(cut -d ' ' -f1 "$i_file" 2>/dev/null)" ]; then
         echo "$i_sum $gate_clock" >"$i_file"
         gate_end idle "$1"
         return 0
     fi
     i_since=$(cut -d ' ' -f2 "$i_file")
-    if [ $((gate_clock - i_since)) -ge $((i_min * 60)) ] &&
-        printf '%s\n' "$screen" | kind_drawn "$(kind_member "$dir" "$1")" &&
-        ! grep -q "^# [0-9]*\. $1 to [a-z0-9-]*: Done:" "$dir"/seq/* 2>/dev/null &&
-        gate_new idle "$1" 1; then
-        echo "$(crew_stamp) idle $1: waiting for input for $i_min minutes, and no Done: sent"
-        gate_notify "$1" "Idle for $i_min minutes, waiting for input, no Done: sent. Look: crew focus $1"
+    [ $((gate_clock - i_since)) -ge $((i_min * 60)) ] || return 0
+    [ "$(printf '%s\n' "$i_screen" | screen_of "$(kind_member "$dir" "$1")")" = idle ] || return 0
+    gate_new idle "$1" "$i_since" || return 0
+    i_last=$(idle_stream "$dir" "$1" | cut -d ' ' -f2)
+    if [ "$i_last" = 0 ]; then
+        i_why="it has sent no message"
+    else
+        i_why="its last message, $(printf '%04d' "$i_last"), is an Idle:"
+    fi
+    echo "$(crew_stamp) idle $1: nothing to do for $i_min minutes: idle at its prompt, nothing unread, and $i_why"
+    if [ -z "${gate_to:-}" ]; then
+        gate_notify "$1" "Nothing to do for $i_min minutes: idle at its prompt, nothing unread, and $i_why. Give it a task, or say why it waits."
+    elif [ -n "$gate_dry" ]; then
+        echo "$(crew_stamp) dry: would send $gate_to a Heads-up: about $1"
+    # In a subshell of its own, with this crew named: crew_send sets
+    # variables of the gate's own names (dir, to).
+    elif ! (echo "$1 sits idle at its prompt with nothing unread, and $i_why. Give it a task, or tell it why to wait." |
+        CREW_DIR=$dir crew_send watch "$gate_to" "Heads-up: $1 has had nothing to do for $i_min minutes" >/dev/null 2>&1); then
+        echo "$(crew_stamp) idle $1: could not send $gate_to the Heads-up:"
     fi
 }

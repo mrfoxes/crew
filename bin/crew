@@ -26,6 +26,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/screen.sh"
 . "$CREW_HOME/lib/context.sh"
+. "$CREW_HOME/lib/idle.sh"
 . "$CREW_HOME/lib/doctor.sh"
 . "$CREW_HOME/lib/cost.sh"
 . "$CREW_HOME/lib/crewfile.sh"
@@ -59,8 +60,9 @@ For everyone
   status <name> [<field>...]    write or update <name>'s status, or print it
   report <name>                 write <name>'s report, text on stdin
   board [count] | --live [seconds]
-                                statuses, claims, lock, latest messages, git,
-                                CI, cost; --live: a line a member, redrawn
+                                statuses with what each pane shows, claims,
+                                lock, latest messages, git, CI, cost; --live:
+                                a line a member, redrawn
   dir                           the crew's directory
   lock <name>                   take the push lock
   unlock <name> | --force       release it
@@ -127,11 +129,12 @@ For the coordinator
   peek <name> [lines]           what <name>'s pane shows
   poke <name> <line>            type a line into it and press Return
   key <name> <key>...           press keys: y, enter, esc, tab, up, ctrl-c, alt-m, ...
-  gate <name>... [--all] [--dry]
+  gate <name>... [--all] [--dry] [--to <name>]
                                 approve their prompts, hold the forbidden ones;
-                                --all: every member with a pane, now and later
+                                --all: every member with a pane, now and later;
+                                --to: who hears of a member with nothing to do
   relay                         wake recipients for every sender, from this pane
-  watch <name>... [--all] [--dry]
+  watch <name>... [--all] [--dry] [--to <name>]
                                 gate and relay in one pane
   story [<archive>]             the session as one document: plan, Crewfile,
                                 members, stream, commits with reviews, reports

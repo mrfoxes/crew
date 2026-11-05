@@ -27,13 +27,15 @@ term_read() {
     tmux:%2) cat "$here/fixtures/codex-run.txt" ;;
     esac
 }
+term_read_styled() { term_read "$@"; }
 echo claude-idle.txt >"$tmp/screen1"
 for m in claude:1 codex:2 agy:3 tess:4; do
     echo "tmux:%${m#*:}" >"$dir/panes/${m%:*}"
 done
 kind_record "$dir" claude claude
 kind_record "$dir" codex codex
-check "a pane with a prompt" "prompt" "$(live_state "$dir" codex)"
+kind_record "$dir" agy agy
+check "a pane with a prompt" "dialog" "$(live_state "$dir" codex)"
 check "an agent back to its shell" "exited" "$(live_state "$dir" agy)"
 check "a pane gone" "gone" "$(live_state "$dir" tess)"
 check "no pane" "none" "$(live_state "$dir" nobody)"
@@ -41,8 +43,11 @@ check "an idle agent, at a first look" "idle" "$(live_state "$dir" claude)"
 check "the same screen again" "idle" "$(live_state "$dir" claude)"
 echo claude-idle-notice.txt >"$tmp/screen1"
 check "a screen that changed" "working" "$(live_state "$dir" claude)"
-echo codex-idle.txt >"$tmp/screen1"
-check "an agent that says esc interrupts it" "working" "$(live_state "$dir" claude)"
+echo claude-working.txt >"$tmp/screen1"
+check "an agent in a turn" "working" "$(live_state "$dir" claude)"
+check "still in it" "working" "$(live_state "$dir" claude)"
+echo claude-typed.txt >"$tmp/screen1"
+check "text on the input line" "typed" "$(live_state "$dir" claude)"
 
 # The members: each tab's, as the tab lists them, then the others by name.
 tab_add "$dir" proof codex
@@ -60,7 +65,7 @@ printf 'codex 12.40\n' >"$dir/tmp/live.cost"
 gh() { return 1; }
 frame=$(live_frame "$dir")
 check "the frame's head" "member    kind    tab      state    issue                         age spent" "$(printf '%s\n' "$frame" | sed -n 1p)"
-check "a member's line" "codex     codex   proof    prompt   #187 step 3, the parser        0m 12.40" "$(printf '%s\n' "$frame" | sed -n 2p)"
+check "a member's line" "codex     codex   proof    dialog   #187 step 3, the parser        0m 12.40" "$(printf '%s\n' "$frame" | sed -n 2p)"
 check "a member with unread has + on its state" "1" "$(printf '%s\n' "$frame" | grep -c '^claude .* working+')"
 check "a muted member's state" "1" "$(printf '%s\n' "$frame" | grep -c '^agy .* exited\*')"
 check "a member with no status" "tess      -       -        gone     -                               - -" "$(printf '%s\n' "$frame" | grep '^tess')"
@@ -75,6 +80,8 @@ check "a reviewer with a commit waiting has ? on its state" "1" "$(live_frame "$
 check "reading clears + while ? stays" "1" "$(live_frame "$dir" | grep -c '^claude .* idle? ')"
 echo x | crew_send claude codex "Review: 1234567 looks good" >/dev/null
 check "an answered review clears ?" "1" "$(live_frame "$dir" | grep -c '^claude .* idle ')"
+echo x | crew_send claude coord "Idle: nothing left" >/dev/null 2>&1
+check "idle with nothing to do is free" "1" "$(live_frame "$dir" | grep -c '^claude .* free ')"
 check "live wants seconds" "2" "$(crew_board --live soon >/dev/null 2>&1; echo $?)"
 
 # The board's reviews section: a push waiting, one answered by its reviewer

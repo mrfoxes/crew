@@ -74,6 +74,22 @@ milestone of the version, on GitHub.
   agent in a turn, with typed text, a dialog, or a background shell is
   refused. `crew up` records each member's line in `lines/<name>` and names
   a live member whose Crewfile line changed since it started.
+- Idle members. `crew board` says what each member's pane shows after its
+  pane, `idle, nothing to do for 7 min` for a member idle at its prompt
+  with nothing unread, no commit waiting for its review, and an `Idle:` as
+  its last message or none, and `idle (muted)` for a muted one, idle by
+  design. It waits two seconds once for all members, not once each.
+  `crew board --live` shows the same words, `dialog` in place of `prompt`
+  and `free` for a member with nothing to do; it now sees Claude Code
+  2.1.318's turn, which no longer says esc interrupts it.
+- `crew watch` tells of a member with nothing to do after 5 minutes, once a
+  stretch, where it was off unless `CREW_IDLE_MINUTES` was set and counted
+  a member that had not sent `Done:`. The check is on by default now:
+  `CREW_IDLE_MINUTES=<n>` changes the minutes, and `CREW_IDLE_MINUTES=0`
+  turns it off. A muted member and one that sent `Done:` are never told.
+  `--to <name>` sends that member, the coordinator, a `Heads-up:` in the
+  stream instead of a notification to the owner; `crew up` does not pass
+  it yet, so a crew up's watch notifies the owner.
 
 ## 1.1.0
 

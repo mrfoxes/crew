@@ -15,6 +15,7 @@ crew_notify() {
     printf '%s | %s\n' "$1" "$2" >>"$notes"
 }
 term_read() { fixture_read; }
+term_read_styled() { fixture_read; }
 term_key() { echo "pressed $2"; }
 term_tty() { [ -e "$tmp/listed" ] && echo /dev/ttys001; }
 term_running() { [ -e "$tmp/running" ]; }
@@ -129,61 +130,115 @@ agent down
 check "a failed notification is said once" "0" "$(round | grep -c 'cannot notify')"
 check "the next event is still printed" "" "$(round)"
 
-# A member idle for CREW_IDLE_MINUTES: off unless asked for.
+# A member idle at its prompt with nothing to do: told after 5 minutes, or
+# CREW_IDLE_MINUTES, once a stretch; 0 turns the check off.
 fresh
-show codex-idle
+show codex-after-turn
+clock 1000
+check "idle starts counting at the first look" "" "$(round)"
+clock 1299
+check "not idle for long enough" "" "$(round)"
+clock 1300
+want="12:00:00 idle codex: nothing to do for 5 minutes: idle at its prompt, nothing unread, and it has sent no message
+crew: codex | Nothing to do for 5 minutes: idle at its prompt, nothing unread, and it has sent no message. Give it a task, or say why it waits."
+check "idle with nothing to do is told after 5 minutes" "$want" "$(round)"
+clock 2000
+check "idle is told once a stretch" "" "$(round)"
+sed 's/^/ /' "$here/fixtures/codex-after-turn.txt" >"$tmp/changed.txt"
+show "$tmp/changed.txt"
+clock 2100
+check "a screen that changed starts the stretch over" "" "$(round)"
+clock 2400
+check "and is told again after it" "$want" "$(round)"
+fresh
+# shellcheck disable=SC2034 # read by the library under test
+CREW_IDLE_MINUTES=0
+show codex-after-turn
 clock 1000
 round >/dev/null
 clock 100000
-check "idle is off by default" "" "$(round)"
-CREW_IDLE_MINUTES=0
 check "idle is off for 0" "" "$(round)"
-CREW_IDLE_MINUTES=soon
-check "idle is off for a word" "" "$(round)"
-
-fresh
 # shellcheck disable=SC2034 # read by the library under test
 CREW_IDLE_MINUTES=10
-show codex-idle
+fresh
+show codex-after-turn
 clock 1000
-check "idle starts counting at the first look" "" "$(round)"
-clock 1599
-check "not idle for long enough" "" "$(round)"
+round >/dev/null
+clock 1300
+check "CREW_IDLE_MINUTES gives the minutes" "" "$(round)"
 clock 1600
-want="12:00:00 idle codex: waiting for input for 10 minutes, and no Done: sent
-crew: codex | Idle for 10 minutes, waiting for input, no Done: sent. Look: crew focus codex"
-check "idle is told" "$want" "$(round)"
-clock 2000
-check "idle is told once" "" "$(round)"
-sed 's/^/ /' "$here/fixtures/codex-idle.txt" >"$tmp/changed.txt"
-show "$tmp/changed.txt"
-clock 2100
-check "a screen that changed is not idle" "" "$(round)"
-clock 2800
-check "idle is told again after the screen changed" "$want" "$(round)"
+check "and the line says them" "1" "$(round | grep -c '^12:00:00 idle codex: nothing to do for 10 minutes')"
+unset CREW_IDLE_MINUTES
 
-# Not idle when the input line is not drawn, or the member sent Done:.
+# Not told: a screen that is no empty prompt, a muted member, one with a
+# message unread or a review to give, one whose last message is not an
+# Idle:, and one that sent Done:.
+quiet() {
+    clock 1000
+    round >/dev/null
+    clock 5000
+    round
+}
+fresh
+show codex-typed
+check "text on the input line is not idle" "" "$(quiet)"
+fresh
+show codex-working
+check "a turn is not idle" "" "$(quiet)"
 fresh
 echo claude >"$dir/kind/codex"
-show codex-idle
-clock 1000
-round >/dev/null
-clock 5000
-check "a screen without the kind's input line is not idle" "" "$(round)"
+show codex-after-turn
+check "a screen without the kind's input line is not idle" "" "$(quiet)"
 fresh
-printf '# 0001. codex to claude: Done: the editors\n\nFrom: codex\nTo: claude\n' >"$dir/seq/1"
-show codex-idle
-clock 1000
-round >/dev/null
-clock 5000
-check "a member that sent Done: is not idle" "" "$(round)"
+mkdir -p "$dir/muted"
+: >"$dir/muted/codex"
+show codex-after-turn
+check "a muted member is idle by design, never told" "" "$(quiet)"
 fresh
-printf '# 0001. claude to codex: Done: the editors\n\nFrom: claude\nTo: codex\n' >"$dir/seq/1"
-show codex-idle
-clock 1000
-round >/dev/null
-clock 5000
-check "a Done: from someone else does not count" "1" "$(round | grep -c '^12:00:00 idle codex')"
+printf '# 0001. claude to codex: Question: the parser\n\nFrom: claude\nTo: codex\n' >"$dir/seq/1"
+show codex-after-turn
+check "a member with a message unread has something to do" "" "$(quiet)"
+fresh
+printf '# 0001. claude to codex: Pushed: 1234567 the parser\n\nFrom: claude\nTo: codex\n' >"$dir/seq/1"
+mkdir -p "$dir/cursors"
+echo 1 >"$dir/cursors/codex"
+show codex-after-turn
+check "a reviewer with a commit waiting has something to do" "" "$(quiet)"
+fresh
+printf '# 0001. codex to claude: Review: 1234567 clean\n\nFrom: codex\nTo: claude\n' >"$dir/seq/1"
+show codex-after-turn
+check "a member whose last message is no Idle: is not told" "" "$(quiet)"
+fresh
+printf '# 0001. codex to owner: Done: the editors\n\nFrom: codex\nTo: owner\n' >"$dir/seq/1"
+show codex-after-turn
+check "a member that sent Done: is not told" "" "$(quiet)"
+fresh
+printf '# 0001. codex to coord: Idle: the lane is done\n\nFrom: codex\nTo: coord\n' >"$dir/seq/1"
+show codex-after-turn
+check "a member whose last message is an Idle: is told, with its number" "1" "$(quiet | grep -c '^12:00:00 idle codex: .*its last message, 0001, is an Idle:$')"
+
+# --to <name>: a Heads-up: in the stream to that member, not a notification;
+# with --dry, only a line.
+fresh
+# shellcheck disable=SC2034 # read by the library under test
+gate_to=coord
+mkdir -p "$dir/messages" "$dir/tmp"
+show codex-after-turn
+told=$(quiet)
+check "with --to, the line and no notification" "12:00:00 idle codex: nothing to do for 5 minutes: idle at its prompt, nothing unread, and it has sent no message" "$told"
+check "and a Heads-up: from the watch to that member" "1" "$(head -n 1 "$dir"/seq/* | grep -c '^# 0001\. watch to coord: Heads-up: codex has had nothing to do for 5 minutes$')"
+check "which says why" "1" "$(grep -c '^codex sits idle at its prompt with nothing unread, and it has sent no message\. Give it a task, or tell it why to wait\.$' "$dir"/seq/1)"
+fresh
+gate_dry=--dry
+show codex-after-turn
+check "with --to and --dry, a line says what it would send" "1" "$(quiet | grep -c '^12:00:00 dry: would send coord a Heads-up: about codex$')"
+check "and nothing is sent" "" "$(ls "$dir/seq")"
+# shellcheck disable=SC2034 # read by the library under test
+gate_dry=""
+# shellcheck disable=SC2034 # read by the library under test
+gate_to=""
+gate_setup --to >/dev/null 2>&1
+check "--to wants a name" "2" "$?"
 
 # --all watches every member with a pane, read again at each round.
 gate_all=1

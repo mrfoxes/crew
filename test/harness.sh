@@ -32,6 +32,11 @@ CREW_HOME=$(dirname "$here")
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/context.sh"
 # shellcheck source=/dev/null
+. "$CREW_HOME/lib/idle.sh"
+# No test reads a live pane: the board looks at each member's screen, so a
+# test that wants a screen read fakes term_read_styled after this.
+term_read_styled() { return 1; }
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/doctor.sh"
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/cost.sh"

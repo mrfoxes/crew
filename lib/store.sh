@@ -700,6 +700,12 @@ crew_board() {
         echo "no members yet: run 'crew up <preset>' or 'crew spawn <name> --join <command>'"
     fi
     term_hold_dir "$dir/panes"
+    # What each pane shows, from looks that wait two seconds once for all
+    # (lib/idle.sh).
+    # shellcheck disable=SC2046 # member names hold no space
+    states=$(idle_states "$dir" $(for f in "$dir"/status/*.md; do
+        [ ! -e "$f" ] || basename "$f" .md
+    done))
     for f in "$dir"/status/*.md; do
         [ -e "$f" ] || continue
         who=$(basename "$f" .md)
@@ -708,7 +714,13 @@ crew_board() {
         else
             pane="no pane"
         fi
-        [ ! -e "$dir/muted/$who" ] || pane="$pane, muted"
+        state=$(printf '%s\n' "$states" | awk -v m="$who" '$1 == m { print $2; exit }')
+        case "$state" in
+        '' | none | gone) state="" ;;
+        *) state=$(idle_said "$dir" "$who" "$state") ;;
+        esac
+        [ -z "$state" ] || pane="$pane, $state"
+        case "$state" in *"(muted)") ;; *) [ ! -e "$dir/muted/$who" ] || pane="$pane, muted" ;; esac
         kind=$(kind_member "$dir" "$who")
         tab=$(tab_of "$dir" "$who")
         reviewer=$(crewfile_get "$dir" "$who" reviewer)

@@ -623,7 +623,7 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
             </tr>
             <tr>
               <td class="cmd-col"><code>crew board [count] | --live [seconds]</code></td>
-              <td>Show statuses, claims, lock, latest messages, git, CI, and cost; <code>--live</code> redraws a line a member every 5 seconds.</td>
+              <td>Show statuses with what each pane shows (idle, nothing to do for 7 min), claims, lock, latest messages, git, CI, and cost; <code>--live</code> redraws a line a member every 5 seconds.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew dir</code></td>
@@ -736,15 +736,15 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
               <td>Press keys: <code>y</code>, <code>enter</code>, <code>esc</code>, <code>tab</code>, <code>up</code>, <code>ctrl-c</code>, <code>alt-m</code>, ...</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew gate &lt;name&gt;... [--all] [--dry]</code></td>
-              <td>Approve their prompts, hold the forbidden ones; <code>--all</code>: every member with a pane, now and later.</td>
+              <td class="cmd-col"><code>crew gate &lt;name&gt;... [--all] [--dry] [--to &lt;name&gt;]</code></td>
+              <td>Approve their prompts, hold the forbidden ones; <code>--all</code>: every member with a pane, now and later; <code>--to</code>: who hears of a member with nothing to do for 5 minutes.</td>
             </tr>
             <tr>
               <td class="cmd-col"><code>crew relay</code></td>
               <td>Wake recipients for every sender, from this pane.</td>
             </tr>
             <tr>
-              <td class="cmd-col"><code>crew watch &lt;name&gt;... [--all] [--dry]</code></td>
+              <td class="cmd-col"><code>crew watch &lt;name&gt;... [--all] [--dry] [--to &lt;name&gt;]</code></td>
               <td>Gate and relay in one pane.</td>
             </tr>
             <tr>
