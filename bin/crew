@@ -25,6 +25,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/panes.sh"
 . "$CREW_HOME/lib/gate.sh"
 . "$CREW_HOME/lib/screen.sh"
+. "$CREW_HOME/lib/context.sh"
 . "$CREW_HOME/lib/doctor.sh"
 . "$CREW_HOME/lib/cost.sh"
 . "$CREW_HOME/lib/crewfile.sh"
@@ -110,6 +111,13 @@ For the coordinator
   invite <name> [seconds]       once its agent is up, tell it to join, in caveman mode
   leave <name> [--clone]        forget <name>'s pane; --clone also removes its
                                 clone, when nothing is left in it
+  clear <name>                  at <name>'s idle prompt, clear its agent's
+                                conversation, then have it rejoin and resume
+                                from its status's Next:; refused while it
+                                works, a background shell runs, or a file
+                                it claims changed after its status
+  compact <name> [instructions] at <name>'s idle prompt, compact its agent's
+                                conversation; instructions for Claude Code
   mute <name>                   wake <name> only for messages to its name
   unmute <name>                 wake it for messages to all again
   focus <name> [--zoom]         bring <name>'s pane to the front, alone in
@@ -198,6 +206,8 @@ gate) crew_gate "$@" ;;
 relay) crew_relay "$@" ;;
 watch) crew_watch "$@" ;;
 story) crew_story "$@" ;;
+clear) crew_clear "$@" ;;
+compact) crew_compact "$@" ;;
 archive) crew_archive "$@" ;;
 reset) crew_reset "$@" ;;
 restore) crew_restore "$@" ;;

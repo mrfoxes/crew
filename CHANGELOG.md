@@ -51,6 +51,19 @@ milestone of the version, on GitHub.
   `crew restore`. With no `pane` line the order is as before: the
   coordinator, the watch, the board, then the members. `crew up --dry`
   prints the first tab's order.
+- `crew clear <name>` and `crew compact <name> [instructions]` clear or
+  compact a member's conversation, only at its idle prompt, never in the
+  pane they run in, with the member's wakes held while they type and the
+  newest held one sent after. A clear also refuses a background shell and a
+  claimed file changed after the member's status; it types `/clear`
+  (Codex: `/new`), waits for the cleared screen, then types the line that
+  has the member rejoin and resume from its `Next:`, and checks that it was
+  taken. A compact waits for the compacted mark; only Claude Code takes
+  instructions. `lib/screen.sh` reads what each kind's screen says, from 25
+  screens newly captured from Claude Code 2.1.318, Codex 0.166.0, and
+  Antigravity 1.4.12, a tmux screen's styles telling dim placeholders and
+  suggestions from typed text. Claude Code 2.1.318 no longer says esc
+  interrupts its turn: its spinner's timer marks it.
 
 ## 1.1.0
 

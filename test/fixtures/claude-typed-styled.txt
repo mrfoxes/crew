@@ -1,0 +1,23 @@
+[38;5;174m ▐[48;5;16m▛███▛█[39m[49m   [1mClaude Code[0m [38;5;241mv2.1.318[39m
+[38;5;174m▝▜[48;5;16m█████[49m█▀[39m  [38;5;241mHaiku 5.5 · Claude Ultra[39m
+[38;5;174m ▝▝   ▝▝ [39m  [38;5;241m/private/tmp/claude-501/-Users-mrfoxes-Documents-repos-github-com-mrfoxes-crew/f7c131f2-f313-4d63-b5c2-f89d09385229/scratchpad/live/proj[39m
+[38;5;241m[48;5;255m❯[39m [38;5;16m/clear[39m
+[38;5;241m❯ [38;5;16mcrew: your context was cleared. Run: crew join ann, then crew status ann, and resume from its Next: line. Work in caveman mode ($caveman) from now on.[39m
+[49m  [38;5;241mRan [1m2[0m[38;5;241m shell commands [39m
+[38;5;16m⏺[39m Joined crew as [38;5;105mann[39m. Status [38;5;105mNext:[39m is "wait for a message". [38;5;105mFiles: none[39m. No unread messages. Nothing to resume, so waiting. Not sending [38;5;105mIdle:[39m since no task was
+  handed off.
+[38;5;241m✻[39m [38;5;241mRainbowed for 5s · done 3:47 AM[39m
+[38;5;241m[48;5;255m❯[39m [38;5;16m/compact[39m
+[38;5;241m[49m  ⎿  [2m[39mCompacted (ctrl+o to see full summary)[0m
+[38;5;241m[48;5;255m❯ [38;5;16mcrew: message 0001 from bob. Run: crew unread ann[39m
+[49m  [38;5;241mRan [1m1[0m[38;5;241m shell command [39m
+[38;5;16m⏺[39m pong
+[38;5;241m✻[39m [38;5;241mRainbowed for 3s · done 3:47 AM[39m
+[38;5;241m[48;5;255m❯ [38;5;16mUse no tool. Reply only with: I can rename a.txt to b.txt. Do you want me to proceed?[39m
+[38;5;16m[49m⏺[39m I can rename a.txt to b.txt. Do you want me to proceed?
+[38;5;241m✻[39m [38;5;241mRainbowed for 1s · done 3:47 AM[39m
+[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m❯ half a line
+[38;5;245m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+[39m  [38;5;172m[CAVEMAN][39m
+  [38;5;137m⏵⏵ auto mode on[38;5;241m (shift+tab to cycle)[39m

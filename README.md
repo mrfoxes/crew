@@ -432,6 +432,44 @@ each, naming `crew mute <name>`; crew never mutes or stops an agent by
 itself. A member whose models no rate prices has its budget said once, as
 one crew cannot check.
 
+## A member's context
+
+```
+crew compact dev1                      # /compact at its idle prompt
+crew compact dev1 keep the open review # Claude Code takes instructions
+crew clear dev1                        # /clear (Codex: /new), then rejoin
+```
+
+Every turn reads the member's whole conversation again, so a long one costs
+every turn. `crew compact` and `crew clear` are the coordinator's care of it,
+done safely. Both act only on an agent idle at an empty prompt, as
+`lib/screen.sh` reads its screen: its kind's agent in the foreground, no
+prompt or dialog open, no turn running (Claude Code's spinner with its timer,
+`esc to interrupt`, Antigravity's `esc to cancel`, or a screen that moved in
+two seconds), and nothing on the input line (a placeholder, or dim text on a
+tmux screen read with its styles, is nothing). They never act on the pane
+they run in, nor on a member with `--no-pane`. While they type, the member's
+wakes are held (`tmp/hold/<member>`, which counts only while the process that
+wrote it lives), and the newest one held is sent when they end.
+
+`crew compact` types the kind's `/compact`, with the instructions for Claude
+Code (Codex and Antigravity are refused them), and waits, up to 10 minutes,
+until the compacted mark comes (`Compacted`, `Context compacted`,
+`Conversation compacted`) and the agent is idle again. Nothing is typed
+after it: a member waiting for an answer is compacted first, and the answer
+starts it.
+
+`crew clear` also refuses a background shell (Claude Code's footer
+`· 1 shell`, Codex's `background terminal`), since a clear loses who started
+it, and a file on the member's `Files:` line, in its tree or its clone, that
+changed after its status was written: its `Next:` could not say where that
+work is. It types `/clear` (Codex: `/new`, after forgetting the member's
+thread), waits up to a minute for the cleared screen, idle, then types the
+line that has the member run `crew join <member>`, read its status, and
+resume from its `Next:`, and checks that the line was taken: shown above the
+input line, not waiting on it. Each says what happened, and exits 1 at the
+step that did not.
+
 ## One command, the whole crew
 
 A crew described once in its `Crewfile`, in the crew's directory, comes
@@ -824,6 +862,8 @@ lib/archive.sh      crew archive, reset, and restore: a session or a whole crew 
 lib/story.sh        crew story: the session as one document, from the crew or an archive
 lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
+lib/screen.sh       what an agent's screen says, per kind: a dialog, a turn, typed text, a background shell, or idle
+lib/context.sh      crew clear and crew compact: a member's conversation cleared or compacted at its idle prompt
 lib/gate.sh         reading approval prompts, the rules, the gate's loop, what it tells the owner
 lib/doctor.sh       crew doctor: the checks of what a crew needs, read only
 lib/cost.sh         crew cost: what the members spent, from the agents' logs and the rates

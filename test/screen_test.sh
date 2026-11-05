@@ -52,8 +52,17 @@ agy agy-working working
 agy agy-compacting working
 agy agy-typed typed
 agy agy-trust dialog
+claude claude-idle-styled idle
+claude claude-typed-styled typed
+codex codex-idle-styled idle
+codex codex-typed-styled typed
 other other unknown
 EOF
+
+# A line of transcript with "…" and a parenthesis is no spinner; a spinner's
+# parenthesis holds its timer, after a hook's name too.
+check "a line of transcript is not a turn" "1" "$(printf '⏺ Wait… (see above)\n' | screen_working claude; echo $?)"
+check "a spinner running a hook is a turn" "0" "$(printf '· Purring… (running PostToolUse hook · 2s · ↓ 18 tokens)\n' | screen_working claude; echo $?)"
 
 # The input line's text: what was typed, never the placeholder.
 check "claude's typed text" "half a line" "$(screen_input claude <"$fixtures/claude-typed.txt")"
@@ -74,6 +83,10 @@ check "a dim placeholder is no text" "idle" "$(styled "${esc}[39m${mark}${esc}[2
 check "text not dim is typed" "typed" "$(styled "${esc}[39m${mark}half a line" | screen_of claude)"
 check "codex's bold mark and dim placeholder" "idle" "$(styled "${esc}[1m›${esc}[0m ${esc}[2mAsk Codex to do anything${esc}[0m" | screen_of codex)"
 check "ESC[22m is not dim" "typed" "$(styled "${esc}[39m${mark}${esc}[22mtyped${esc}[0m" | screen_of claude)"
+check "a truecolor whose numbers hold a 2 is not dim" "hello world" "$(styled "${esc}[39m${mark}${esc}[38;2;200;100;50mhello world" | screen_input claude)"
+check "256-color green, 38;5;2, is not dim" "hello world" "$(styled "${esc}[39m${mark}${esc}[38;5;2mhello world" | screen_input claude)"
+check "a background color then dim is dim" "" "$(styled "${esc}[39m${mark}${esc}[48;5;255;2msuggested${esc}[0m" | screen_input claude)"
+check "dim ends at ESC[0m" "typed" "$(styled "${esc}[39m${mark}${esc}[2mghost${esc}[0mtyped" | screen_input claude)"
 
 # The marks of a finished compact, one each.
 check "claude's compacted mark" "1" "$(screen_compacted claude <"$fixtures/claude-compacted.txt")"

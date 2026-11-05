@@ -33,12 +33,36 @@ screen_input() {
             sub(/[ \t]+$/, "", s)
             return s
         }
+        # The text of <s> drawn not dim, its escape sequences taken off.
+        # Dim is an SGR parameter 2 that stands alone; the 2 or 5 after
+        # 38, 48, or 58 starts a color (2;r;g;b or 5;n) and is skipped with
+        # its arguments; 0, 22, or no parameter ends dim.
+        function undim(s,   out, dim, seq, a, c, i) {
+            out = ""
+            dim = 0
+            while (match(s, /\033\[[0-9;:?]*[A-Za-z]/)) {
+                if (!dim) out = out substr(s, 1, RSTART - 1)
+                seq = substr(s, RSTART + 2, RLENGTH - 3)
+                if (substr(s, RSTART + RLENGTH - 1, 1) == "m") {
+                    c = split(seq, a, ";")
+                    if (c == 0) dim = 0
+                    for (i = 1; i <= c; i++) {
+                        if (a[i] == "38" || a[i] == "48" || a[i] == "58") {
+                            if (a[i + 1] == "5") i += 2
+                            else if (a[i + 1] == "2") i += 4
+                        } else if (a[i] == "2") dim = 1
+                        else if (a[i] == "" || a[i] + 0 == 0 || a[i] == "22") dim = 0
+                    }
+                }
+                s = substr(s, RSTART + RLENGTH)
+            }
+            if (!dim) out = out s
+            return out
+        }
         {
             p = $0
             gsub(/\033\[[0-9;:?]*[A-Za-z]/, "", p)
-            t = $0
-            gsub(/\033\[([0-9;]*;)?2(;[0-9;]*)?m[^\033]*/, "", t)
-            gsub(/\033\[[0-9;:?]*[A-Za-z]/, "", t)
+            t = undim($0)
             p = norm(p)
             if (p != "") { line[++n] = p; text[n] = norm(t) }
         }
@@ -59,12 +83,14 @@ screen_input() {
 }
 
 # Whether the screen on stdin shows <kind> in a turn: Claude Code's spinner
-# line ("✳ Sparkling… (4s · ↓ 216 tokens)", "Compacting conversation… (1s"),
-# which no longer says esc interrupts it, or esc to interrupt (Claude Code
-# before 2.1.318, Codex), or esc to cancel (Antigravity's footer).
+# line, "…" then a parenthesis that holds its timer ("✳ Sparkling… (4s ·",
+# "Compacting conversation… (1s ·", "Purring… (running PostToolUse hook ·
+# 2s ·"), which no longer says esc interrupts it, so that a line of the
+# transcript ("Wait… (see above)") is not one; or esc to interrupt (Claude
+# Code before 2.1.318, Codex), or esc to cancel (Antigravity's footer).
 screen_working() {
     LC_ALL=C awk -v k="$1" '
-        k == "claude" && (index($0, "\342\200\246 (") || index($0, "esc to interrupt")) { found = 1 }
+        k == "claude" && (/\342\200\246 \([^)]*[0-9]s \302\267/ || index($0, "esc to interrupt")) { found = 1 }
         k == "codex" && index($0, "esc to interrupt") { found = 1 }
         k == "agy" && index($0, "esc to cancel") { found = 1 }
         END { exit !found }'

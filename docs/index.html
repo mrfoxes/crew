@@ -704,6 +704,14 @@ total    input 2766629  cached 146995979  write 1647717  output 562313  reasonin
               <td>Forget <code>&lt;name&gt;</code>'s pane; <code>--clone</code> also removes its clone, when nothing is left in it.</td>
             </tr>
             <tr>
+              <td class="cmd-col"><code>crew clear &lt;name&gt;</code></td>
+              <td>At <code>&lt;name&gt;</code>'s idle prompt, clear its agent's conversation, then have it rejoin and resume from its status's <code>Next:</code>; refused while it works, a background shell runs, or a file it claims changed after its status.</td>
+            </tr>
+            <tr>
+              <td class="cmd-col"><code>crew compact &lt;name&gt; [instructions]</code></td>
+              <td>At <code>&lt;name&gt;</code>'s idle prompt, compact its agent's conversation; instructions for Claude Code.</td>
+            </tr>
+            <tr>
               <td class="cmd-col"><code>crew mute &lt;name&gt;</code></td>
               <td>Wake <code>&lt;name&gt;</code> only for messages to its name.</td>
             </tr>

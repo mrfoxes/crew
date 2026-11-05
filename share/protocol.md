@@ -127,6 +127,37 @@ screenshots in `work/<you>/` (`mkdir -p "$(crew dir)/work/<you>"`).
 commits waiting for a review (`reviews`), the messages waiting for each member
 (`N unread`), the lock, the latest messages, and CI.
 
+## Context
+
+Every turn reads your whole conversation again, so a long one costs every
+turn. The coordinator takes care of the members' contexts with two
+commands. Both act only on an agent idle at an empty prompt, never on the
+pane they run in (the coordinator's own included), and hold the member's
+wakes while they type:
+
+- `crew compact <name> [instructions]` summarizes the conversation and keeps
+  the task. Use it on a member whose context grew large mid-task (`crew
+  cost`, the board's tokens), and on a member waiting for an answer: compact
+  it first, then send the answer, which starts it. Only Claude Code takes
+  instructions.
+- `crew clear <name>` starts the conversation over, between tasks: once the
+  member's `Pushed:` is reviewed, its `Next:` written, and no background
+  shell runs. Then it types the line that has the member run
+  `crew join <name>` and resume from its `Next:`. It refuses while a turn
+  runs, text waits on the input line, a dialog is open, a background shell
+  runs, or a file the member claims changed after its status was written.
+  Never clear a member in the middle of a task.
+- A member cleared after its `Idle:` has nothing in `Next:`: it rejoins and
+  waits. Clear it, then send its next task; that message wakes it. Never
+  write another member's status to let a clear pass: a status someone else
+  rewrote is newer than the member's files not landed, and the check that
+  keeps that work findable passes on a lie.
+
+When the line `crew: your context was cleared` reaches you, do what it says:
+your status's `Next:` is all that is left of your task, which is why every
+`Pushed:`, `Done:`, and `Paused:` comes after a `Next:` that a fresh session
+can resume from.
+
 ## One working tree, many hands
 
 When the crew shares one checkout, every file on disk, the git index, and the

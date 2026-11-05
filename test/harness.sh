@@ -30,6 +30,8 @@ CREW_HOME=$(dirname "$here")
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/screen.sh"
 # shellcheck source=/dev/null
+. "$CREW_HOME/lib/context.sh"
+# shellcheck source=/dev/null
 . "$CREW_HOME/lib/doctor.sh"
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/cost.sh"

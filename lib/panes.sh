@@ -542,9 +542,10 @@ pane_agent() {
 }
 
 # Wakes one recipient <who> for message <n> from <from> in <dir>. When
-# <who>'s pane runs no agent, nothing is typed and tmp/wake.<n>.<who>
-# records <from> for the relay to try again once the agent is back; a fifth
-# argument (retry) keeps stderr quiet on a retry that still finds no agent.
+# <who>'s pane runs no agent, or crew clear or compact holds it
+# (tmp/hold/<who>), nothing is typed and tmp/wake.<n>.<who> records <from>
+# for the relay, or the end of the hold, to try again; a fifth argument
+# (retry) keeps stderr quiet on a retry that still finds no agent.
 wake_one() {
     w_dir=$1
     w_n=$2
@@ -552,6 +553,17 @@ wake_one() {
     w_who=$4
     w_retry=${5:-}
     w_line=$(printf 'crew: message %04d from %s. Run: crew unread %s' "$w_n" "$w_from" "$w_who")
+    # crew clear or crew compact holds the member's wakes while it types
+    # into its pane (lib/context.sh): a line typed then would be lost or
+    # glued to the command. A hold whose process is gone counts for nothing.
+    if [ -s "$w_dir/tmp/hold/$w_who" ]; then
+        if kill -0 "$(cat "$w_dir/tmp/hold/$w_who" 2>/dev/null)" 2>/dev/null; then
+            echo "$w_from" >"$w_dir/tmp/wake.$w_n.$w_who"
+            [ -n "$w_retry" ] || echo "crew: $w_who is being cleared or compacted; the message waits, and it is woken once that ends" >&2
+            return 1
+        fi
+        rm -f "$w_dir/tmp/hold/$w_who"
+    fi
     # Codex takes the line through its daemon, which needs no terminal;
     # its pane is the way when the thread is gone.
     if [ -s "$w_dir/threads/$w_who" ] &&
