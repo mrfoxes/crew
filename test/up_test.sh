@@ -331,12 +331,14 @@ echo shell >"$tmp/state.qa"
 check "a background shell is refused" "1" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
 echo typed >"$tmp/state.qa"
 check "typed text is refused" "1" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
+check "a refusal releases the hold" "" "$(ls "$dir/tmp/hold" 2>/dev/null)"
 check "nothing was typed into qa's pane" "" "$(grep "^poke $qa" "$tmp/calls" 2>/dev/null)"
 rm -f "$tmp/state.qa"
 printf 'Agent: qa\nFiles: f.txt\nNext: f\n' | crew_write status qa >/dev/null
 touch -t 202601010000 "$dir/status/qa.md"
 echo f >f.txt
 check "--fresh refuses work its Next: cannot place" "1" "$(crew_up --fresh --restart qa >/dev/null 2>&1; echo $?)"
+check "and releases the hold" "" "$(ls "$dir/tmp/hold" 2>/dev/null)"
 check "a resume does not need it" "0" "$(crew_up --restart qa >/dev/null 2>&1; echo $?)"
 rm -f f.txt
 : >"$tmp/stuck"

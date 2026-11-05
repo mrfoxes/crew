@@ -197,11 +197,15 @@ up_restart() (
         echo "restart $1 in its pane: $u_q, then $(up_resume "$dir" "$1" "$2" "$3")"
         exit 0
     fi
+    # context_start takes the hold, and every path after it ends with
+    # context_end, which releases it.
     context_start restart "$1" || exit 1
-    [ -z "$u_fresh" ] || context_landed || exit 1
+    if [ -n "$u_fresh" ] && ! context_landed; then
+        context_end
+        exit 1
+    fi
     u_rline=$(up_resume "$dir" "$1" "$2" "$3")
     u_q=$(context_command "$cx_kind" restart)
-    context_hold
     if ! term_poke "$cx_pane" "$u_q" 2>/dev/null; then
         context_end "could not type $u_q into $1's pane"
         exit 1
