@@ -118,9 +118,12 @@ screen_shell() {
 
 # How many of <kind>'s marks of a finished compact the screen on stdin
 # shows: Claude Code's "⎿  Compacted", Codex's "• Context compacted",
-# Antigravity's "── Conversation compacted ──".
+# Antigravity's "── Conversation compacted ──". Claude Code draws the space
+# before "Compacted" as a plain space or as a no-break space (U+00A0), by
+# version: both count.
 screen_compacted() {
     LC_ALL=C awk -v k="$1" '
+        { gsub("\302\240", " ") }
         k == "claude" && index($0, "\342\216\277  Compacted") { n++ }
         k == "codex" && index($0, "\342\200\242 Context compacted") { n++ }
         k == "agy" && index($0, " Conversation compacted ") { n++ }

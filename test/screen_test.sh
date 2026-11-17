@@ -90,6 +90,7 @@ check "dim ends at ESC[0m" "typed" "$(styled "${esc}[39m${mark}${esc}[2mghost${e
 
 # The marks of a finished compact, one each.
 check "claude's compacted mark" "1" "$(screen_compacted claude <"$fixtures/claude-compacted.txt")"
+check "claude's compacted mark with a no-break space" "1" "$(screen_compacted claude <"$fixtures/claude-compacted-nbsp.txt")"
 check "codex's compacted mark" "1" "$(screen_compacted codex <"$fixtures/codex-compacted.txt")"
 check "agy's compacted mark" "1" "$(screen_compacted agy <"$fixtures/agy-compacted.txt")"
 check "none while compacting" "0 0 0" "$(screen_compacted claude <"$fixtures/claude-compacting.txt") $(screen_compacted codex <"$fixtures/codex-compacting.txt") $(screen_compacted agy <"$fixtures/agy-compacting.txt")"
