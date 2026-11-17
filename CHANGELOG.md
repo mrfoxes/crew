@@ -4,6 +4,13 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.2.1
+
+- `crew compact` sees the end of a compact in Claude Code 2.1.326, which
+  draws a no-break space before "Compacted". It waited its full 10
+  minutes instead, and held every wake to the member that whole time:
+  messages to a compacted member, the coordinator included, woke nobody.
+
 ## 1.2.0
 
 ### New commands
