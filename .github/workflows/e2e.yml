@@ -14,7 +14,7 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: tmux
         run: |
           command -v tmux >/dev/null || { [ "$(uname)" = Darwin ] && brew install tmux || sudo apt-get install -y tmux; }
