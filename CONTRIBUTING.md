@@ -33,8 +33,8 @@ human, with the reasons.
 
 ```
 sh test/run.sh                      # all tests; sh test/run.sh gate: one area
-for f in bin/crew lib/*.sh test/*.sh; do sh -n "$f"; done
-shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh
+for f in bin/crew lib/*.sh test/*.sh share/recipes/*/*.sh; do sh -n "$f"; done
+shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh share/recipes/*/*.sh
 ```
 
 CI runs the same three on Ubuntu and macOS at every push. A test file is

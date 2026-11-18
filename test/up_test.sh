@@ -205,9 +205,9 @@ check "a preset starts the Crewfile" "$dir/Crewfile" "$(up_crewfile "$dir" small
 check "with its lines" "tab main" "$(cat "$dir/Crewfile")"
 rm "$dir/Crewfile"
 check "no Crewfile and no preset" "crew: no Crewfile in $dir: write one, or start from a preset with 'crew up <preset>'
-crew: presets: lean pair ring small solo " "$(up_crewfile "$dir" "" 2>&1)"
+crew: presets: lean mesh pair ring small solo star " "$(up_crewfile "$dir" "" 2>&1)"
 check "a preset not there" "1" "$(up_crewfile "$dir" nowhere >/dev/null 2>&1; echo $?)"
-for p in solo pair ring; do
+for p in solo pair ring star mesh; do
     check "the preset $p is read" "0" "$(crewfile_read "$CREW_HOME/share/presets/$p" >/dev/null 2>&1; echo $?)"
 done
 check "a preset crew ships" "$CREW_HOME/share/presets/ring" "$(crewfile_preset ring)"

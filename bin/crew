@@ -35,6 +35,7 @@ CREW_HOME=$(cd "$(dirname "$self")/.." && pwd)
 . "$CREW_HOME/lib/down.sh"
 . "$CREW_HOME/lib/story.sh"
 . "$CREW_HOME/lib/update.sh"
+. "$CREW_HOME/lib/recipe.sh"
 
 usage() {
     cat <<'EOF'
@@ -80,6 +81,12 @@ For the coordinator
                                 directory under ~/.crew named after the
                                 root's path: ~/.crew/-home-me-app for
                                 /home/me/app
+  recipe [<recipe>] [--mode | --install <member>]
+                                the recipes: whole crew setups, written for
+                                the agent that brings one up; one printed
+                                whole, its mode section alone (for a
+                                project's CLAUDE.md), or its scripts and
+                                playbooks installed into work/<member>/
   up [<preset>] [--fresh] [--dry] [--restart <name>...]
                                 bring the crew of the Crewfile up, or back:
                                 tabs, members, invites, layouts; an agent
@@ -176,8 +183,12 @@ case "${1:-}" in
     ;;
 esac
 case "$cmd" in
-help) cat "$CREW_HOME/share/protocol.md" ;;
+help)
+    cat "$CREW_HOME/share/protocol.md"
+    recipe_help
+    ;;
 init) crew_init "$@" ;;
+recipe) crew_recipe "$@" ;;
 up) crew_up "$@" ;;
 down) crew_down "$@" ;;
 doctor) crew_doctor "$@" ;;

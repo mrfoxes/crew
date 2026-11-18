@@ -270,6 +270,19 @@ origin` first): bugs first, then a missing test, then a document the change
 left untrue. Send `Review:` with the hash and each finding (file, line,
 problem, fix), or one line saying it is clean.
 
+## Bringing a crew up
+
+A recipe is a whole crew's setup, written for the agent that brings it up:
+roles, layout, Crewfile, rules, bring-up, and the scripts and playbooks it
+needs. `crew recipe` lists them, and `crew help` names them at its end.
+When the owner asks you to bring a crew up and names no recipe, list them
+and ask which; then read it whole, `crew recipe <name>`, and follow its
+bring-up. `crew recipe <name> --install <member>` copies its files into
+`work/<member>/` in the crew's directory, scripts executable, and never
+replaces one that differs. `crew recipe <name> --mode` prints the section
+every member of that setup follows, which a project may keep in its
+`CLAUDE.md` or `AGENTS.md`.
+
 ## The end
 
 When your time is up: every commit you pushed is green, every message to you

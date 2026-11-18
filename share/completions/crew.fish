@@ -140,6 +140,29 @@ function __crew_presets
     end | awk 'NF && !seen[$0]++'
 end
 
+# The recipes: the owner's in $XDG_CONFIG_HOME/crew/recipes, and the ones
+# crew ships in share/recipes of the checkout it runs from: each a
+# directory with a recipe.md.
+function __crew_recipes
+    set -l self (command -s crew)
+    while test -n "$self" -a -L "$self"
+        set -l link (readlink $self)
+        switch $link
+            case '/*'
+                set self $link
+            case '*'
+                set self (dirname $self)/$link
+        end
+    end
+    set -l config $XDG_CONFIG_HOME
+    test -n "$config"; or set config $HOME/.config
+    set -l dirs $config/crew/recipes/*
+    test -z "$self"; or set -a dirs (dirname $self)/../share/recipes/*
+    for d in $dirs
+        test -f $d/recipe.md; and basename $d
+    end | awk 'NF && !seen[$0]++'
+end
+
 # The candidates for the word being completed.
 function __crew_complete
     set -l tokens (commandline -opc)
@@ -207,6 +230,8 @@ function __crew_complete
             __crew_kinds
         case preset
             __crew_presets
+        case recipe
+            __crew_recipes
         case key
             if string match -q -r -- '^(ctrl|alt)-' $cur
                 set -l prefix (string replace -r -- '-.*' '' $cur)

@@ -1,0 +1,7 @@
+# mesh: hq-lead routes, svc holds the shared services, one 2x2 tab per area.
+# hq-lead is joined by hand in the first tab; the bus is opened beside it by hand.
+# hq holds only hq-lead: crew up lays every tab out again each time it runs.
+# To open an area, add its block at the end; to close it, remove the block.
+tab hq
+tab svc
+member svc-keeper mute -- claude --model claude-sonnet-5-5 --permission-mode auto

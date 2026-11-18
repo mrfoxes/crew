@@ -107,8 +107,12 @@ crew show 0003 |0003 0012
 crew spawn |
 crew spawn x --beside |agy claude codex
 crew spawn x --kind |agy claude codex other
-crew up |pair ring solo
+crew up |mesh pair ring solo star
 crew up r|ring
+crew recipe |mesh star
+crew recipe m|mesh
+crew recipe mesh --|--install --mode
+crew recipe mesh --install |agy claude codex
 crew up --|--dry --fresh --restart
 crew up --restart |agy claude codex
 crew restore |2026-11-05-025404 2026-11-05-030723

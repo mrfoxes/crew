@@ -1,0 +1,10 @@
+# star: 2x2 with the coordinator bottom-left; dev1 and dev2 build, reviewer reviews; all Opus 5.5 at xhigh in auto mode.
+# The coordinator is the owner's pane, joined by hand. No watch: the coordinator approves prompts itself.
+# The keeper compacts the coordinator on request. The bus tab runs crew relay and is opened by hand.
+tab main layout=2x2
+member dev1     reviewer=reviewer -- claude --model claude-opus-5-5 --effort xhigh --permission-mode auto
+member dev2     reviewer=reviewer -- claude --model claude-opus-5-5 --effort xhigh --permission-mode auto
+pane coordinator
+member reviewer -- claude --model claude-opus-5-5 --effort xhigh --permission-mode auto
+tab keeper
+member keeper   mute -- claude --model claude-sonnet-5-5 --permission-mode auto

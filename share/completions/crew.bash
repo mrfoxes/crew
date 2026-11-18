@@ -134,6 +134,24 @@ _crew_presets() {
     } | awk 'NF && !seen[$0]++'
 }
 
+# The recipes: the owner's in ${XDG_CONFIG_HOME:-~/.config}/crew/recipes, and
+# the ones crew ships in share/recipes of the checkout it runs from: each a
+# directory with a recipe.md.
+_crew_recipes() {
+    local self link d
+    self=$(command -v crew) || self=
+    while [ -n "$self" ] && [ -L "$self" ]; do
+        link=$(readlink "$self")
+        case "$link" in
+        /*) self=$link ;;
+        *) self=$(dirname "$self")/$link ;;
+        esac
+    done
+    for d in "${XDG_CONFIG_HOME:-$HOME/.config}/crew/recipes"/* ${self:+"$(dirname "$self")/../share/recipes"/*}; do
+        [ -f "$d/recipe.md" ] && basename "$d"
+    done | awk 'NF && !seen[$0]++'
+}
+
 # Sets COMPREPLY to the words of $1 (blanks or lines apart) that start with
 # the word being completed.
 _crew_reply() {
@@ -208,6 +226,7 @@ owner" ;;
     archive) _crew_reply "$(_crew_archives)" ;;
     kind) _crew_reply "$(_crew_kinds)" ;;
     preset) _crew_reply "$(_crew_presets)" ;;
+    recipe) _crew_reply "$(_crew_recipes)" ;;
     key)
         case "$cur" in
         ctrl-* | alt-*)

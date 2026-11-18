@@ -545,12 +545,14 @@ crew up --restart qa        # restart qa's live agent on its Crewfile line
 crew up pair                # start the Crewfile from the preset pair
 ```
 
-Three presets ship in `share/presets/`, to start from on a new machine:
+Five presets ship in `share/presets/`, to start from on a new machine:
 
 - `solo`: one member, with the watch and the board beside you.
 - `pair`: two members of two kinds, `claude` and `codex`, reviewing each other.
 - `ring`: three members, `claude`, `codex`, and `agy`, each in a clone of
   its own, each reviewing the next.
+- `star` and `mesh`: the Crewfiles of the recipes of the same names (see
+  [Recipes](#recipes)).
 
 A preset whose agent is not installed says which and stops before any pane
 opens. Edit the Crewfile it wrote to change the crew.
@@ -584,6 +586,39 @@ A preset is a Crewfile in `~/.config/crew/presets/<name>`
 the same name wins. `crew up <preset>` copies it to a crew that has no
 Crewfile, and refuses one that has its own, which is the truth. Tab
 completes the preset names.
+
+## Recipes
+
+A recipe is a whole crew's setup, written for the agent that brings it up:
+roles, layout, Crewfile, rules, bring-up, tear-down, and the scripts and
+playbooks it needs. Start an agent, run `crew` (`!crew` in Claude Code): the
+protocol it prints ends with the recipes there are, and the agent asks you
+which to bring up.
+
+```
+crew recipe                         # the recipes, each with its title
+crew recipe mesh                    # one, whole: what the agent reads and follows
+crew recipe mesh --mode             # its section every member follows, for a project's CLAUDE.md
+crew recipe mesh --install hq-lead  # its scripts and playbooks into work/hq-lead/
+```
+
+Two ship in `share/recipes/`:
+
+- `star`: one coordinator in the owner's pane, two devs, a reviewer, a
+  keeper that compacts the coordinator, and a bus tab: the owner's chat
+  and the stream.
+- `mesh`: past a handful of agents. The owner talks to one lead only,
+  through the bus; the lead runs one coordinator per area, each with its
+  2x2 of two devs, a reviewer, and itself; areas talk through contracts;
+  a keeper and a fable serve the lead and the coordinators. It grows an
+  area at a time, from a seed of six agents.
+
+A recipe is a directory: `recipe.md`, whose first line is its title, and
+the files `--install` copies into `work/<member>/` of the crew's directory,
+scripts executable. It never replaces a file there that differs. Its
+section whose heading ends in " mode" is what `--mode` prints. The owner's
+recipes, in `~/.config/crew/recipes/<name>/` (under `$XDG_CONFIG_HOME`),
+win over crew's of the same name. Tab completes the recipe names.
 
 ## Ending a crew
 
@@ -896,6 +931,7 @@ lib/land.sh         crew land: check on an export, lock, commit the member's pat
 lib/archive.sh      crew archive, reset, and restore: a session or a whole crew put aside, and back
 lib/story.sh        crew story: the session as one document, from the crew or an archive
 lib/update.sh       crew version and crew update: which crew runs, the latest release, updating
+lib/recipe.sh       crew recipe: the recipes listed, one printed whole or its mode section, its files installed
 lib/panes.sh        members and their panes: join, mute, peek, poke, key, spawn, move, waking
 lib/screen.sh       what an agent's screen says, per kind: a dialog, a turn, typed text, a background shell, or idle
 lib/idle.sh         idle members: what each pane shows, from looks that never wait, and who has nothing to do
@@ -907,7 +943,8 @@ share/protocol.md   what agents follow, printed by crew help and crew join
 share/forbid        the gate's default rules
 share/kinds         the kinds of agent crew knows
 share/rates         the prices of Anthropic's models, for crew cost
-share/presets/      the Crewfiles crew up starts from: solo, pair, ring
+share/presets/      the Crewfiles crew up starts from: solo, pair, ring, star, mesh
+share/recipes/      whole crew setups for the agent that brings one up: star, mesh
 share/plan.md       the plan crew init writes to a new crew's README.md
 share/completions/  Tab completion: crew.fish (fish), _crew (zsh), crew.bash (bash)
 install.sh          the one-line install from a release: download, check, unpack, link

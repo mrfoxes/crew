@@ -54,6 +54,8 @@ term_read_styled() { return 1; }
 . "$CREW_HOME/lib/story.sh"
 # shellcheck source=/dev/null
 . "$CREW_HOME/lib/update.sh"
+# shellcheck source=/dev/null
+. "$CREW_HOME/lib/recipe.sh"
 export CREW_WAKE=0
 # No test notifies the owner; the ones that test notifying fake crew_notify.
 export CREW_NOTIFY=0

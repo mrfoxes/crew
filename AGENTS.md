@@ -26,6 +26,6 @@ each piece lives.
 
 ```
 sh test/run.sh                      # all tests; sh test/run.sh gate: one area
-for f in bin/crew lib/*.sh test/*.sh; do sh -n "$f"; done
-shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh
+for f in bin/crew lib/*.sh test/*.sh share/recipes/*/*.sh; do sh -n "$f"; done
+shellcheck -s sh -S warning -x bin/crew lib/*.sh test/*.sh share/recipes/*/*.sh
 ```
