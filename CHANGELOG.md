@@ -4,6 +4,41 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.3.0
+
+### New commands
+
+- `crew recipe` lists the recipes: whole crew setups, written for the
+  agent that brings one up (roles, layout, Crewfile, rules, bring-up,
+  tear-down, and the scripts and playbooks they need). `crew recipe
+  <name>` prints one whole; `--mode` prints only its section every member
+  follows, to keep in a project's `CLAUDE.md` or `AGENTS.md`; `--install
+  <member>` copies its scripts and playbooks into `work/<member>/` of the
+  crew's directory, scripts executable, and never replaces a file there
+  that differs. The owner's recipes, in `~/.config/crew/recipes/<name>/`,
+  win over crew's of the same name, and Tab completes the names.
+- `crew help` names the recipes after the protocol, and the protocol says
+  to ask the owner which one to bring up: start an agent, run `crew`, and
+  it asks.
+
+### Recipes
+
+- `star`: a coordinator in the owner's pane, two devs, a reviewer, a
+  keeper that compacts the coordinator, and a bus tab with the owner's
+  chat and the stream.
+- `mesh`: for more than a handful of agents. The owner talks to one lead
+  only; the lead runs one coordinator per area, each with a 2x2 of two
+  devs, a reviewer, and itself; areas agree on contracts between
+  coordinators; a keeper compacts the lead and the coordinators, and a
+  fable answers hard questions. The owner's chat filters the stream
+  (`/f`) and closes an area (`/end`). It starts from a seed of six agents
+  and grows an area at a time, or starts with every area open.
+- Their Crewfiles ship as the presets `star` and `mesh`.
+
+### Changes
+
+- CI runs `sh -n` and ShellCheck on the recipes' scripts too.
+
 ## 1.2.1
 
 - `crew compact` sees the end of a compact in Claude Code 2.1.326, which
