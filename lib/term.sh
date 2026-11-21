@@ -318,13 +318,48 @@ term_key() {
 # TUI that gets both in one burst takes them for a paste and keeps the Return
 # as a newline. A newline inside the line would submit it halfway.
 # CR and LF become spaces; other control bytes belong to crew key.
+# A long line goes in pieces (term_pieces), term_poke_gap seconds apart.
+# Claude Code (2.1.329) takes more than 800 characters that arrive at once
+# for a paste: it shows "[Pasted text #1]" and sends the line as a prompt,
+# so a crew compact with long instructions never ran /compact. Pieces of 200
+# bytes stay under that even when the agent reads four of them at once.
+term_poke_piece=200
+term_poke_gap=0.1
 term_poke() {
     poke_line=$(printf '%s' "$2" | tr '\r\n' '  ')
     if printf '%s' "$poke_line" | LC_ALL=C grep -q '[[:cntrl:]]'; then
         echo "crew: poke refuses control bytes; use 'crew key' to press keys" >&2
         return 2
     fi
-    term_type "$1" "$poke_line" || return 1
+    poke_first=1
+    while IFS= read -r poke_piece <&3; do
+        [ -n "$poke_piece" ] || continue
+        [ -n "$poke_first" ] || sleep "$term_poke_gap"
+        poke_first=""
+        term_type "$1" "$poke_piece" || return 1
+    done 3<<EOF
+$(printf '%s\n' "$poke_line" | term_pieces "$term_poke_piece")
+EOF
     sleep 0.5
     term_key "$1" enter || return 3
+}
+
+# The line on stdin in pieces of at most <max> bytes, one a line, each cut
+# after a space, so that no character is split; a word longer than <max>
+# goes whole. Joined again, the pieces are the line.
+term_pieces() {
+    LC_ALL=C awk -v max="$1" '{
+        s = $0
+        while (length(s) > max) {
+            i = max
+            while (i > 0 && substr(s, i, 1) != " ") i--
+            if (i == 0) {
+                i = index(s, " ")
+                if (i == 0) break
+            }
+            print substr(s, 1, i)
+            s = substr(s, i + 1)
+        }
+        print s
+    }'
 }

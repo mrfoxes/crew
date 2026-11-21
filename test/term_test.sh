@@ -19,12 +19,12 @@ check "key unknown" "2" "$(term_key tmux:%1 f13 2>/dev/null; echo $?)"
 # type/key functions and the delay are faked, in a subshell so they cannot
 # affect the later tests. Keep the bytes apart from the Return key.
 poke() (
-    tmux_type() { printf '%s' "$2" >"$tmp/poke.bytes"; }
-    iterm_type() { printf '%s' "$2" >"$tmp/poke.bytes"; }
+    tmux_type() { printf '%s' "$2" >>"$tmp/poke.bytes"; printf '%s\n' "$2" >>"$tmp/poke.pieces"; }
+    iterm_type() { printf '%s' "$2" >>"$tmp/poke.bytes"; printf '%s\n' "$2" >>"$tmp/poke.pieces"; }
     tmux_key() { printf '%s\n' "$2" >>"$tmp/poke.keys"; }
     iterm_key() { printf '%s\n' "$2" >>"$tmp/poke.keys"; }
-    sleep() { :; }
-    rm -f "$tmp/poke.bytes" "$tmp/poke.keys"
+    sleep() { printf '%s\n' "$1" >>"$tmp/poke.sleeps"; }
+    rm -f "$tmp/poke.bytes" "$tmp/poke.keys" "$tmp/poke.pieces" "$tmp/poke.sleeps"
     term_poke "$1" "$2" 2>"$tmp/poke.err"
     echo $?
 )
@@ -37,6 +37,24 @@ for target in tmux:%1 iterm:X; do
     literal=$(printf '%s' '"quotes" $dollar \backslash' " 'single'" ' café')
     check "poke $target accepts literal text" "0" "$(poke "$target" "$literal")"
     check "poke $target preserves every literal byte" "$literal" "$(cat "$tmp/poke.bytes")"
+    check "poke $target types a short line at once" "1" "$(wc -l <"$tmp/poke.pieces" | tr -d ' ')"
+
+    # Claude Code takes more than 800 characters at once for a paste: a
+    # long line goes in pieces of at most 200 bytes, cut after a space,
+    # with a pause between two, and Return once at the end.
+    long="/compact Keep: café"
+    while [ ${#long} -lt 1100 ]; do long="$long \"quoted\" \\back \$x word"; done
+    check "poke $target accepts a long line" "0" "$(poke "$target" "$long")"
+    check "poke $target types every byte of a long line" "$long" "$(cat "$tmp/poke.bytes")"
+    pieces=$(wc -l <"$tmp/poke.pieces" | tr -d ' ')
+    check "poke $target types a long line in pieces" "yes" "$([ "$pieces" -ge 6 ] && echo yes)"
+    check "poke $target keeps each piece within 200 bytes" "" "$(LC_ALL=C awk 'length($0) > 200' "$tmp/poke.pieces")"
+    check "poke $target cuts pieces after a space" "" "$(sed '$d' "$tmp/poke.pieces" | grep -v ' $')"
+    check "poke $target pauses between two pieces, then before Return" "$((pieces - 1)) 0.1, 1 0.5" "$(grep -c '^0\.1$' "$tmp/poke.sleeps") 0.1, $(grep -c '^0\.5$' "$tmp/poke.sleeps") $(tail -n 1 "$tmp/poke.sleeps")"
+    check "poke $target submits a long line once" "enter" "$(cat "$tmp/poke.keys")"
+    word=$(printf '%0300d' 0)
+    check "poke $target sends a word longer than a piece" "0" "$(poke "$target" "a $word b")"
+    check "poke $target keeps that word whole" "a |$word |b" "$(tr '\n' '|' <"$tmp/poke.pieces" | sed 's/|$//')"
 
     for control in 001 011 033 037 177; do
         check "poke $target refuses control $control" "2" "$(poke "$target" "a$(printf "\\$control")b")"
