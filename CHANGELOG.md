@@ -4,6 +4,15 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.3.1
+
+- `crew compact` with long instructions runs the compact in Claude Code
+  2.1.329, which takes more than 800 characters that arrive at once for a
+  paste. The instructions went to the member as a message instead, crew
+  waited its full 10 minutes for a compacted mark that never came, and held
+  every wake to the member that whole time. crew now types a long line in
+  pieces of at most 200 bytes; a short line, such as a wake, goes as before.
+
 ## 1.3.0
 
 ### New commands
