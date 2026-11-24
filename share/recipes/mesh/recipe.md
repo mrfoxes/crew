@@ -21,7 +21,7 @@ Only in a mesh: member names are `<crew>-<role>` (`hq-lead`, `api-dev1`, ...). O
 - **Between areas, only coordinators talk, and only about contracts:** subject `Contract: <name>`, by name. The area that provides a contract keeps it in `$(crew dir)/work/<area>-coord/contracts.md`. One counter-proposal at most, then `Design:` to `hq-lead`, which decides. Never write to another area's dev or reviewer.
 - **One writer per file:** the plan `$(crew dir)/README.md` and `$(crew dir)/work/hq-lead/state.md` belong to the lead; `lanes.md` and `contracts.md` in `$(crew dir)/work/<area>-coord/` belong to that coordinator.
 - **Context:** at each feature boundary (a reviewed push or PR, or a task's `Done:`) your coordinator goes through its members one at a time, none skipped: `crew clear` when the next task is another feature, `crew compact` when it continues the same feature or the member waits for an answer (compact first, then the answer). `svc-keeper` compacts the lead and the coordinators on request, and, as a net, anyone at an idle prompt above 40%. Everyone keeps their state on disk (`state.md`, `lanes.md`, `contracts.md`, the status), so a compact can come at any idle prompt.
-- **`svc-fable`** answers hard questions, only as the project's rules allow.
+- **`svc-fable`** answers hard questions, only as the project's rules allow. It runs on another model and spends that model's weekly limits: it comes up only on the owner's explicit ask, takes questions only from `hq-lead`, and is never the first to solve.
 - **The project's rules** are `## Rules` in `$(crew dir)/README.md`. They win over this section.
 
 ## Shape
@@ -81,6 +81,10 @@ A compact loses nothing: after one, the lead runs `crew unread hq-lead`, reads `
 - A decision comes with the options and the lead's recommendation, never as an open question.
 - When the owner asks for the state, the lead answers from `state.md`, without waking anyone.
 - When the owner's word changes the plan, the lead updates the plan, then tells each coordinator that must act, by name.
+- It answers the owner in the stream (`crew send hq-lead owner ...`), even when the owner types in its pane: the owner follows the stream, not the pane.
+- An owner's decision goes down with its text inside the task, quoted: each member reads only the messages to its own name.
+- A new piece of work starts read-only, unless the project or the owner says otherwise: each member writes its output in `$(crew dir)/work/<name>/`, with `file:line` sources; the area's reviewer checks it, the coordinator sums it up to the lead, the lead to the owner, and only the proposal the owner approves becomes code or a write outside the repository.
+- When two members find the same gap, their coordinator (or the lead, when they are in different areas) decides once who covers it, and tells both.
 
 ## Between areas
 
