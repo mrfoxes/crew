@@ -20,7 +20,7 @@ Only in a mesh: member names are `<crew>-<role>` (`hq-lead`, `api-dev1`, ...). O
 - **Never write to `all`.** Only the owner's `End:` goes to `all`.
 - **Between areas, only coordinators talk, and only about contracts:** subject `Contract: <name>`, by name. The area that provides a contract keeps it in `$(crew dir)/work/<area>-coord/contracts.md`. One counter-proposal at most, then `Design:` to `hq-lead`, which decides. Never write to another area's dev or reviewer.
 - **One writer per file:** the plan `$(crew dir)/README.md` and `$(crew dir)/work/hq-lead/state.md` belong to the lead; `lanes.md` and `contracts.md` in `$(crew dir)/work/<area>-coord/` belong to that coordinator.
-- **Context:** your coordinator compacts and clears you. `svc-keeper` compacts the coordinators and the lead, on request or above 70%. The lead and the coordinators keep their state on disk, so a compact can come at any idle prompt.
+- **Context:** at each feature boundary (a reviewed push or PR, or a task's `Done:`) your coordinator goes through its members one at a time, none skipped: `crew clear` when the next task is another feature, `crew compact` when it continues the same feature or the member waits for an answer (compact first, then the answer). `svc-keeper` compacts the lead and the coordinators on request, and, as a net, anyone at an idle prompt above 40%. Everyone keeps their state on disk (`state.md`, `lanes.md`, `contracts.md`, the status), so a compact can come at any idle prompt.
 - **`svc-fable`** answers hard questions, only as the project's rules allow.
 - **The project's rules** are `## Rules` in `$(crew dir)/README.md`. They win over this section.
 
@@ -70,13 +70,7 @@ Waiting for the owner: <the decision, the options, the recommendation> | nothing
 
 A compact loses nothing: after one, the lead runs `crew unread hq-lead`, reads `state.md` and the plan, and goes on.
 
-**Context.** The lead reads its context at each milestone and after each exchange with the owner:
-
-```sh
-tmux capture-pane -p -t "$TMUX_PANE" | grep -oE '[0-9]+% [0-9]+k/1M' | tail -1
-```
-
-Above 50%, it rewrites `state.md`, sends `crew send hq-lead svc-keeper "Question: compact me"`, and ends its turn. Above 70%, the keeper compacts it unasked, at its next idle prompt. Both read the percent from the agent's status line, which must show `NN% NNNk/1M`.
+**Context.** The lead asks for its compact at the end of each owner task, not at a percent: it rewrites `state.md`, stops its background shells (`stuck.sh`), sends `crew send hq-lead svc-keeper "Question: compact me"` with what to keep in the body, and ends its turn. On the keeper's `Answer: compacted` it runs `crew unread hq-lead` first and starts `stuck.sh` again, with its arguments. The coordinators do the same at the end of each task from the lead. As a net, the keeper compacts anyone it finds at an idle prompt above 40%, the lead first, reading the percent from the agent's status line, which must show `NN% NNNk/1M` (a narrow pane cuts it to `NN% NN…`).
 
 **Wakes.** Each message to the lead costs a turn of the largest context in the mesh. So coordinators write to it only for what "Crew mesh mode" lists. The lead reads its own messages only, never `crew log` of an area.
 
@@ -223,7 +217,7 @@ Each project writes its own rules, in the plan, `$(crew dir)/README.md`, under `
 
 A project's rules answer at least:
 
-- **Context:** when each coordinator compacts or clears its members; other thresholds than 50% (the lead asks) and 70% (the keeper acts).
+- **Context:** when each coordinator compacts or clears its members; another threshold than 40% for the keeper's net (`ctx.sh <crew dir> <percent>`).
 - **Unblocking:** other scopes for `stuck.sh` than the default: `hq-lead` watches `coord svc`, and each coordinator watches its area.
 - **Prompts:** who approves them in each area, and what is never approved.
 - **Fable:** who may ask it, for what, and when its context is cleared.
@@ -350,8 +344,8 @@ member svc-fable  mute -- claude --model claude-fable-5-2 --permission-mode auto
 - `chat.zsh`: the owner's line to `hq-lead`, the `owner-chat` pane. A zsh line editor: Return sends, Shift+Return adds a line, a multi-line paste waits until Return. A line that starts with a command runs here, is not posted, and wakes nobody: `/f [word...]` shows or sets the stream filter, `/end <area>` sends `End:` to each member of the area by name after a `y`, `/help` lists them. The keys need the same setup as the bus of `star`: tmux `extended-keys` for Shift+Return, and iTerm2's Left Option key set to `Esc+`.
 - `stream.sh`: the `stream` pane. It prints the messages that match the filter in `stream.filter`, as [Stream filter](#stream-filter) says.
 - `stuck.sh`: wakes its caller, by exiting, when its scope looks stuck: a member on a dialog or on typed text two checks in a row, a pane gone or an agent exited, or nobody working and nobody writing while a status says `Blocked on:`. `stuck.sh <crew dir> <you> <quiet minutes> <word>...`: `hq-lead` on `coord svc`, each coordinator on its area. Run it with the Bash tool, `run_in_background: true`, and start it again after each wake.
-- `ctx.sh`: wakes the keeper when `hq-lead` or a coordinator sits at its prompt above a context percent, 70 by default, read from the agent's status line (`NN% NNNk/1M`).
-- `playbook-keeper.md`: the keeper's job, one compact at a time, `hq-lead` first.
+- `ctx.sh`: wakes the keeper when any member but the keeper sits at its prompt (`idle` or `shell`) above a context percent, 40 by default, with no compact running on it (no `tmp/hold/<name>`). It names them `hq-lead` first, then the coordinators, then the rest, and reads the percent from the agent's status line (`NN% NNNk/1M`, or `NN% NN…` in a narrow pane).
+- `playbook-keeper.md`: the keeper's job, one compact at a time, `hq-lead` first: on request for the lead and the coordinators, on `ctx.sh` for anyone, with default instructions for each role and the rejoin check after each compact.
 
 ## Tear-down
 
