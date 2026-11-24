@@ -112,7 +112,7 @@ member keeper   mute -- claude --model claude-sonnet-5-5 --permission-mode auto
 
 - `chat.zsh`: the owner's line to the coordinator, the left pane of the bus. A zsh line editor: Return sends, Shift+Return adds a line, a multi-line paste waits until Return, Option+Delete deletes a word. The subject is the first line, cut to 60 characters; the body is the whole text. Shift+Return needs tmux to forward modified keys: `set -s extended-keys on` in `~/.tmux.conf` (with `set -as terminal-features 'xterm*:extkeys'`). Option+Delete and Option+Return need iTerm2's Profiles → Keys → Left Option key set to `Esc+`.
 - `stream.sh`: prints every message of the stream, whole, as it arrives: the right pane of the bus.
-- `stuck.sh`: wakes the coordinator, by exiting, when a member sits on a dialog or on typed text two checks in a row, a pane is gone, or nobody works and nobody writes while a status says `Blocked on:`. Start it with the Bash tool, `run_in_background: true`: `$(crew dir)/work/coordinator/stuck.sh "$(crew dir)" 5`. Start it again after each wake.
+- `stuck.sh`: wakes the coordinator, by exiting, when a member sits on a dialog or on typed text two checks in a row, a pane is gone or an agent exited two checks in a row (a background shell that ends can show `, exited` for one check), or nobody works and nobody writes while a status says `Blocked on:` something other than nothing or the owner. Start it with the Bash tool, `run_in_background: true`: `$(crew dir)/work/coordinator/stuck.sh "$(crew dir)" 5`. Start it again after each wake.
 - `playbook-keeper.md`: the keeper's job, sent to it at bring-up.
 
 ## Tear-down
