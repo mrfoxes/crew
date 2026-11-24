@@ -4,6 +4,33 @@ What each version of crew adds, newest first. A version is a tag on the
 repository, `v1.0.0`, which `crew version` prints; the issues are in the
 milestone of the version, on GitHub.
 
+## 1.3.2
+
+### Recipes
+
+- `mesh`: the keeper is now the net for every member, not only the lead
+  and the coordinators. `ctx.sh` wakes it when anyone but the keeper sits
+  at an idle prompt above 40% of context (it was 70%), names `hq-lead`
+  first, skips a member with a compact already running, and reads the
+  percent that a narrow pane cuts short. The keeper's playbook compacts
+  devs and reviewers too, with instructions for their role, and tells
+  their coordinator when a compact or a rejoin fails.
+- `mesh`: the lead asks for its compact at the end of each owner task,
+  not at 50%, and a coordinator goes through its members one at a time at
+  each feature boundary: clear for another feature, compact for the same
+  one.
+- `mesh`: the lead answers the owner in the stream even when the owner
+  types in its pane, sends an owner's decision down quoted, starts new
+  work read-only, and decides once who covers a gap two members found.
+  The fable comes up only on the owner's explicit ask.
+- `star` and `mesh`: `stuck.sh` counts a member gone or exited only on
+  two checks in a row, so a background shell that ends no longer wakes
+  the caller, and a member waiting on the owner no longer counts as
+  stuck.
+- Run `crew recipe mesh --install <member>` again to take the new
+  scripts: it never replaces a file that differs, so remove the old
+  copies in `work/<member>/` first.
+
 ## 1.3.1
 
 - `crew compact` with long instructions runs the compact in Claude Code
